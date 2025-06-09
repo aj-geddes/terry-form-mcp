@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "terry-form": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "/path/to/your/terraform/workspace:/mnt/workspace",
+        "terry-form-mcp"
+      ]
+    }
+  }
+}
