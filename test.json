@@ -1,0 +1,9 @@
+{
+  "actions": ["init", "validate", "plan"],
+  "path": "ai-terraform-modules/terraform-azurerm-aks",
+  "vars": {
+    "resource_group_name": "rg-dev",
+    "cluster_name": "dev-aks",
+    "environment": "dev"
+  }
+}
