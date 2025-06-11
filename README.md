@@ -808,65 +808,61 @@ Terry-Form MCP implements a robust security model with multiple layers of protec
 
 ```mermaid
 flowchart TB
-    %% Define external nodes
-    Requests["AI Assistant\nTool Requests"]:::external
-    Execution["Secure Terraform\nExecution"]:::execution
+    %% Define external entities
+    Input["AI Assistant\nRequests"]:::input
+    Output["Secure Terraform\nExecution"]:::output
     
-    %% Security Layers Group
-    subgraph SecurityLayers["Security Architecture"]
+    %% Defense layers as concentric shields
+    subgraph Shield["Defense-in-Depth Security Model"]
         direction TB
         
-        %% Layer 1
-        subgraph L1["Layer 1: Physical Isolation"]
-            direction LR
-            Docker["Docker Containerization"]:::layer1
+        subgraph Shield1["Physical Isolation"]
+            ContainerShield["Docker Containerization\n(Complete Environment Isolation)"]:::container
         end
         
-        %% Layer 2
-        subgraph L2["Layer 2: Access Control"]
-            direction LR
-            ReadOnly["Read-Only File System Mount"]:::layer2
-            NoNetwork["No External Network Access"]:::layer2
+        subgraph Shield2["Resource Access Control"]
+            direction TB
+            FileSystem["Read-Only Mount\n/mnt/workspace"]:::filesystem
+            Network["Network\nIsolation"]:::network
         end
         
-        %% Layer 3
-        subgraph L3["Layer 3: Operation Restrictions"]
+        subgraph Shield3["Operation Control"]
             direction LR
-            SafeOpsOnly["Safe Operations Only\n(init, validate, fmt, plan)"]:::layer3
-            NoStateModification["No State Modification"]:::layer3
+            AllowOps["✅ Allowed:\ninit, validate, fmt, plan"]:::allowed
+            BlockOps["❌ Blocked:\napply, destroy"]:::blocked
         end
         
-        %% Layer 4
-        subgraph L4["Layer 4: Input Validation"]
+        subgraph Shield4["Input Validation"]
             direction LR
-            PathValidation["Path Validation\n& Sanitization"]:::layer4
-            VariableSanitization["Variable Input Sanitization"]:::layer4
+            PathCheck["Path Traversal\nPrevention"]:::validation
+            VarCheck["Variable\nSanitization"]:::validation
         end
-        
-        %% Define internal connections
-        L1 --> L2
-        L2 --> L3
-        L3 --> L4
     end
     
-    %% Define external connections
-    Requests --> SecurityLayers
-    SecurityLayers --> Execution
+    %% Flow connections
+    Input --> Shield1
+    Shield1 --> Shield2
+    Shield2 --> Shield3
+    Shield3 --> Shield4
+    Shield4 --> Output
     
-    %% Define styles
-    classDef external fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px
-    classDef execution fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px
-    classDef layer1 fill:#E8F4FF,stroke:#1976D2,stroke-width:2px
-    classDef layer2 fill:#E5FFE8,stroke:#43A047,stroke-width:2px
-    classDef layer3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:2px
-    classDef layer4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:2px
+    %% Apply consistent styling with enhanced readability
+    classDef input fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef output fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px,font-weight:bold
     
-    %% Group styles
-    style SecurityLayers fill:#F5F5F5,stroke:#333333,stroke-width:2px
-    style L1 fill:#E8F4FF,stroke:#1976D2,stroke-width:1px
-    style L2 fill:#E5FFE8,stroke:#43A047,stroke-width:1px
-    style L3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:1px
-    style L4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:1px
+    classDef container fill:#1E88E5,stroke:#0D47A1,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef filesystem fill:#00ACC1,stroke:#00838F,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef network fill:#00ACC1,stroke:#00838F,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef allowed fill:#7CB342,stroke:#558B2F,color:#000000,stroke-width:2px,font-weight:bold
+    classDef blocked fill:#E53935,stroke:#B71C1C,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef validation fill:#FFB300,stroke:#FF8F00,color:#000000,stroke-width:2px,font-weight:bold
+    
+    %% Shield styling - progressively lighter colors from outside to inside
+    style Shield fill:#F5F5F5,stroke:#333333,stroke-width:3px
+    style Shield1 fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    style Shield2 fill:#E0F7FA,stroke:#00838F,stroke-width:2px
+    style Shield3 fill:#FFF8E1,stroke:#FFB300,stroke-width:2px
+    style Shield4 fill:#FFF3E0,stroke:#E65100,stroke-width:2px
 ```
 
 ### Safe Operations Only
