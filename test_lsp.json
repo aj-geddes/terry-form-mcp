@@ -1,0 +1,30 @@
+{
+  "lsp_validation_test": {
+    "tool": "terraform_validate_lsp",
+    "file_path": "main.tf",
+    "workspace_path": "ai-terraform-modules/terraform-azurerm-aks"
+  },
+  "lsp_hover_test": {
+    "tool": "terraform_hover", 
+    "file_path": "main.tf",
+    "line": 10,
+    "character": 15,
+    "workspace_path": "ai-terraform-modules/terraform-azurerm-aks"
+  },
+  "lsp_completion_test": {
+    "tool": "terraform_complete",
+    "file_path": "variables.tf",
+    "line": 5,
+    "character": 10,
+    "workspace_path": "ai-terraform-modules/terraform-azurerm-aks"
+  },
+  "terraform_execution_test": {
+    "actions": ["validate", "fmt"],
+    "path": "ai-terraform-modules/terraform-azurerm-aks",
+    "vars": {
+      "resource_group_name": "rg-dev",
+      "cluster_name": "dev-aks",
+      "environment": "dev"
+    }
+  }
+}

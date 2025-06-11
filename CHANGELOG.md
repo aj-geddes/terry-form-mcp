@@ -34,5 +34,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Troubleshooting guide and best practices
 - Security considerations and limitations
 
-[Unreleased]: https://github.com/aj-geddes/terry-form-mcp/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/aj-geddes/terry-form-mcp/releases/tag/v1.0.0
+[Unreleased]: https://github.com/your-username/terry-form-mcp/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/your-username/terry-form-mcp/releases/tag/v1.0.0

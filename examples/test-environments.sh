@@ -1,4 +1,3 @@
-#!/bin/bash
 # Test multiple Terraform environments
 environments=("development" "staging" "production")
 

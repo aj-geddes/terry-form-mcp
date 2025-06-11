@@ -1,10 +1,11 @@
+# Terry-Form MCP Git Repository
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -16,27 +17,81 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Terraform
-.terraform/
-terraform.tfstate
-terraform.tfstate.backup
-.terraform.tfstate.lock.info
-.terraform.lock.hcl
-*.tfvars
-crash.log
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Docker
 .dockerignore
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+terraform.tfvars.json
+!terraform.tfvars.example.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
 
 # Logs
 *.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Local development
+local/
+tmp/
+temp/
+
+# Secrets and credentials
+*.key
+*.pem
+*.p12
+*.p8
+*.pfx
+.secrets
+secrets.json
+
+# Claude MCP specific
+mcp-test-output/
+test-results/
