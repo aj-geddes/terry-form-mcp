@@ -19,66 +19,92 @@ Terry-Form MCP is a bridge between AI language models and Terraform infrastructu
 
 ```mermaid
 flowchart LR
-    Claude["AI Assistant\n(Claude)"] <--> MCP["Terry-Form MCP\nServer"]
-    MCP <--> Container["Terraform Docker\nContainer"]
-    Container --> TF["Terraform CLI"]
-    Container --> TFLS["Terraform-LS\nLanguage Server"]
-    TF --> LocalTF[("Local Terraform\nConfigurations")]
-    TFLS --> LocalTF
+    %% Define nodes with improved styling
+    Claude["AI Assistant\n(Claude)"]:::claude
+    MCP["Terry-Form MCP\nServer"]:::server
+    Container["Terraform Docker\nContainer"]:::container
+    TF["Terraform CLI"]:::terraform
+    TFLS["Terraform-LS\nLanguage Server"]:::lsp
+    LocalTF[("Local Terraform\nConfigurations")]:::files
+    
+    %% Define connections
+    Claude <---> MCP
+    MCP <---> Container
+    Container --> TF
+    Container --> TFLS
+    TF --- LocalTF
+    TFLS --- LocalTF
+    
+    %% Define styles
+    classDef claude fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px
+    classDef server fill:#2196F3,stroke:#0D47A1,color:#FFFFFF,stroke-width:2px
+    classDef container fill:#F5F5F5,stroke:#333333,stroke-width:2px
+    classDef terraform fill:#844FBA,stroke:#4C2889,color:#FFFFFF,stroke-width:2px
+    classDef lsp fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px
+    classDef files fill:#FFE0B2,stroke:#FB8C00,stroke-width:2px
+
+    %% Add a title
+    subgraph Terry-Form Component Architecture
+    end
 ```
 
 ### Data Flow and Security Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Host["Host Machine (Secure)"]
-        LocalFiles[("Local Terraform Files\n(Read-Write Access)")]
-    end
+flowchart LR
+    %% Main components
+    Claude["AI Assistant\n(Claude)"]:::claude
     
-    subgraph Container["Docker Container (Isolated)"]
-        MCP["Terry-Form MCP Server"]
-        TFLS["Terraform-LS\nLanguage Server"]
-        TF["Terraform CLI"]
+    %% Docker container with components
+    subgraph Container["Docker Container"]
+        MCP["Terry-Form MCP Server"]:::mcp
+        TF["Terraform Engine"]:::terraform
         
-        subgraph SecureOperations["Secure Operations"]
-            Init["init (safe)"]
-            Validate["validate (safe)"]
-            Fmt["fmt (safe)"]
-            Plan["plan (safe)"]
-            LSP["LSP Operations (safe)"]
-        end
-        
-        subgraph BlockedOperations["Blocked Operations"]
-            Apply["apply (blocked)"]
-            Destroy["destroy (blocked)"]
+        %% Operations subgraph
+        subgraph Operations["Operations"]
+            direction TB
+            
+            %% Allowed operations
+            subgraph Allowed["✅ Allowed"]
+                Init("init"):::safe
+                Validate("validate"):::safe
+                Format("fmt"):::safe
+                Plan("plan"):::safe
+                LSP("LSP"):::safe
+            end
+            
+            %% Blocked operations
+            subgraph Blocked["❌ Blocked"]
+                Apply("apply"):::blocked
+                Destroy("destroy"):::blocked
+            end
         end
     end
     
-    subgraph Network["External Networks"]
-        Remote["Remote Terraform State\n(No Access)"]
-        Provider["Cloud Provider APIs\n(No Access)"]
-    end
+    %% External components
+    Files[("Local Files\n(/mnt/workspace)")]:::files
+    External["Remote Services\n(State/Cloud APIs)"]:::external
     
-    Claude["AI Assistant (Claude)"] <-- "MCP Protocol\n(JSON Request/Response)" --> MCP
-    
-    MCP --> TFLS
+    %% Connections
+    Claude <--> MCP
     MCP --> TF
+    TF --> Operations
+    Files <--> Container
+    Blocked -.- |"NO ACCESS"| External
     
-    TF --> SecureOperations
-    TFLS --> LSP
+    %% Styling
+    classDef claude fill:#9C27B0,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef mcp fill:#2196F3,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef terraform fill:#844FBA,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    classDef files fill:#FF9800,color:#000000,stroke-width:2px,font-weight:bold
+    classDef safe fill:#8BC34A,color:#000000,stroke-width:1px,font-weight:bold
+    classDef blocked fill:#F44336,color:#FFFFFF,stroke-width:1px,font-weight:bold
+    classDef external fill:#9E9E9E,color:#FFFFFF,stroke-width:1px,font-weight:bold
     
-    LocalFiles <-- "Read-Only Mount\n(/mnt/workspace)" --> TF
-    LocalFiles <-- "Read-Only Mount\n(/mnt/workspace)" --> TFLS
-    
-    TF -.-> BlockedOperations
-    BlockedOperations -.-> |"❌ Blocked"| Remote
-    BlockedOperations -.-> |"❌ Blocked"| Provider
-    
-    style BlockedOperations fill:#ffdddd
-    style SecureOperations fill:#ddffdd
-    style Container fill:#f5f5f5,stroke:#333,stroke-width:2px
-    style Host fill:#e8f4ff,stroke:#333,stroke-width:2px
-    style Network fill:#fff4e8,stroke:#333,stroke-width:2px
+    style Container fill:#F5F5F5,stroke:#333333,stroke-width:3px
+    style Operations fill:#FAFAFA,stroke:#616161,stroke-width:1px
+    style Allowed fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    style Blocked fill:#FFEBEE,stroke:#C62828,stroke-width:2px
 ```
 
 ### Components
@@ -782,41 +808,65 @@ Terry-Form MCP implements a robust security model with multiple layers of protec
 
 ```mermaid
 flowchart TB
-    subgraph SecurityLayers["Security Layers"]
+    %% Define external nodes
+    Requests["AI Assistant\nTool Requests"]:::external
+    Execution["Secure Terraform\nExecution"]:::execution
+    
+    %% Security Layers Group
+    subgraph SecurityLayers["Security Architecture"]
         direction TB
         
+        %% Layer 1
         subgraph L1["Layer 1: Physical Isolation"]
-            Docker["Docker Containerization"]
+            direction LR
+            Docker["Docker Containerization"]:::layer1
         end
         
+        %% Layer 2
         subgraph L2["Layer 2: Access Control"]
-            ReadOnly["Read-Only File System Mount"]
-            NoNetwork["No External Network Access"]
+            direction LR
+            ReadOnly["Read-Only File System Mount"]:::layer2
+            NoNetwork["No External Network Access"]:::layer2
         end
         
+        %% Layer 3
         subgraph L3["Layer 3: Operation Restrictions"]
-            SafeOpsOnly["Safe Operations Only\n(init, validate, fmt, plan)"]
-            NoStateModification["No State Modification"]
+            direction LR
+            SafeOpsOnly["Safe Operations Only\n(init, validate, fmt, plan)"]:::layer3
+            NoStateModification["No State Modification"]:::layer3
         end
         
+        %% Layer 4
         subgraph L4["Layer 4: Input Validation"]
-            PathValidation["Path Validation\n& Sanitization"]
-            VariableSanitization["Variable Input Sanitization"]
+            direction LR
+            PathValidation["Path Validation\n& Sanitization"]:::layer4
+            VariableSanitization["Variable Input Sanitization"]:::layer4
         end
         
+        %% Define internal connections
         L1 --> L2
         L2 --> L3
         L3 --> L4
     end
     
-    Requests["AI Assistant\nTool Requests"] --> SecurityLayers
-    SecurityLayers --> Execution["Secure Terraform\nExecution"]
+    %% Define external connections
+    Requests --> SecurityLayers
+    SecurityLayers --> Execution
     
-    style SecurityLayers fill:#f5f5f5,stroke:#333,stroke-width:2px
-    style L1 fill:#e8f4ff,stroke:#333,stroke-width:1px
-    style L2 fill:#e5ffe8,stroke:#333,stroke-width:1px
-    style L3 fill:#fff4e8,stroke:#333,stroke-width:1px
-    style L4 fill:#f8e8ff,stroke:#333,stroke-width:1px
+    %% Define styles
+    classDef external fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px
+    classDef execution fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px
+    classDef layer1 fill:#E8F4FF,stroke:#1976D2,stroke-width:2px
+    classDef layer2 fill:#E5FFE8,stroke:#43A047,stroke-width:2px
+    classDef layer3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:2px
+    classDef layer4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:2px
+    
+    %% Group styles
+    style SecurityLayers fill:#F5F5F5,stroke:#333333,stroke-width:2px
+    style L1 fill:#E8F4FF,stroke:#1976D2,stroke-width:1px
+    style L2 fill:#E5FFE8,stroke:#43A047,stroke-width:1px
+    style L3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:1px
+    style L4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:1px
 ```
 
 ### Safe Operations Only
