@@ -42,7 +42,7 @@ fi
 
 # Step 2: Build the Docker image
 echo -e "${YELLOW}Building Docker image: ${FULL_IMAGE_NAME}${NC}"
-docker build -f Dockerfile.consolidated -t ${FULL_IMAGE_NAME} .
+docker build -f Dockerfile -t ${FULL_IMAGE_NAME} .
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Docker build failed!${NC}"
