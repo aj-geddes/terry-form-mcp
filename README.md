@@ -161,25 +161,23 @@ flowchart LR
 ### 1. Build the Docker Image
 
 ```bash
-# For basic Terraform execution only
-docker build -t terry-form-mcp -f Dockerfile .
+# Build using the provided script (Linux/macOS)
+./build.sh
 
-# For enhanced LSP features
-docker build -t terry-form-mcp-lsp-enhanced -f Dockerfile_enhanced_lsp .
+# Or for Windows users
+build.bat
+
+# Alternatively, build directly with Docker
+docker build -t terry-form-mcp .
 ```
 
 ### 2. Run as MCP Server
 
 ```bash
-# Basic execution features
+# Run as MCP server
 docker run -it --rm \
   -v "$(pwd)":/mnt/workspace \
   terry-form-mcp
-
-# Enhanced LSP features
-docker run -it --rm \
-  -v "$(pwd)":/mnt/workspace \
-  terry-form-mcp-lsp-enhanced
 ```
 
 ### 3. Test with Sample Data
@@ -188,11 +186,10 @@ docker run -it --rm \
 # Create a test workspace
 docker run -i --rm \
   -v "$(pwd)":/mnt/workspace \
-  terry-form-mcp-lsp-enhanced \
-  python3 -c "import json; print(json.dumps({'tool': 'terry_workspace_setup', 'arguments': {'path': 'test-project', 'project_name': 'test'}}))" | \
+  terry-form-mcp python3 -c "import json; print(json.dumps({'tool': 'terry_workspace_setup', 'arguments': {'path': 'test-project', 'project_name': 'test'}}))" | \
   docker run -i --rm \
   -v "$(pwd)":/mnt/workspace \
-  terry-form-mcp-lsp-enhanced
+  terry-form-mcp
 
 # Initialize the project
 echo '{
@@ -203,7 +200,14 @@ echo '{
   }
 }' | docker run -i --rm \
   -v "$(pwd)":/mnt/workspace \
-  terry-form-mcp-lsp-enhanced
+  terry-form-mcp
+```
+
+### 4. Run Environment Check
+
+```bash
+# Check the environment for Terraform and LSP readiness
+docker run -i --rm terry-form-mcp python3 -c "import json; import sys; sys.path.append('/app'); from server_enhanced_with_lsp import terry_environment_check; print(json.dumps(terry_environment_check(), indent=2))"
 ```
 
 ## Configuration
@@ -220,7 +224,7 @@ Most IDEs that support MCP will have a configuration file or UI. Here's a generi
       "args": [
         "run", "-i", "--rm",
         "-v", "/path/to/your/workspace:/mnt/workspace",
-        "terry-form-mcp-lsp-enhanced"
+        "terry-form-mcp"
       ]
     }
   }
@@ -239,7 +243,7 @@ Most IDEs that support MCP will have a configuration file or UI. Here's a generi
       "args": [
         "run", "-i", "--rm",
         "-v", "C:\\Users\\YourUsername\\terraform-projects:/mnt/workspace",
-        "terry-form-mcp-lsp-enhanced"
+        "terry-form-mcp"
       ]
     }
   }
@@ -256,7 +260,7 @@ Most IDEs that support MCP will have a configuration file or UI. Here's a generi
       "args": [
         "run", "-i", "--rm",
         "-v", "/Users/YourUsername/terraform-projects:/mnt/workspace",
-        "terry-form-mcp-lsp-enhanced"
+        "terry-form-mcp"
       ]
     }
   }
@@ -273,7 +277,7 @@ Most IDEs that support MCP will have a configuration file or UI. Here's a generi
       "args": [
         "run", "-i", "--rm",
         "-v", "/home/YourUsername/terraform-projects:/mnt/workspace",
-        "terry-form-mcp-lsp-enhanced"
+        "terry-form-mcp"
       ]
     }
   }
@@ -292,7 +296,7 @@ For VSCode extensions that support MCP, add to settings.json:
       "args": [
         "run", "-i", "--rm",
         "-v", "${workspaceFolder}:/mnt/workspace",
-        "terry-form-mcp-lsp-enhanced"
+        "terry-form-mcp"
       ]
     }
   }
@@ -808,61 +812,65 @@ Terry-Form MCP implements a robust security model with multiple layers of protec
 
 ```mermaid
 flowchart TB
-    %% Define external entities
-    Input["AI Assistant\nRequests"]:::input
-    Output["Secure Terraform\nExecution"]:::output
+    %% Define external nodes
+    Requests["AI Assistant\nTool Requests"]:::external
+    Execution["Secure Terraform\nExecution"]:::execution
     
-    %% Defense layers as concentric shields
-    subgraph Shield["Defense-in-Depth Security Model"]
+    %% Security Layers Group
+    subgraph SecurityLayers["Security Architecture"]
         direction TB
         
-        subgraph Shield1["Physical Isolation"]
-            ContainerShield["Docker Containerization\n(Complete Environment Isolation)"]:::container
-        end
-        
-        subgraph Shield2["Resource Access Control"]
-            direction TB
-            FileSystem["Read-Only Mount\n/mnt/workspace"]:::filesystem
-            Network["Network\nIsolation"]:::network
-        end
-        
-        subgraph Shield3["Operation Control"]
+        %% Layer 1
+        subgraph L1["Layer 1: Physical Isolation"]
             direction LR
-            AllowOps["✅ Allowed:\ninit, validate, fmt, plan"]:::allowed
-            BlockOps["❌ Blocked:\napply, destroy"]:::blocked
+            Docker["Docker Containerization"]:::layer1
         end
         
-        subgraph Shield4["Input Validation"]
+        %% Layer 2
+        subgraph L2["Layer 2: Access Control"]
             direction LR
-            PathCheck["Path Traversal\nPrevention"]:::validation
-            VarCheck["Variable\nSanitization"]:::validation
+            ReadOnly["Read-Only File System Mount"]:::layer2
+            NoNetwork["No External Network Access"]:::layer2
         end
+        
+        %% Layer 3
+        subgraph L3["Layer 3: Operation Restrictions"]
+            direction LR
+            SafeOpsOnly["Safe Operations Only\n(init, validate, fmt, plan)"]:::layer3
+            NoStateModification["No State Modification"]:::layer3
+        end
+        
+        %% Layer 4
+        subgraph L4["Layer 4: Input Validation"]
+            direction LR
+            PathValidation["Path Validation\n& Sanitization"]:::layer4
+            VariableSanitization["Variable Input Sanitization"]:::layer4
+        end
+        
+        %% Define internal connections
+        L1 --> L2
+        L2 --> L3
+        L3 --> L4
     end
     
-    %% Flow connections
-    Input --> Shield1
-    Shield1 --> Shield2
-    Shield2 --> Shield3
-    Shield3 --> Shield4
-    Shield4 --> Output
+    %% Define external connections
+    Requests --> SecurityLayers
+    SecurityLayers --> Execution
     
-    %% Apply consistent styling with enhanced readability
-    classDef input fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px,font-weight:bold
-    classDef output fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px,font-weight:bold
+    %% Define styles
+    classDef external fill:#9C27B0,stroke:#6A1B9A,color:#FFFFFF,stroke-width:2px
+    classDef execution fill:#4CAF50,stroke:#2E7D32,color:#FFFFFF,stroke-width:2px
+    classDef layer1 fill:#E8F4FF,stroke:#1976D2,stroke-width:2px
+    classDef layer2 fill:#E5FFE8,stroke:#43A047,stroke-width:2px
+    classDef layer3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:2px
+    classDef layer4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:2px
     
-    classDef container fill:#1E88E5,stroke:#0D47A1,color:#FFFFFF,stroke-width:2px,font-weight:bold
-    classDef filesystem fill:#00ACC1,stroke:#00838F,color:#FFFFFF,stroke-width:2px,font-weight:bold
-    classDef network fill:#00ACC1,stroke:#00838F,color:#FFFFFF,stroke-width:2px,font-weight:bold
-    classDef allowed fill:#7CB342,stroke:#558B2F,color:#000000,stroke-width:2px,font-weight:bold
-    classDef blocked fill:#E53935,stroke:#B71C1C,color:#FFFFFF,stroke-width:2px,font-weight:bold
-    classDef validation fill:#FFB300,stroke:#FF8F00,color:#000000,stroke-width:2px,font-weight:bold
-    
-    %% Shield styling - progressively lighter colors from outside to inside
-    style Shield fill:#F5F5F5,stroke:#333333,stroke-width:3px
-    style Shield1 fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
-    style Shield2 fill:#E0F7FA,stroke:#00838F,stroke-width:2px
-    style Shield3 fill:#FFF8E1,stroke:#FFB300,stroke-width:2px
-    style Shield4 fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    %% Group styles
+    style SecurityLayers fill:#F5F5F5,stroke:#333333,stroke-width:2px
+    style L1 fill:#E8F4FF,stroke:#1976D2,stroke-width:1px
+    style L2 fill:#E5FFE8,stroke:#43A047,stroke-width:1px
+    style L3 fill:#FFF4E8,stroke:#FB8C00,stroke-width:1px
+    style L4 fill:#F8E8FF,stroke:#7B1FA2,stroke-width:1px
 ```
 
 ### Safe Operations Only
@@ -942,7 +950,7 @@ docker run -it --rm \
   -v "$(pwd)":/mnt/workspace \
   -e TF_LOG=DEBUG \
   -e PYTHONUNBUFFERED=1 \
-  terry-form-mcp-lsp-enhanced
+  terry-form-mcp
 ```
 
 ## Development
@@ -961,16 +969,16 @@ docker run -it --rm \
 
 ### Building Custom Images
 
-Modify the Dockerfile_enhanced_lsp to customize the container:
+Modify the Dockerfile to customize the container:
 
 ```bash
 # Build with custom modifications
-docker build -t terry-form-mcp-custom -f Dockerfile_enhanced_lsp .
+docker build -t terry-form-mcp-custom .
 ```
 
 ### Testing
 
-Test the enhanced LSP features:
+Test the LSP features:
 
 ```bash
 # Test LSP client initialization
@@ -979,7 +987,7 @@ python3 -c "import terraform_lsp_client; import asyncio; asyncio.run(terraform_l
 # Test with Docker
 docker run -i --rm \
   -v "$(pwd):/mnt/workspace" \
-  terry-form-mcp-lsp-enhanced \
+  terry-form-mcp \
   python3 -c "import json; print(json.dumps({'tool': 'terraform_lsp_status'}))"
 ```
 
@@ -987,20 +995,21 @@ docker run -i --rm \
 
 ```
 terry-form-mcp/
-├── server.py                     # Original FastMCP server implementation
-├── server_with_lsp.py            # FastMCP server with basic LSP integration
 ├── server_enhanced_with_lsp.py   # Enhanced FastMCP server with comprehensive LSP integration
 ├── terry-form-mcp.py             # Core Terraform execution logic
 ├── terraform_lsp_client.py       # LSP client implementation
-├── Dockerfile                    # Original container build configuration
-├── Dockerfile_with_lsp           # Basic LSP container configuration
-├── Dockerfile_enhanced_lsp       # Enhanced LSP container with improved features
-├── build.sh                      # Original build script
-├── build_lsp.sh                  # Build script for LSP-enabled image
+├── Dockerfile                    # Container build configuration with LSP support
+├── build.sh                      # Build script (Linux/macOS)
+├── build.bat                     # Build script (Windows)
 ├── examples/                     # Usage examples and documentation
 │   ├── LSP_INTEGRATION.md        # Detailed LSP integration documentation
-│   └── claude-desktop-lsp-config.json # Example Claude Desktop configuration
-├── README.md                     # This documentation
+│   ├── claude-desktop-config.json # Example Claude Desktop configuration
+│   └── claude-desktop-lsp-config.json # Example Claude Desktop LSP configuration
+├── test-terraform-project/       # Sample Terraform project for testing
+│   └── main.tf                   # Example Terraform configuration
+├── README.md                     # Documentation
+├── CHANGELOG.md                  # Version history
+├── CONTRIBUTING.md               # Contribution guidelines
 └── LICENSE                       # MIT License
 ```
 
