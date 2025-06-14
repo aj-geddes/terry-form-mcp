@@ -23,7 +23,8 @@ class AuthenticationManager:
     """Manages authentication for GitHub and Azure services"""
     
     def __init__(self):
-        self.secrets_path = Path("/var/run/secrets")
+        # Check both standard and vault paths
+        self.secrets_paths = [Path("/var/run/secrets"), Path("/vault/secrets")]
         self.github_auth = None
         self.azure_auth = None
         self._load_credentials()
@@ -31,19 +32,23 @@ class AuthenticationManager:
     def _load_credentials(self):
         """Load credentials from Kubernetes secrets"""
         try:
-            # Load GitHub credentials
-            github_secret_path = self.secrets_path / "github-auth" / "credentials"
-            if github_secret_path.exists():
-                github_data = json.loads(github_secret_path.read_text())
-                self.github_auth = self._parse_github_credentials(github_data)
-                logger.info("GitHub credentials loaded successfully")
+            # Try each path for GitHub credentials
+            for secrets_path in self.secrets_paths:
+                github_secret_path = secrets_path / "github-auth" / "credentials"
+                if github_secret_path.exists():
+                    github_data = json.loads(github_secret_path.read_text())
+                    self.github_auth = self._parse_github_credentials(github_data)
+                    logger.info(f"GitHub credentials loaded successfully from {secrets_path}")
+                    break
             
-            # Load Azure credentials  
-            azure_secret_path = self.secrets_path / "azure-auth" / "credentials"
-            if azure_secret_path.exists():
-                azure_data = json.loads(azure_secret_path.read_text())
-                self.azure_auth = self._parse_azure_credentials(azure_data)
-                logger.info("Azure credentials loaded successfully")
+            # Try each path for Azure credentials
+            for secrets_path in self.secrets_paths:
+                azure_secret_path = secrets_path / "azure-auth" / "credentials"
+                if azure_secret_path.exists():
+                    azure_data = json.loads(azure_secret_path.read_text())
+                    self.azure_auth = self._parse_azure_credentials(azure_data)
+                    logger.info(f"Azure credentials loaded successfully from {secrets_path}")
+                    break
                 
         except Exception as e:
             logger.warning(f"Failed to load credentials: {e}")

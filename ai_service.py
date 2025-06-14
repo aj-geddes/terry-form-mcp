@@ -19,20 +19,23 @@ class AIServiceManager:
     
     def __init__(self):
         self.config = {}
-        self.secrets_path = Path("/var/run/secrets")
+        # Check both standard and vault paths
+        self.secrets_paths = [Path("/var/run/secrets"), Path("/vault/secrets")]
         self._load_ai_config()
     
     def _load_ai_config(self):
         """Load AI configuration from Kubernetes secrets"""
         try:
-            # Load AI service credentials
-            ai_secret_path = self.secrets_path / "ai-service" / "credentials"
-            if ai_secret_path.exists():
-                self.config = json.loads(ai_secret_path.read_text())
-                provider = self.config.get("provider", "anthropic").lower()
-                logger.info(f"AI service configured with {provider}")
-            else:
-                logger.warning("No AI service credentials found")
+            # Try each path until we find credentials
+            for secrets_path in self.secrets_paths:
+                ai_secret_path = secrets_path / "ai-service" / "credentials"
+                if ai_secret_path.exists():
+                    self.config = json.loads(ai_secret_path.read_text())
+                    provider = self.config.get("provider", "anthropic").lower()
+                    logger.info(f"AI service configured with {provider} from {secrets_path}")
+                    return
+                    
+            logger.warning("No AI service credentials found in any path")
                 
         except Exception as e:
             logger.error(f"Failed to load AI configuration: {e}")
