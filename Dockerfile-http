@@ -1,0 +1,83 @@
+# Terry-Form MCP HTTP Server Dockerfile
+FROM hashicorp/terraform:1.6.6
+
+# Install Python and dependencies including build tools
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    git \
+    openssh-client \
+    curl \
+    wget \
+    gnupg \
+    bash \
+    gcc \
+    musl-dev \
+    python3-dev \
+    linux-headers
+
+# Install GitHub CLI (simple apk approach)
+RUN apk add --no-cache github-cli
+
+# Install essential Python packages only (skip heavy Azure CLI for now)
+RUN pip3 install --break-system-packages --no-cache-dir \
+    azure-identity \
+    azure-mgmt-core \
+    PyGithub \
+    cryptography \
+    pyjwt \
+    requests
+
+# Install minimal Azure components (we can add az-cli later if needed)
+RUN echo "Azure CLI skipped for faster builds - can be added later"
+
+# Create non-root user
+RUN addgroup -g 1000 terry && \
+    adduser -D -u 1000 -G terry terry
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY --chown=terry:terry . .
+
+# Create required directories
+RUN mkdir -p /mnt/workspace /tmp/terraform-ls /home/terry/.config && \
+    chown -R terry:terry /mnt/workspace /tmp/terraform-ls /app /home/terry
+
+# Configure git for automation (global settings)
+RUN git config --global user.name "Terry-Form MCP" && \
+    git config --global user.email "terry@terry-form-mcp.local" && \
+    git config --global init.defaultBranch main && \
+    git config --global pull.rebase false && \
+    git config --global core.autocrlf input
+
+# Download terraform-ls
+RUN wget -O /tmp/terraform-ls.zip https://releases.hashicorp.com/terraform-ls/0.33.2/terraform-ls_0.33.2_linux_amd64.zip && \
+    unzip /tmp/terraform-ls.zip -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/terraform-ls && \
+    rm /tmp/terraform-ls.zip
+
+# Switch to non-root user
+USER terry
+
+# Environment variables
+ENV PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1 \
+    MCP_HOST="0.0.0.0" \
+    MCP_PORT="8000" \
+    WORKSPACE_PATH="/mnt/workspace"
+
+# Expose HTTP ports (MCP and health)
+EXPOSE 8000 8001
+
+# Health check on dedicated port
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"
+
+# Run the combined server
+ENTRYPOINT ["python3", "/app/server_combined.py"]

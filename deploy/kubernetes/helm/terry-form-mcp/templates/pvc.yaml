@@ -1,0 +1,18 @@
+{{- if .Values.terryform.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}-workspace
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: workspace
+spec:
+  accessModes:
+    - {{ .Values.terryform.persistence.accessMode }}
+  {{- if .Values.terryform.persistence.storageClass }}
+  storageClassName: {{ .Values.terryform.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.terryform.persistence.size }}
+{{- end }}

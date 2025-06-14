@@ -1,0 +1,47 @@
+# Terry-Form MCP v3.0.0 Dependencies
+# Core MCP and async framework
+fastmcp>=0.1.0
+aiohttp>=3.8.0
+aiofiles>=0.8.0
+pydantic>=2.0.0
+
+# GitHub App integration
+PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# HTTP client for API calls
+httpx>=0.24.0
+
+# Version parsing for provider analysis
+packaging>=23.0
+
+# JSON processing
+orjson>=3.9.0
+
+# Date/time handling
+python-dateutil>=2.8.0
+
+# Logging enhancements
+structlog>=23.0.0
+
+# Prometheus metrics (optional)
+prometheus-client>=0.17.0
+
+# Configuration management
+python-dotenv>=1.0.0
+
+# Existing dependencies from v2.0.0
+# (These would be maintained from the original requirements)
+
+# Development dependencies (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.5.0
+flake8>=6.0.0
+
+# Documentation dependencies (optional)
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "terry-form-mcp": {
+      "command": "python3",
+      "args": [
+        "/mnt/c/Users/Munso/terry-form-mcp/client/terry-form-mcp-client.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "KUBECONFIG": "${HOME}/.kube/config"
+      }
+    }
+  }
+}

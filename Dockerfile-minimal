@@ -1,0 +1,25 @@
+# Minimal Dockerfile for testing deployment
+FROM python:3.11-alpine
+
+# Create non-root user
+RUN addgroup -g 1000 terry && \
+    adduser -D -u 1000 -G terry terry
+
+# Set working directory
+WORKDIR /app
+
+# Copy minimal server
+COPY --chown=terry:terry server_minimal.py .
+
+# Create required directories
+RUN mkdir -p /mnt/workspace && \
+    chown -R terry:terry /mnt/workspace /app
+
+# Switch to non-root user
+USER terry
+
+# Expose port
+EXPOSE 8000
+
+# Run the minimal server
+ENTRYPOINT ["python3", "/app/server_minimal.py"]

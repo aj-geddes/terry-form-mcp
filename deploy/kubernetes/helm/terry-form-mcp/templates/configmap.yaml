@@ -1,0 +1,60 @@
+{{- if .Values.terryFormMcp }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}-config
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+data:
+  # Core configuration
+  TERRY_FORM_VERSION: {{ .Values.terryFormMcp.image.tag | quote }}
+  TERRAFORM_VERSION: {{ .Values.terraform.version | quote }}
+  LSP_ENABLED: {{ .Values.lsp.enabled | quote }}
+  LSP_VERSION: {{ .Values.lsp.terraformLs.version | quote }}
+  
+  # Allowed operations
+  ALLOWED_OPERATIONS: {{ .Values.terraform.operations.allowedActions | join "," | quote }}
+  
+  # Timeouts
+  TIMEOUT_INIT: {{ .Values.terraform.timeouts.init | quote }}
+  TIMEOUT_PLAN: {{ .Values.terraform.timeouts.plan | quote }}
+  TIMEOUT_VALIDATE: {{ .Values.terraform.timeouts.validate | quote }}
+  TIMEOUT_DEFAULT: {{ .Values.terraform.timeouts.default | quote }}
+  
+  # Concurrency
+  MAX_CONCURRENT_OPERATIONS: {{ .Values.terraform.maxConcurrent | quote }}
+  
+  # Logging
+  LOG_LEVEL: {{ .Values.logging.level | quote }}
+  LOG_FORMAT: {{ .Values.logging.format | quote }}
+  
+  # GitHub App settings
+  {{- if .Values.github.enabled }}
+  GITHUB_ENABLED: "true"
+  GITHUB_WEBHOOK_PATH: {{ .Values.github.webhook.path | quote }}
+  GITHUB_VALIDATION_ENABLED: {{ .Values.github.validation.enabled | quote }}
+  GITHUB_AUTO_COMMENT: {{ .Values.github.validation.autoComment | quote }}
+  {{- end }}
+  
+  # Terraform Cloud settings
+  {{- if .Values.terraformCloud.enabled }}
+  TFC_ENABLED: "true"
+  TFC_ENDPOINT: {{ .Values.terraformCloud.api.endpoint | quote }}
+  TFC_ORGANIZATION: {{ .Values.terraformCloud.authentication.organizationName | quote }}
+  TFC_DEFAULT_EXECUTION_MODE: {{ .Values.terraformCloud.workspaces.defaultExecutionMode | quote }}
+  TFC_AUTO_QUEUE_PLANS: {{ .Values.terraformCloud.runs.autoQueuePlans | quote }}
+  {{- end }}
+  
+  # Module Intelligence settings
+  {{- if .Values.moduleIntelligence.enabled }}
+  MODULE_INTELLIGENCE_ENABLED: "true"
+  MODULE_SCAN_INTERVAL: {{ .Values.moduleIntelligence.repositoryScanning.scanInterval | quote }}
+  MODULE_MAX_REPOSITORIES: {{ .Values.moduleIntelligence.repositoryScanning.maxRepositories | quote }}
+  {{- end }}
+  
+  # Provider cache settings
+  {{- if .Values.terraform.providerCache.enabled }}
+  PROVIDER_CACHE_ENABLED: "true"
+  PROVIDER_CACHE_TTL: {{ .Values.terraform.providerCache.ttl | quote }}
+  {{- end }}
+{{- end }}

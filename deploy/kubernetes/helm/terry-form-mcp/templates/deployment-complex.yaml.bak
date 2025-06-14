@@ -1,0 +1,215 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/version: "{{ .Values.terryFormMcp.image.tag | default .Chart.AppVersion }}"
+spec:
+  {{- if not .Values.terryFormMcp.autoscaling.enabled }}
+  replicas: {{ .Values.terryFormMcp.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "terry-form-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "terry-form-mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/version: "{{ .Values.terryFormMcp.image.tag | default .Chart.AppVersion }}"
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.terryFormMcp.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "terry-form-mcp.serviceAccountName" . }}
+      securityContext:
+        runAsUser: {{ .Values.terryFormMcp.securityContext.runAsUser | default 1000 }}
+        runAsGroup: {{ .Values.terryFormMcp.securityContext.runAsGroup | default 1000 }}
+        fsGroup: {{ .Values.terryFormMcp.securityContext.fsGroup | default 1000 }}
+        runAsNonRoot: {{ .Values.terryFormMcp.securityContext.runAsNonRoot | default true }}
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        # Main Terry-Form MCP container
+        - name: terry-form-mcp
+          image: "{{ .Values.terryFormMcp.image.repository }}:{{ .Values.terryFormMcp.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.terryFormMcp.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: mcp
+              containerPort: {{ .Values.terryFormMcp.service.targetPort }}
+              protocol: TCP
+            - name: health
+              containerPort: 8001
+              protocol: TCP
+            {{- if .Values.monitoring.prometheus.enabled }}
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.github.enabled }}
+            - name: webhook
+              containerPort: {{ .Values.github.webhook.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            # Core environment variables
+            - name: PORT
+              value: "{{ .Values.terryFormMcp.service.targetPort }}"
+            - name: WORKSPACE_PATH
+              value: "/mnt/workspace"
+            {{- if .Values.terraform.providerCache.enabled }}
+            - name: TF_PLUGIN_CACHE_DIR
+              value: "/mnt/provider-cache"
+            {{- end }}
+            {{- if .Values.lsp.enabled }}
+            - name: LSP_CACHE_DIR
+              value: "/mnt/lsp-cache"
+            {{- end }}
+            # Configuration from ConfigMap
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "terry-form-mcp.fullname" . }}-config
+                  key: LOG_LEVEL
+            - name: ALLOWED_OPERATIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "terry-form-mcp.fullname" . }}-config
+                  key: ALLOWED_OPERATIONS
+            # GitHub App configuration
+            {{- if .Values.github.enabled }}
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "terry-form-mcp.fullname" . }}-secrets
+                  key: github-app-id
+            - name: GITHUB_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.github.privateKeySecretName }}
+                  key: private-key
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.github.webhookSecretName }}
+                  key: webhook-secret
+            {{- end }}
+            # Terraform Cloud configuration
+            {{- if .Values.terraformCloud.enabled }}
+            - name: TFC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.terraformCloud.authentication.tokenSecretName }}
+                  key: token
+            - name: TFC_ORGANIZATION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "terry-form-mcp.fullname" . }}-config
+                  key: TFC_ORGANIZATION
+            {{- end }}
+            # Extra environment variables
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.terryFormMcp.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.terryFormMcp.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.terryFormMcp.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.terryFormMcp.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.terryFormMcp.startupProbe }}
+          startupProbe:
+            {{- toYaml .Values.terryFormMcp.startupProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.terryFormMcp.resources }}
+          resources:
+            {{- toYaml .Values.terryFormMcp.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            # Workspace volume
+            - name: workspace
+              mountPath: /mnt/workspace
+            {{- if .Values.terraform.providerCache.enabled }}
+            # Provider cache volume
+            - name: provider-cache
+              mountPath: /mnt/provider-cache
+            {{- end }}
+            {{- if and .Values.lsp.enabled .Values.lsp.cache.enabled }}
+            # LSP cache volume
+            - name: lsp-cache
+              mountPath: /mnt/lsp-cache
+            {{- end }}
+            # Temp directory for operations
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml .Values.lifecycle | nindent 12 }}
+          {{- end }}
+        {{- if .Values.sidecarContainers }}
+        {{- toYaml .Values.sidecarContainers | nindent 8 }}
+        {{- end }}
+      volumes:
+        # Workspace volume
+        {{- if .Values.terryFormMcp.persistence.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "terry-form-mcp.fullname" . }}-workspace
+        {{- else }}
+        - name: workspace
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.terraform.providerCache.enabled }}
+        # Provider cache volume
+        - name: provider-cache
+          persistentVolumeClaim:
+            claimName: {{ include "terry-form-mcp.fullname" . }}-provider-cache
+        {{- end }}
+        {{- if and .Values.lsp.enabled .Values.lsp.cache.enabled }}
+        # LSP cache volume
+        - name: lsp-cache
+          persistentVolumeClaim:
+            claimName: {{ include "terry-form-mcp.fullname" . }}-lsp-cache
+        {{- end }}
+        # Temp directory
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

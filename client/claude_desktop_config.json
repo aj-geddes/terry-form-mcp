@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "terry-form-mcp": {
+      "url": "http://localhost:8080/mcp",
+      "transport": "stdio",
+      "command": "kubectl",
+      "args": [
+        "port-forward",
+        "-n",
+        "terry-form-system",
+        "service/terry-form-mcp",
+        "8080:8000"
+      ],
+      "env": {
+        "KUBECONFIG": "${HOME}/.kube/config"
+      },
+      "metadata": {
+        "name": "Terry-Form MCP v3.0.0",
+        "description": "Terraform infrastructure development platform with MCP support",
+        "version": "3.0.0",
+        "capabilities": [
+          "terraform_operations",
+          "module_intelligence",
+          "github_integration",
+          "terraform_cloud"
+        ]
+      }
+    }
+  }
+}

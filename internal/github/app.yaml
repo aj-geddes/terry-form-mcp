@@ -1,0 +1,30 @@
+# GitHub App Manifest for Terry-Form Terraform Validator
+# Use this manifest to create the GitHub App: https://github.com/settings/apps/new
+
+name: Terry-Form Terraform Validator
+description: Advanced Terraform validation, review, and analysis for pull requests. Powered by Terry-Form MCP v3.0.0.
+url: https://github.com/aj-geddes/terry-form-mcp
+hook_attributes:
+  url: https://your-domain.com/webhooks/github
+  active: true
+public: true
+default_permissions:
+  # Read repository contents to analyze Terraform files
+  contents: read
+  # Write check runs for validation results
+  checks: write
+  # Read and write pull request comments
+  pull_requests: write
+  # Read repository metadata
+  metadata: read
+  # Write commit statuses
+  statuses: write
+default_events:
+  # Trigger on pull request events
+  - pull_request
+  # Trigger on push events for branch validation
+  - push
+  # Allow manual re-runs of checks
+  - check_run
+  # Monitor check suite completion
+  - check_suite

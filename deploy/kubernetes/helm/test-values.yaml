@@ -1,0 +1,85 @@
+# Minimal test values for Terry-Form MCP v3.0.0
+terryFormMcp:
+  image:
+    repository: terry-form-mcp
+    tag: "v3.0.0"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+  
+  persistence:
+    enabled: false
+  
+  autoscaling:
+    enabled: false
+  
+  podDisruptionBudget:
+    enabled: false
+
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+
+github:
+  enabled: false
+
+terraformCloud:
+  enabled: false
+
+moduleIntelligence:
+  enabled: false
+
+lsp:
+  enabled: false
+  terraformLs:
+    version: "0.33.2"
+
+terraform:
+  version: "latest"
+  operations:
+    allowedActions:
+      - init
+      - validate
+      - fmt
+      - plan
+  timeouts:
+    init: 300
+    plan: 600
+    validate: 120
+    default: 300
+  maxConcurrent: 10
+  providerCache:
+    enabled: false
+
+networkPolicies:
+  enabled: false
+
+serviceAccount:
+  create: true
+
+multiTenancy:
+  enabled: false
+
+logging:
+  level: "info"
+  format: "json"

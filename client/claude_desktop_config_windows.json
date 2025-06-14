@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "terry-form-mcp": {
+      "command": "wsl",
+      "args": [
+        "python3",
+        "/mnt/c/Users/Munso/terry-form-mcp/client/terry-form-mcp-client.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

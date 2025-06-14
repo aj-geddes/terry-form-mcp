@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "terry-form-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "terry-form-mcp.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "terry-form-mcp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: mcp
+              containerPort: 8000
+              protocol: TCP
+            - name: health
+              containerPort: 8001
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.terryform.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /mnt/workspace
+            {{- if .Values.terryform.auth.github.enabled }}
+            - name: github-auth
+              mountPath: /var/run/secrets/github-auth
+              readOnly: true
+            {{- end }}
+            {{- if .Values.terryform.auth.azure.enabled }}
+            - name: azure-auth
+              mountPath: /var/run/secrets/azure-auth
+              readOnly: true
+            {{- end }}
+            {{- if .Values.terryform.ai.enabled }}
+            - name: ai-service
+              mountPath: /var/run/secrets/ai-service
+              readOnly: true
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.terryform.persistence.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "terry-form-mcp.fullname" . }}-workspace
+        {{- else }}
+        - name: workspace
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.terryform.auth.github.enabled }}
+        - name: github-auth
+          secret:
+            secretName: {{ .Values.terryform.auth.github.secretName }}
+        {{- end }}
+        {{- if .Values.terryform.auth.azure.enabled }}
+        - name: azure-auth
+          secret:
+            secretName: {{ .Values.terryform.auth.azure.secretName }}
+        {{- end }}
+        {{- if .Values.terryform.ai.enabled }}
+        - name: ai-service
+          secret:
+            secretName: {{ .Values.terryform.ai.secretName }}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,447 @@
+# Terry-Form MCP v3.0.0 Helm Chart Values
+# This file contains default configuration values for deploying Terry-Form MCP on Kubernetes
+
+# Global configuration
+global:
+  # The domain name for external access
+  domain: ""
+  # Storage class for persistent volumes
+  storageClass: ""
+
+# Core Terry-Form MCP configuration
+terryFormMcp:
+  # Container image configuration
+  image:
+    repository: terry-form-mcp
+    tag: "3.0.0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+  # Number of replicas for the core service
+  replicaCount: 2
+
+  # Resource limits and requests
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Security context for pods
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    annotations: {}
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: terry-form.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+      # - secretName: terry-form-tls
+      #   hosts:
+      #     - terry-form.example.com
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    annotations: {}
+    # Workspace data retention
+    workspaceRetentionDays: 30
+
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Liveness and Readiness probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Startup probe for terraform-ls initialization
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+      scrapeTimeout: 10s
+      labels: {}
+    
+  # Grafana dashboards
+  grafana:
+    enabled: false
+    dashboards:
+      enabled: false
+
+# GitHub App Integration
+github:
+  enabled: false
+  
+  # GitHub App credentials
+  appId: ""
+  privateKeySecretName: ""
+  webhookSecretName: ""
+  
+  # Webhook configuration
+  webhook:
+    path: /webhooks/github
+    port: 8001
+    
+  # Validation settings
+  validation:
+    enabled: true
+    requireApproval: true
+    autoComment: true
+    
+  # Repository scanning
+  repositoryScanning:
+    enabled: false
+    interval: 3600  # seconds
+    maxConcurrent: 5
+
+# Terraform Configuration
+terraform:
+  # Provider cache settings
+  providerCache:
+    enabled: true
+    size: 5Gi
+    ttl: 86400  # seconds
+    
+  # Allowed Terraform operations
+  operations:
+    allowedActions:
+      - init
+      - validate
+      - fmt
+      - plan
+      - show
+      - graph
+      - providers
+      - version
+    # Explicitly disallowed for security
+    disallowedActions:
+      - apply
+      - destroy
+      - import
+      
+  # Operation timeouts
+  timeouts:
+    init: 300
+    plan: 600
+    validate: 120
+    default: 300
+    
+  # Concurrent operations limit
+  maxConcurrent: 10
+  
+  # Terraform version constraints
+  version: "latest"
+  allowedVersions: []
+    # - "1.5.*"
+    # - "1.6.*"
+
+# Language Server Protocol (LSP) configuration
+lsp:
+  enabled: true
+  
+  # terraform-ls configuration
+  terraformLs:
+    version: "0.33.2"
+    maxInstances: 5
+    memoryLimit: "2Gi"
+    cpuLimit: "1000m"
+    
+  # LSP caching
+  cache:
+    enabled: true
+    size: 2Gi
+    ttl: 3600  # seconds
+    
+  # LSP workspace settings
+  workspace:
+    maxSize: "1Gi"
+    maxFiles: 10000
+
+# Module Intelligence System
+moduleIntelligence:
+  enabled: false
+  
+  # Provider schema management
+  providerSchemas:
+    refreshInterval: 86400  # 24 hours
+    providers: []
+      # - name: azurerm
+      #   minVersion: "3.0.0"
+      # - name: aws
+      #   minVersion: "4.0.0"
+      
+  # Repository scanning for modules
+  repositoryScanning:
+    enabled: false
+    scanInterval: 604800  # 7 days
+    maxRepositories: 100
+    
+  # Impact analysis settings
+  impactAnalysis:
+    enabled: false
+    maxImpactRadius: 50
+    breakingChangeThreshold: "minor"
+    
+  # Automated PR generation
+  pullRequests:
+    enabled: false
+    autoGenerate: false
+    labelPrefix: "module-update"
+    maxPRsPerDay: 10
+
+# Terraform Cloud Integration
+terraformCloud:
+  enabled: false
+  
+  # Authentication
+  authentication:
+    method: "token"  # token, serviceAccount
+    tokenSecretName: ""
+    organizationName: ""
+    
+  # API configuration
+  api:
+    endpoint: "https://app.terraform.io/api/v2"
+    rateLimit:
+      maxRequestsPerSecond: 10
+      burstLimit: 25
+      
+  # Workspace settings
+  workspaces:
+    defaultExecutionMode: "remote"  # remote, local
+    autoCreateWorkspaces: false
+    namingTemplate: "terry-form-{{repository}}-{{branch}}"
+    defaultTerraformVersion: "1.5.0"
+    
+  # Run configuration
+  runs:
+    autoApply: false
+    autoQueuePlans: true
+    waitForCompletion: true
+    timeoutSeconds: 3600
+    
+  # State management
+  state:
+    allowStateRetrieval: true
+    stateVersionLimit: 10
+    enableStateLocking: true
+    
+  # Policy checks
+  policyChecks:
+    enabled: false
+    enforcePolicies: true
+    allowOverrides: false
+    
+  # Cost estimation
+  costEstimation:
+    enabled: false
+    budgetThresholds:
+      warning: 100
+      critical: 500
+
+# Multi-tenancy configuration
+multiTenancy:
+  enabled: false
+  
+  # Isolation mode
+  isolationMode: "namespace"  # namespace, workspace
+  
+  # RBAC configuration
+  rbac:
+    enabled: true
+    createRoles: true
+    
+  # Resource quotas per tenant
+  resourceQuotas:
+    enabled: true
+    defaults:
+      cpu: "4000m"
+      memory: "8Gi"
+      storage: "50Gi"
+
+# Authentication and Authorization
+auth:
+  enabled: false
+  
+  # OAuth2/OIDC configuration
+  oidc:
+    enabled: false
+    issuer: ""
+    clientId: ""
+    clientSecretName: ""
+    redirectUrl: ""
+    
+  # Basic auth (for testing only)
+  basic:
+    enabled: false
+    usersSecretName: ""
+
+# Logging configuration
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json, text
+  
+  # Log aggregation
+  aggregation:
+    enabled: false
+    endpoint: ""
+
+# Network policies
+networkPolicies:
+  enabled: false
+  
+  # Ingress rules
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+          
+  # Egress rules
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+  automountServiceAccountToken: true
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     - labelSelector:
+  #         matchExpressions:
+  #           - key: app.kubernetes.io/name
+  #             operator: In
+  #             values:
+  #               - terry-form-mcp
+  #       topologyKey: kubernetes.io/hostname
+
+# Priority class
+priorityClassName: ""
+
+# Extra environment variables
+extraEnvVars: []
+  # - name: CUSTOM_VAR
+  #   value: "custom-value"
+
+# Extra volumes
+extraVolumes: []
+  # - name: custom-config
+  #   configMap:
+  #     name: custom-config
+
+# Extra volume mounts
+extraVolumeMounts: []
+  # - name: custom-config
+  #   mountPath: /etc/custom-config
+  #   readOnly: true
+
+# Lifecycle hooks
+lifecycle: {}
+  # preStop:
+  #   exec:
+  #     command:
+  #       - /bin/sh
+  #       - -c
+  #       - sleep 15
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecarContainers: []

@@ -1,0 +1,83 @@
+{{- if .Values.networkPolicies.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "terry-form-mcp.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    {{- if .Values.networkPolicies.ingress }}
+    {{- toYaml .Values.networkPolicies.ingress | nindent 4 }}
+    {{- else }}
+    # Default: Allow ingress from same namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.terryFormMcp.service.targetPort }}
+    {{- if .Values.monitoring.prometheus.enabled }}
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+    {{- end }}
+    {{- if .Values.github.enabled }}
+    # Allow GitHub webhooks
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: {{ .Values.github.webhook.port }}
+    {{- end }}
+    {{- end }}
+  egress:
+    {{- if .Values.networkPolicies.egress }}
+    {{- toYaml .Values.networkPolicies.egress | nindent 4 }}
+    {{- else }}
+    # Default: Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow HTTPS for external APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32  # AWS metadata
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+    {{- if .Values.terraformCloud.enabled }}
+    # Allow Terraform Cloud API
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+    {{- end }}
+{{- end }}

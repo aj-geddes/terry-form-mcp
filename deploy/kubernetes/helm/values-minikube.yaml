@@ -1,0 +1,128 @@
+# Minikube test values for Terry-Form MCP v3.0.0
+# Simplified configuration for local testing
+
+terryFormMcp:
+  image:
+    repository: terry-form-mcp
+    tag: "v3.0.0-http"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+  
+  persistence:
+    enabled: false
+  
+  autoscaling:
+    enabled: false
+  
+  podDisruptionBudget:
+    enabled: false
+    
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8001
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+
+github:
+  enabled: false
+
+terraform:
+  version: "latest"
+  operations:
+    allowedActions:
+      - init
+      - validate
+      - fmt
+      - plan
+      - version
+  timeouts:
+    init: 300
+    plan: 600
+    validate: 120
+    default: 300
+  maxConcurrent: 10
+  providerCache:
+    enabled: false
+
+lsp:
+  enabled: true
+  terraformLs:
+    version: "0.33.2"
+  cache:
+    enabled: false
+
+moduleIntelligence:
+  enabled: false
+
+terraformCloud:
+  enabled: false
+
+multiTenancy:
+  enabled: false
+
+auth:
+  enabled: false
+
+logging:
+  level: "info"
+  format: "json"
+
+networkPolicies:
+  enabled: false
+
+serviceAccount:
+  create: true
+
+podAnnotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+priorityClassName: ""
+
+extraEnvVars:
+  - name: ENVIRONMENT
+    value: "development"

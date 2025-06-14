@@ -1,0 +1,33 @@
+apiVersion: v2
+name: terry-form-mcp
+description: A comprehensive Terraform infrastructure development platform with MCP protocol support, GitHub integration, module intelligence, and Terraform Cloud connectivity
+
+type: application
+version: 3.0.0
+appVersion: "3.0.0"
+
+home: https://github.com/aj-geddes/terry-form-mcp
+sources:
+  - https://github.com/aj-geddes/terry-form-mcp
+
+maintainers:
+  - name: AJ Geddes
+    email: terry-form@example.com
+
+keywords:
+  - terraform
+  - infrastructure-as-code
+  - mcp
+  - kubernetes
+  - github
+  - terraform-cloud
+  - lsp
+
+annotations:
+  artifacthub.io/category: integration-delivery
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://github.com/aj-geddes/terry-form-mcp/tree/main/docs
+    - name: Support
+      url: https://github.com/aj-geddes/terry-form-mcp/issues

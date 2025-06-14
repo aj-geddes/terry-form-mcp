@@ -1,0 +1,118 @@
+# Terry-Form MCP v3.0.0 Multi-stage Dockerfile
+# Optimized for Kubernetes deployment with enhanced security
+
+# Build stage
+FROM python:3.11-slim as builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements-v3.txt .
+RUN pip install --no-cache-dir --user pydantic_core && \
+    pip install --no-cache-dir --user -r requirements-v3.txt
+
+# Download and install terraform-ls
+ARG TERRAFORM_LS_VERSION=0.33.2
+RUN curl -Lo terraform-ls.zip \
+    "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" \
+    && unzip terraform-ls.zip \
+    && chmod +x terraform-ls
+
+# Production stage
+FROM hashicorp/terraform:1.6.6 as production
+
+# Install Python and required system packages
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ca-certificates \
+    git \
+    openssh-client \
+    && update-ca-certificates
+
+# Create non-root user for security
+RUN addgroup -g 1000 terry && \
+    adduser -D -u 1000 -G terry terry
+
+# Copy Python dependencies from builder
+COPY --from=builder /root/.local /home/terry/.local
+
+# Copy terraform-ls binary
+COPY --from=builder /build/terraform-ls /usr/local/bin/terraform-ls
+RUN chmod +x /usr/local/bin/terraform-ls
+
+# Set up application directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=terry:terry . .
+
+# Create required directories with proper permissions
+RUN mkdir -p /mnt/workspace /mnt/provider-cache /mnt/lsp-cache /tmp/module_cache && \
+    chown -R terry:terry /mnt/workspace /mnt/provider-cache /mnt/lsp-cache /tmp/module_cache /app
+
+# Create a read-only temp directory for the container
+RUN mkdir -p /tmp/readonly && \
+    chown terry:terry /tmp/readonly
+
+# Switch to non-root user
+USER terry
+
+# Update PATH to include user-installed packages
+ENV PATH="/home/terry/.local/bin:$PATH"
+
+# Environment variables for v3.0.0
+ENV PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1 \
+    TERRAFORM_PLUGIN_CACHE_DIR="/mnt/provider-cache" \
+    LSP_CACHE_DIR="/mnt/lsp-cache" \
+    MODULE_CACHE_DIR="/tmp/module_cache" \
+    WORKSPACE_PATH="/mnt/workspace"
+
+# Expose ports
+EXPOSE 8000 8001 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+
+# Use existing working server for now
+ENTRYPOINT ["python3", "/app/server_enhanced_with_lsp.py"]
+
+# Multi-service stage for microservice architecture
+FROM production as microservices
+
+# This stage would be used for running individual microservices
+# Each service would have its own entrypoint
+
+# Core service
+FROM production as terry-form-core
+ENTRYPOINT ["python3", "cmd/terry-form-core/main.py"]
+
+# GitHub service
+FROM production as terry-form-github
+ENV GITHUB_ENABLED=true
+ENTRYPOINT ["python3", "cmd/terry-form-github/main.py"]
+
+# Analytics service
+FROM production as terry-form-analytics
+ENV MODULE_INTELLIGENCE_ENABLED=true
+ENTRYPOINT ["python3", "cmd/terry-form-analytics/main.py"]
+
+# Cloud service
+FROM production as terry-form-cloud
+ENV TFC_ENABLED=true
+ENTRYPOINT ["python3", "cmd/terry-form-cloud/main.py"]
+
+# LSP service
+FROM production as terry-form-lsp
+ENV LSP_ENABLED=true
+ENTRYPOINT ["python3", "cmd/terry-form-lsp/main.py"]

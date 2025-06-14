@@ -1,0 +1,124 @@
+{{- if .Values.serviceAccount.create -}}
+# ClusterRole for Terry-Form MCP
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+rules:
+  # Core API resources
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  # For workspace isolation and multi-tenancy
+  - apiGroups: [""]
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+  # For monitoring integration
+  {{- if and .Values.monitoring .Values.monitoring.prometheus .Values.monitoring.prometheus.enabled }}
+  - apiGroups: [""]
+    resources:
+      - services
+      - endpoints
+    verbs:
+      - get
+      - list
+  {{- end }}
+  # For persistent volume management
+  {{- if .Values.terryform.persistence.enabled }}
+  - apiGroups: [""]
+    resources:
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  {{- end }}
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "terry-form-mcp.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "terry-form-mcp.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+{{- if .Values.multiTenancy.enabled }}
+# Role for namespace-scoped operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}-namespace
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+rules:
+  # For workspace management within namespace
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  # For job execution
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  # For pod logs
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+---
+# RoleBinding for namespace operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}-namespace
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "terry-form-mcp.fullname" . }}-namespace
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "terry-form-mcp.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

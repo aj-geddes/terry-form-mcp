@@ -1,0 +1,313 @@
+# Production-grade values for Terry-Form MCP v3.0.0
+# Follows Kubernetes best practices for enterprise deployment
+
+# Global configuration
+global:
+  # Use a proper domain for production
+  domain: "terry-form.internal"
+  storageClass: "standard"
+
+# Core Terry-Form MCP configuration
+terryFormMcp:
+  image:
+    repository: terry-form-mcp
+    tag: "v3.0.0"
+    pullPolicy: IfNotPresent
+    # For production, use image pull secrets
+    pullSecrets: []
+      # - name: registry-credentials
+
+  # Production replicas for HA
+  replicaCount: 2
+
+  # Production resource allocation
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Strict security context
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+
+  # Production ingress configuration
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - host: terry-form.internal
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: terry-form-tls
+        hosts:
+          - terry-form.internal
+
+  # Persistent storage for production
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    annotations:
+      volume.beta.kubernetes.io/storage-class: "standard"
+
+  # Enable autoscaling for production
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  # Pod disruption budget for zero-downtime updates
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Production-grade probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+    successThreshold: 1
+
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+
+# Production monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      scrapeTimeout: 10s
+      labels:
+        prometheus: kube-prometheus
+    
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# GitHub App configuration (disabled for initial deployment)
+github:
+  enabled: false
+  # Configure after creating secrets
+  # appId: ""
+  # privateKeySecretName: "github-app-private-key"
+  # webhookSecretName: "github-webhook-secret"
+
+# Terraform configuration
+terraform:
+  version: "1.6.6"
+  operations:
+    allowedActions:
+      - init
+      - validate
+      - fmt
+      - plan
+      - show
+      - graph
+      - providers
+      - version
+    disallowedActions:
+      - apply
+      - destroy
+      - import
+      
+  timeouts:
+    init: 300
+    plan: 600
+    validate: 120
+    default: 300
+    
+  maxConcurrent: 10
+  
+  providerCache:
+    enabled: true
+    size: 10Gi
+    ttl: 86400
+
+# LSP configuration
+lsp:
+  enabled: true
+  terraformLs:
+    version: "0.33.2"
+    maxInstances: 5
+    memoryLimit: "2Gi"
+    cpuLimit: "1000m"
+    
+  cache:
+    enabled: true
+    size: 5Gi
+    ttl: 3600
+
+# Module Intelligence (disabled for initial deployment)
+moduleIntelligence:
+  enabled: false
+
+# Terraform Cloud (disabled for initial deployment)
+terraformCloud:
+  enabled: false
+
+# Multi-tenancy configuration
+multiTenancy:
+  enabled: false
+  isolationMode: "namespace"
+  rbac:
+    enabled: true
+    createRoles: true
+
+# Authentication (disabled for initial deployment)
+auth:
+  enabled: false
+
+# Production logging
+logging:
+  level: "info"
+  format: "json"
+  aggregation:
+    enabled: false
+
+# Network policies for security
+networkPolicies:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+          
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow HTTPS for external APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+
+# Service Account with proper annotations
+serviceAccount:
+  create: true
+  annotations:
+    # For AWS IRSA
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/terry-form-mcp
+  name: ""
+  automountServiceAccountToken: true
+
+# Pod annotations for production
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"
+
+# Node affinity for production
+nodeSelector:
+  node-role.kubernetes.io/worker: "true"
+
+# Tolerations for dedicated nodes
+tolerations: []
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "terry-form"
+  #   effect: "NoSchedule"
+
+# Anti-affinity for HA
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - terry-form-mcp
+          topologyKey: kubernetes.io/hostname
+
+# Priority class for production workloads
+priorityClassName: "high-priority"
+
+# Extra environment variables for production
+extraEnvVars:
+  - name: ENVIRONMENT
+    value: "production"
+  - name: LOG_LEVEL
+    value: "info"
