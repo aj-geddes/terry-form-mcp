@@ -36,7 +36,14 @@ class AuthenticationManager:
             for secrets_path in self.secrets_paths:
                 github_secret_path = secrets_path / "github-auth" / "credentials"
                 if github_secret_path.exists():
-                    github_data = json.loads(github_secret_path.read_text())
+                    raw_data = json.loads(github_secret_path.read_text())
+                    
+                    # Handle nested JSON from Vault/OpenBao
+                    if isinstance(raw_data, dict) and "credentials" in raw_data:
+                        github_data = json.loads(raw_data["credentials"])
+                    else:
+                        github_data = raw_data
+                        
                     self.github_auth = self._parse_github_credentials(github_data)
                     logger.info(f"GitHub credentials loaded successfully from {secrets_path}")
                     break
@@ -45,7 +52,14 @@ class AuthenticationManager:
             for secrets_path in self.secrets_paths:
                 azure_secret_path = secrets_path / "azure-auth" / "credentials"
                 if azure_secret_path.exists():
-                    azure_data = json.loads(azure_secret_path.read_text())
+                    raw_data = json.loads(azure_secret_path.read_text())
+                    
+                    # Handle nested JSON from Vault/OpenBao
+                    if isinstance(raw_data, dict) and "credentials" in raw_data:
+                        azure_data = json.loads(raw_data["credentials"])
+                    else:
+                        azure_data = raw_data
+                        
                     self.azure_auth = self._parse_azure_credentials(azure_data)
                     logger.info(f"Azure credentials loaded successfully from {secrets_path}")
                     break

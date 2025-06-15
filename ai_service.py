@@ -30,7 +30,16 @@ class AIServiceManager:
             for secrets_path in self.secrets_paths:
                 ai_secret_path = secrets_path / "ai-service" / "credentials"
                 if ai_secret_path.exists():
-                    self.config = json.loads(ai_secret_path.read_text())
+                    raw_data = json.loads(ai_secret_path.read_text())
+                    
+                    # Handle nested JSON from Vault/OpenBao
+                    if isinstance(raw_data, dict) and "credentials" in raw_data:
+                        # Credentials are JSON string inside JSON
+                        self.config = json.loads(raw_data["credentials"])
+                    else:
+                        # Direct credentials format
+                        self.config = raw_data
+                    
                     provider = self.config.get("provider", "anthropic").lower()
                     logger.info(f"AI service configured with {provider} from {secrets_path}")
                     return
@@ -230,13 +239,16 @@ class AIServiceManager:
         api_key = self.config["api_key"]
         model = self.config.get("model", "claude-3-5-sonnet-20241022" if provider == "anthropic" else "gpt-4")
         max_tokens = self.config.get("max_tokens", 4000)
+        # Claude 3.5 Sonnet has a limit of 8192 tokens
+        if provider == "anthropic" and max_tokens > 8192:
+            max_tokens = 8192
         temperature = self.config.get("temperature", 0.1)
         
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 if provider == "anthropic":
                     headers = {
-                        "Authorization": f"Bearer {api_key}",
+                        "x-api-key": api_key,
                         "Content-Type": "application/json",
                         "anthropic-version": "2023-06-01"
                     }

@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "terry-form-mcp.fullname" . }}
+  labels:
+    {{- include "terry-form-mcp.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "terry-form-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Vault/OpenBao agent injection
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-ai-service: "secret/data/terry-form/ai-service"
+        vault.hashicorp.com/agent-inject-template-ai-service: |
+          {{`{{- with secret "secret/data/terry-form/ai-service" -}}
+          {{ .Data.data.credentials }}
+          {{- end }}`}}
+        vault.hashicorp.com/agent-inject-secret-github-auth: "secret/data/terry-form/github-auth"
+        vault.hashicorp.com/agent-inject-template-github-auth: |
+          {{`{{- with secret "secret/data/terry-form/github-auth" -}}
+          {{ .Data.data.credentials }}
+          {{- end }}`}}
+        vault.hashicorp.com/agent-inject-secret-azure-auth: "secret/data/terry-form/azure-auth"
+        vault.hashicorp.com/agent-inject-template-azure-auth: |
+          {{`{{- with secret "secret/data/terry-form/azure-auth" -}}
+          {{ .Data.data.credentials }}
+          {{- end }}`}}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "terry-form-mcp.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "terry-form-mcp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: mcp
+              containerPort: 8000
+              protocol: TCP
+            - name: health
+              containerPort: 8001
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.terryform.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /mnt/workspace
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.terryform.persistence.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "terry-form-mcp.fullname" . }}-workspace
+        {{- else }}
+        - name: workspace
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

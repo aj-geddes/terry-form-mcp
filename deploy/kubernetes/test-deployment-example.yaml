@@ -1,0 +1,92 @@
+# Example test deployment for Terry-Form MCP
+# IMPORTANT: Replace the placeholder values with your actual secrets
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: terry-test
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: terry-secrets
+  namespace: terry-test
+type: Opaque
+stringData:
+  ai-service-credentials: |
+    {
+      "credentials": "{\"provider\": \"anthropic\", \"api_key\": \"YOUR_ANTHROPIC_API_KEY_HERE\", \"model\": \"claude-3-5-sonnet-20241022\", \"max_tokens\": 8192, \"temperature\": 0}"
+    }
+  azure-auth-credentials: |
+    {
+      "credentials": "{\"type\": \"service_principal\", \"client_id\": \"YOUR_AZURE_CLIENT_ID\", \"client_secret\": \"YOUR_AZURE_CLIENT_SECRET\", \"tenant_id\": \"YOUR_AZURE_TENANT_ID\"}"
+    }
+  github-auth-credentials: |
+    {
+      "credentials": "{\"type\": \"pat\", \"token\": \"YOUR_GITHUB_PAT\", \"username\": \"YOUR_GITHUB_USERNAME\"}"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: terry-test
+  namespace: terry-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: terry-test
+  template:
+    metadata:
+      labels:
+        app: terry-test
+    spec:
+      containers:
+      - name: terry
+        image: terry-form-mcp:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: mcp
+        - containerPort: 8001
+          name: health
+        volumeMounts:
+        - name: secrets
+          mountPath: /vault/secrets/ai-service
+          subPath: ai-service
+        - name: secrets
+          mountPath: /vault/secrets/azure-auth
+          subPath: azure-auth
+        - name: secrets
+          mountPath: /vault/secrets/github-auth
+          subPath: github-auth
+        - name: workspace
+          mountPath: /mnt/workspace
+      volumes:
+      - name: secrets
+        secret:
+          secretName: terry-secrets
+          items:
+          - key: ai-service-credentials
+            path: ai-service/credentials
+          - key: azure-auth-credentials
+            path: azure-auth/credentials
+          - key: github-auth-credentials
+            path: github-auth/credentials
+      - name: workspace
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: terry-test
+  namespace: terry-test
+spec:
+  selector:
+    app: terry-test
+  ports:
+  - name: mcp
+    port: 8000
+    targetPort: 8000
+  - name: health
+    port: 8001
+    targetPort: 8001
