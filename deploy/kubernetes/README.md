@@ -38,7 +38,7 @@ Terry-Form MCP expects secrets in the following format:
 ```json
 {
   "provider": "anthropic",
-  "api_key": "sk-ant-api03-...",
+  "api_key": "YOUR_ANTHROPIC_API_KEY",
   "model": "claude-3-5-sonnet-20241022",
   "max_tokens": 8192,
   "temperature": 0

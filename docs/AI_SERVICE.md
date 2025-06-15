@@ -39,7 +39,7 @@ kubectl create secret generic ai-service \
   --namespace=terry-form-system \
   --from-literal=credentials='{
     "provider": "anthropic",
-    "api_key": "sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "api_key": "YOUR_ANTHROPIC_API_KEY_HERE",
     "model": "claude-3-5-sonnet-20241022",
     "max_tokens": 4000,
     "temperature": 0.1
@@ -55,7 +55,7 @@ kubectl create secret generic ai-service \
   --namespace=terry-form-system \
   --from-literal=credentials='{
     "provider": "openai",
-    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "api_key": "YOUR_OPENAI_API_KEY_HERE",
     "model": "gpt-4",
     "max_tokens": 4000,
     "temperature": 0.1
