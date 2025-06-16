@@ -46,6 +46,12 @@ To install and use this MCP server in Claude Desktop:
 
 4. Restart Claude Desktop to ensure the MCP server is properly loaded.
 
+## 📚 Documentation
+
+- **[User Guide](./docs/USER_GUIDE.md)** - Simple setup guide for local mode with Docker Desktop
+- **[Developer Documentation](./docs/DEVELOPMENT.md)** - Architecture and development guide
+- **[Enterprise Deployment](./docs/ENTERPRISE_DEPLOYMENT.md)** - Production Kubernetes deployment
+
 ## Server Modes
 
 The Terraform MCP Server supports two operational modes:

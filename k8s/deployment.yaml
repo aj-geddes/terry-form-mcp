@@ -19,7 +19,7 @@ spec:
       containers:
       - name: terry
         image: terraform-mcp-server:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         env:
         - name: MODE
           value: "enterprise"
