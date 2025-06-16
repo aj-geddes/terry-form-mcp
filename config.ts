@@ -4,6 +4,14 @@
 export const VERSION = "0.13.0";
 export const SERVER_NAME = "terraform-registry-mcp";
 
+// Server mode configuration
+export const SERVER_MODE = process.env.MODE || "local";
+export const MODES = {
+  LOCAL: "local",
+  ENTERPRISE: "enterprise"
+} as const;
+export type ServerMode = typeof MODES[keyof typeof MODES];
+
 // Terraform Registry API URLs
 export const REGISTRY_API_BASE = process.env.TERRAFORM_REGISTRY_URL || "https://registry.terraform.io";
 export const REGISTRY_API_V1 = `${REGISTRY_API_BASE}/v1`;
@@ -42,6 +50,9 @@ export const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS ||
 
 // Request timeouts in milliseconds
 export const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || "10000", 10);
+
+// Web UI configuration
+export const WEB_UI_PORT = parseInt(process.env.WEB_UI_PORT || "3000", 10);
 
 // Algolia search configuration for Terraform Registry
 export const ALGOLIA_CONFIG = {

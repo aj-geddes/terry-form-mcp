@@ -1,0 +1,17 @@
+apiVersion: v2
+name: terry
+description: Terraform MCP Server - A Model Context Protocol server for Terraform Registry operations
+type: application
+version: 0.1.0
+appVersion: "0.13.0"
+keywords:
+  - terraform
+  - mcp
+  - model-context-protocol
+  - terraform-cloud
+home: https://github.com/thrashr888/terraform-mcp-server
+sources:
+  - https://github.com/thrashr888/terraform-mcp-server
+maintainers:
+  - name: Paul Thrasher
+    url: https://github.com/thrashr888

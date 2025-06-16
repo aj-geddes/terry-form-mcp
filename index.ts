@@ -41,8 +41,9 @@ import {
 // Import resource handlers
 import { handleResourcesList, handleResourcesRead } from "./src/resources/index.js";
 
-import { VERSION, SERVER_NAME, TFC_TOKEN } from "./config.js";
+import { VERSION, SERVER_NAME, TFC_TOKEN, SERVER_MODE } from "./config.js";
 import logger from "./src/utils/logger.js";
+import { getModeConfig, shouldEnableTerraformCloud } from "./src/modes/index.js";
 
 // Import prompt handlers
 import { addMigrateCloudsPrompt } from "./src/prompts/migrate-clouds.js";
@@ -352,9 +353,19 @@ server.tool("policyDetails", PolicyDetailsShape, async (args) => {
   };
 });
 
-// --- Register TFC Tools (if TFC_TOKEN is set) ---
-if (TFC_TOKEN) {
-  logger.info("TFC_TOKEN detected, registering Terraform Cloud tools...");
+// --- Register TFC Tools (if enabled by mode and TFC_TOKEN is set) ---
+const modeConfig = getModeConfig();
+logger.info(`Starting server in ${modeConfig.displayName}: ${modeConfig.description}`);
+
+if (shouldEnableTerraformCloud()) {
+  if (TFC_TOKEN) {
+    logger.info("Terraform Cloud features enabled, registering TFC tools...");
+  } else {
+    logger.warn("Enterprise mode enabled but TFC_TOKEN not set - TFC tools will not be registered");
+  }
+}
+
+if (shouldEnableTerraformCloud() && TFC_TOKEN) {
   server.tool("listOrganizations", ListOrganizationsShape, async () => {
     const result = await handleListOrganizations();
     return {
@@ -630,8 +641,8 @@ function registerResources(server: McpServer) {
       }
     );
 
-    // TFC resources (if token is available)
-    if (TFC_TOKEN) {
+    // TFC resources (if enabled by mode and token is available)
+    if (shouldEnableTerraformCloud() && TFC_TOKEN) {
       // Organizations list
       server.resource("terraform-organizations", "terraform://organizations", async () => {
         logger.debug("Read requested for terraform://organizations");
@@ -685,6 +696,13 @@ async function main() {
 
     // Register resources before connecting
     registerResources(server);
+
+    // Start Web UI if enabled
+    if (modeConfig.features.webUI) {
+      const { createWebUI } = await import("./src/ui/server.js");
+      const webPort = parseInt(process.env.WEB_UI_PORT || "3000", 10);
+      createWebUI(webPort);
+    }
 
     // McpServer handles connection internally
     await server.connect(transport);

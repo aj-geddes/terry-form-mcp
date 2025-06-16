@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: terry-mcp-server
+  labels:
+    app: terry-mcp-server
+    mode: enterprise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: terry-mcp-server
+  template:
+    metadata:
+      labels:
+        app: terry-mcp-server
+        mode: enterprise
+    spec:
+      containers:
+      - name: terry
+        image: terraform-mcp-server:latest
+        imagePullPolicy: Always
+        env:
+        - name: MODE
+          value: "enterprise"
+        - name: TFC_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: terry-secrets
+              key: tfc-token
+        - name: LOG_LEVEL
+          value: "info"
+        - name: WEB_UI_PORT
+          value: "3000"
+        ports:
+        - containerPort: 3000
+          name: web-ui
+        - containerPort: 9090
+          name: mcp
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5

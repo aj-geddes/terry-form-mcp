@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terry-config
+  labels:
+    app: terry-mcp-server
+data:
+  # Server configuration
+  MODE: "enterprise"
+  LOG_LEVEL: "info"
+  WEB_UI_PORT: "3000"
+  
+  # Terraform Registry configuration
+  TERRAFORM_REGISTRY_URL: "https://registry.terraform.io"
+  DEFAULT_PROVIDER_NAMESPACE: "hashicorp"
+  
+  # Request configuration
+  REQUEST_TIMEOUT_MS: "10000"
+  
+  # Rate limiting configuration
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_REQUESTS: "60"
+  RATE_LIMIT_WINDOW_MS: "60000"

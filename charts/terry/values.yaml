@@ -1,0 +1,67 @@
+# Default values for terry.
+replicaCount: 2
+
+image:
+  repository: terraform-mcp-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Server mode configuration
+mode: enterprise
+
+# Terraform Cloud configuration
+tfcToken: ""  # Set via --set or values override
+
+# Server configuration
+config:
+  logLevel: info
+  webUIPort: 3000
+  requestTimeoutMs: 10000
+  rateLimitEnabled: true
+  rateLimitRequests: 60
+  rateLimitWindowMs: 60000
+
+service:
+  type: ClusterIP
+  port: 80
+  mcpPort: 9090
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: terry.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# MCP Bridge configuration (future)
+mcpBridge:
+  enabled: false
+  image: mcp-bridge:latest
+  port: 8080

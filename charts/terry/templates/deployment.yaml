@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "terry.fullname" . }}
+  labels:
+    {{- include "terry.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "terry.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "terry.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: MODE
+          value: {{ .Values.mode | quote }}
+        {{- if eq .Values.mode "enterprise" }}
+        - name: TFC_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "terry.fullname" . }}-secrets
+              key: tfc-token
+        {{- end }}
+        - name: LOG_LEVEL
+          value: {{ .Values.config.logLevel | quote }}
+        - name: WEB_UI_PORT
+          value: {{ .Values.config.webUIPort | quote }}
+        - name: REQUEST_TIMEOUT_MS
+          value: {{ .Values.config.requestTimeoutMs | quote }}
+        - name: RATE_LIMIT_ENABLED
+          value: {{ .Values.config.rateLimitEnabled | quote }}
+        - name: RATE_LIMIT_REQUESTS
+          value: {{ .Values.config.rateLimitRequests | quote }}
+        - name: RATE_LIMIT_WINDOW_MS
+          value: {{ .Values.config.rateLimitWindowMs | quote }}
+        ports:
+        - name: web-ui
+          containerPort: {{ .Values.config.webUIPort }}
+          protocol: TCP
+        - name: mcp
+          containerPort: {{ .Values.service.mcpPort }}
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: web-ui
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: web-ui
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

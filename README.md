@@ -46,6 +46,32 @@ To install and use this MCP server in Claude Desktop:
 
 4. Restart Claude Desktop to ensure the MCP server is properly loaded.
 
+## Server Modes
+
+The Terraform MCP Server supports two operational modes:
+
+### Local Mode (Default)
+- **Purpose**: Lightweight deployment for individual developers
+- **Features**: Access to public Terraform Registry (providers, modules, policies)
+- **Requirements**: No authentication required
+- **Web UI**: Simple status dashboard at http://localhost:3000
+
+### Enterprise Mode
+- **Purpose**: Full-featured deployment for teams and organizations
+- **Features**: All local features plus:
+  - Terraform Cloud integration (workspaces, runs, private modules)
+  - MCP Bridge support for LLM integration (coming soon)
+  - Enhanced monitoring and metrics
+- **Requirements**: `TFC_TOKEN` for Terraform Cloud features
+- **Deployment**: Designed for Kubernetes deployments
+
+To run in enterprise mode:
+```bash
+export MODE=enterprise
+export TFC_TOKEN=your-terraform-cloud-token
+npm start
+```
+
 ## Tools
 
 The following tools are available in this MCP server:
@@ -138,6 +164,7 @@ The server can be configured using environment variables:
 
 | Environment Variable | Description | Default Value |
 |---------------------|-------------|---------------|
+| `MODE` | Server mode: `local` or `enterprise` | local |
 | `TERRAFORM_REGISTRY_URL` | Base URL for Terraform Registry API | https://registry.terraform.io |
 | `DEFAULT_PROVIDER_NAMESPACE` | Default namespace for providers | hashicorp |
 | `LOG_LEVEL` | Logging level (error, warn, info, debug) | info |
@@ -145,7 +172,8 @@ The server can be configured using environment variables:
 | `RATE_LIMIT_ENABLED` | Enable rate limiting for API requests | false |
 | `RATE_LIMIT_REQUESTS` | Number of requests allowed in time window | 60 |
 | `RATE_LIMIT_WINDOW_MS` | Time window for rate limiting in milliseconds | 60000 |
-| `TFC_TOKEN` | Terraform Cloud API token for private registry access (optional) | |
+| `TFC_TOKEN` | Terraform Cloud API token (required for TFC tools in enterprise mode) | |
+| `WEB_UI_PORT` | Port for the web UI status dashboard | 3000 |
 
 Example usage with environment variables:
 

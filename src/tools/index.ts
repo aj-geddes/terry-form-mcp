@@ -16,3 +16,4 @@ export * from "./resourceUsage.js";
 export * from "./runs.js";
 export * from "./workspaces.js";
 export * from "./workspaceResources.js";
+export * from './azureTerraformPlan.js';
