@@ -16,6 +16,14 @@ Welcome to the Terry (Terraform Registry MCP Server) documentation!
 - **[Enterprise Deployment Guide](./ENTERPRISE_DEPLOYMENT.md)** - Production Kubernetes deployment
 - Comprehensive guide for deploying Terry at scale with full features
 
+### GitHub Integration
+- **[GitHub App Setup Guide](./GITHUB_APP_SETUP.md)** - Configure GitHub App for repository access
+- Enable Terry to read Terraform configurations from your GitHub repositories
+
+### Platform Integrations
+- **[OpenWebUI Integration Guide](./OPENWEBUI_INTEGRATION.md)** - Add Terry to OpenWebUI as a function tool
+- Complete guide for administrators to integrate Terry with OpenWebUI using mcpo
+
 ## 🚀 Quick Start
 
 ### Local Mode (Individual Use)

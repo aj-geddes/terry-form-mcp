@@ -1,10 +1,19 @@
 import express from "express";
 import { getModeConfig } from "../modes/index.js";
 import { VERSION, SERVER_NAME, TFC_TOKEN } from "../../config.js";
+import { githubAppRouter } from "../github-app/routes.js";
+import { getActiveGitHubAppConfig } from "../github-app/storage.js";
 import logger from "../utils/logger.js";
 
 export function createWebUI(port: number = 3000): void {
   const app = express();
+  
+  // Middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  
+  // GitHub App routes
+  app.use("/github-app", githubAppRouter);
   
   // Health check endpoint
   app.get("/health", (req, res) => {
@@ -14,6 +23,7 @@ export function createWebUI(port: number = 3000): void {
   // Mode status endpoint
   app.get("/api/status", (req, res) => {
     const modeConfig = getModeConfig();
+    const githubAppConfig = getActiveGitHubAppConfig();
     res.json({
       server: SERVER_NAME,
       version: VERSION,
@@ -21,13 +31,15 @@ export function createWebUI(port: number = 3000): void {
       displayName: modeConfig.displayName,
       description: modeConfig.description,
       features: modeConfig.features,
-      terraformCloudEnabled: modeConfig.features.terraformCloud && !!TFC_TOKEN
+      terraformCloudEnabled: modeConfig.features.terraformCloud && !!TFC_TOKEN,
+      githubAppConfigured: !!githubAppConfig
     });
   });
   
   // Main UI page
   app.get("/", (req, res) => {
     const modeConfig = getModeConfig();
+    const githubAppConfig = getActiveGitHubAppConfig();
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -144,6 +156,15 @@ export function createWebUI(port: number = 3000): void {
                     ${modeConfig.features.mcpBridge ? '✓ Enabled' : '✗ Not Available'}
                 </div>
                 <p>Integration with LLM services</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>GitHub Integration</h3>
+                <div class="feature-status ${githubAppConfig ? 'enabled' : 'disabled'}">
+                    ${githubAppConfig ? '✓ Configured' : '✗ Not Configured'}
+                </div>
+                <p>Read Terraform configs from GitHub repos</p>
+                ${!githubAppConfig ? '<a href="/github-app" style="color: #0066cc;">Configure GitHub App</a>' : '<a href="/github-app" style="color: #0066cc;">Manage</a>'}
             </div>
         </div>
         

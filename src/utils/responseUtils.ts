@@ -29,6 +29,22 @@ export function createStandardResponse(
 }
 
 /**
+ * Helper function to create a success response with data
+ * @param data The data to return in the response
+ * @returns Formatted response object
+ */
+export function createSuccessResponse(data: any): ResponseContent {
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify(data, null, 2)
+      }
+    ]
+  };
+}
+
+/**
  * Helper function to format code examples as markdown
  * @param code Code snippet to format
  * @param language Language for syntax highlighting

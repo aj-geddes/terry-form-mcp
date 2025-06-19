@@ -57,6 +57,9 @@ Environment variables are managed in `config.ts`:
 - `RATE_LIMIT_*` - Rate limiting configuration
 - `TFC_TOKEN` - Terraform Cloud API token (enables TFC tools in enterprise mode)
 - `WEB_UI_PORT` - Port for web UI (default: 3000)
+- `GITHUB_APP_ID` - GitHub App ID for repository access
+- `GITHUB_APP_PRIVATE_KEY` - GitHub App private key (PEM format)
+- `GITHUB_APP_INSTALLATION_ID` - Default GitHub App installation ID
 
 ### Local Development Setup
 - Node.js version specified in `.nvmrc`
@@ -72,3 +75,26 @@ Environment variables are managed in `config.ts`:
 4. Commit, tag, and push to GitHub
 5. Create GitHub release using `gh`
 6. npm and Docker releases handled automatically via GitHub Actions
+
+### OpenWebUI Integration
+Terry can be integrated with OpenWebUI using mcpo (MCP-to-OpenAPI proxy):
+
+#### Quick Setup
+```bash
+# Run Terry through mcpo for OpenWebUI
+uvx mcpo --port 8000 --api-key "secure-key" -- npx terraform-mcp-server
+```
+
+#### Key Points
+- OpenWebUI v0.6+ supports MCP servers via OpenAPI
+- mcpo converts Terry's stdio-based tools to REST endpoints
+- All Terry tools become available as functions in OpenWebUI
+- Requires models with native function calling (e.g., GPT-4o)
+
+#### Admin Setup in OpenWebUI
+1. Go to Admin Settings → Tools
+2. Add Tool Server URL: `http://mcpo-server:8000`
+3. Add authentication header: `X-API-Key: your-key`
+4. Enable for users/models that need Terraform assistance
+
+See `docs/OPENWEBUI_INTEGRATION.md` for complete setup guide.

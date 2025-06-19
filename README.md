@@ -51,6 +51,7 @@ To install and use this MCP server in Claude Desktop:
 - **[User Guide](./docs/USER_GUIDE.md)** - Simple setup guide for local mode with Docker Desktop
 - **[Developer Documentation](./docs/DEVELOPMENT.md)** - Architecture and development guide
 - **[Enterprise Deployment](./docs/ENTERPRISE_DEPLOYMENT.md)** - Production Kubernetes deployment
+- **[OpenWebUI Integration](./docs/OPENWEBUI_INTEGRATION.md)** - Add Terry as a function tool in OpenWebUI
 
 ## Server Modes
 
@@ -118,6 +119,19 @@ These tools require a Terraform Cloud API token (`TFC_TOKEN`):
 | `cancelRun` | Cancels a run that's in progress |
 | `listWorkspaceResources` | Lists resources in a workspace |
 
+### GitHub Integration Tools
+
+These tools are available in all modes after configuring GitHub App:
+
+| Tool | Description |
+|------|-------------|
+| `listGitHubRepos` | Lists all accessible GitHub repositories |
+| `readGitHubFile` | Reads a file from a GitHub repository |
+| `listGitHubFiles` | Lists files in a GitHub repository directory |
+| `searchGitHubRepo` | Searches for content within a repository |
+
+See [GitHub App Setup Guide](./docs/GITHUB_APP_SETUP.md) for configuration instructions.
+
 ## Resources
 
 The MCP server supports the following resource URIs for listing and reading via the `resources/*` methods:
@@ -180,6 +194,9 @@ The server can be configured using environment variables:
 | `RATE_LIMIT_WINDOW_MS` | Time window for rate limiting in milliseconds | 60000 |
 | `TFC_TOKEN` | Terraform Cloud API token (required for TFC tools in enterprise mode) | |
 | `WEB_UI_PORT` | Port for the web UI status dashboard | 3000 |
+| `GITHUB_APP_ID` | GitHub App ID for repository access | |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App private key (PEM format) | |
+| `GITHUB_APP_INSTALLATION_ID` | Default GitHub App installation ID | |
 
 Example usage with environment variables:
 

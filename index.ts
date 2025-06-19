@@ -35,7 +35,11 @@ import {
   handleCreateRun,
   handleApplyRun,
   handleCancelRun,
-  handleListWorkspaceResources
+  handleListWorkspaceResources,
+  handleReadGitHubFile,
+  handleListGitHubFiles,
+  handleSearchGitHubRepo,
+  handleListGitHubRepos
 } from "./src/tools/index.js";
 
 // Import resource handlers
@@ -266,7 +270,7 @@ server.tool("providerDetails", ProviderLookupShape, async (args) => {
   // Explicitly set type: "text"
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -278,7 +282,7 @@ server.tool("resourceUsage", ResourceUsageShape, async (args) => {
   const result = await handleResourceUsage(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -289,7 +293,7 @@ server.tool("moduleSearch", ModuleRecommendationsShape, async (args) => {
   const result = await handleModuleRecommendations(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -297,7 +301,7 @@ server.tool("listDataSources", DataSourceLookupShape, async (args) => {
   const result = await handleDataSourceLookup(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -305,7 +309,7 @@ server.tool("resourceArgumentDetails", ResourceDocumentationShape, async (args) 
   const result = await handleResourceArgumentDetails(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -313,7 +317,7 @@ server.tool("moduleDetails", ModuleDetailsShape, async (args) => {
   const result = await handleModuleDetails(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -321,7 +325,7 @@ server.tool("functionDetails", FunctionDetailsShape, async (args) => {
   const result = await handleFunctionDetails(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -329,7 +333,7 @@ server.tool("providerGuides", ProviderGuidesShape, async (args) => {
   const result = await handleProviderGuides(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -341,7 +345,7 @@ server.tool("policySearch", PolicySearchShape, async (args) => {
   const result = await handlePolicySearch(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -349,7 +353,7 @@ server.tool("policyDetails", PolicyDetailsShape, async (args) => {
   const result = await handlePolicyDetails(args);
   return {
     ...result,
-    content: result.content.map((c) => ({ type: "text", text: c.text }))
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
   };
 });
 
@@ -370,7 +374,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleListOrganizations();
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -378,7 +382,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handlePrivateModuleSearch(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -386,7 +390,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handlePrivateModuleDetails(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -394,7 +398,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleExplorerQuery(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -402,7 +406,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleListWorkspaces(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -416,7 +420,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     });
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -424,7 +428,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleLockWorkspace(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -432,7 +436,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleUnlockWorkspace(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -440,7 +444,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleListRuns(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -448,7 +452,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleShowRun(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -456,7 +460,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleCreateRun(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -464,7 +468,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleApplyRun(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -472,7 +476,7 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleCancelRun(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 
@@ -480,12 +484,72 @@ if (shouldEnableTerraformCloud() && TFC_TOKEN) {
     const result = await handleListWorkspaceResources(args);
     return {
       ...result,
-      content: result.content.map((c) => ({ type: "text", text: c.text }))
+      content: result.content.map((c: any) => ({ type: "text", text: c.text }))
     };
   });
 } else {
   logger.warn("TFC_TOKEN not set, skipping Terraform Cloud tool registration.");
 }
+
+// --- Register GitHub Tools ---
+// Define GitHub tool schemas
+const ReadGitHubFileShape = {
+  owner: z.string().describe("Repository owner (user or organization)"),
+  repo: z.string().describe("Repository name"),
+  path: z.string().describe("File path in the repository"),
+  ref: z.string().optional().describe("Git ref (branch, tag, or commit SHA)")
+};
+
+const ListGitHubFilesShape = {
+  owner: z.string().describe("Repository owner (user or organization)"),
+  repo: z.string().describe("Repository name"),
+  path: z.string().optional().describe("Directory path in the repository"),
+  ref: z.string().optional().describe("Git ref (branch, tag, or commit SHA)"),
+  pattern: z.string().optional().describe("File pattern to filter (e.g., '*.tf')")
+};
+
+const SearchGitHubRepoShape = {
+  owner: z.string().describe("Repository owner (user or organization)"),
+  repo: z.string().describe("Repository name"),
+  query: z.string().describe("Search query"),
+  path: z.string().optional().describe("Limit search to this path"),
+  extension: z.string().optional().describe("File extension filter (e.g., 'tf')")
+};
+
+// Register GitHub tools (available in all modes)
+logger.info("Registering GitHub integration tools...");
+
+server.tool("readGitHubFile", ReadGitHubFileShape, async (args) => {
+  const result = await handleReadGitHubFile(args);
+  return {
+    ...result,
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
+  };
+});
+
+server.tool("listGitHubFiles", ListGitHubFilesShape, async (args) => {
+  const result = await handleListGitHubFiles(args);
+  return {
+    ...result,
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
+  };
+});
+
+server.tool("searchGitHubRepo", SearchGitHubRepoShape, async (args) => {
+  const result = await handleSearchGitHubRepo(args);
+  return {
+    ...result,
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
+  };
+});
+
+server.tool("listGitHubRepos", {}, async () => {
+  const result = await handleListGitHubRepos();
+  return {
+    ...result,
+    content: result.content.map((c: any) => ({ type: "text", text: c.text }))
+  };
+});
 
 // --- Register Prompts ---
 function registerPrompts(server: McpServer) {

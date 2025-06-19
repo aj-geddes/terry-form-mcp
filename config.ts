@@ -54,6 +54,13 @@ export const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || "10
 // Web UI configuration
 export const WEB_UI_PORT = parseInt(process.env.WEB_UI_PORT || "3000", 10);
 
+// GitHub App configuration
+export const GITHUB_APP_ID = process.env.GITHUB_APP_ID;
+export const GITHUB_APP_PRIVATE_KEY = process.env.GITHUB_APP_PRIVATE_KEY;
+export const GITHUB_APP_INSTALLATION_ID = process.env.GITHUB_APP_INSTALLATION_ID;
+export const GITHUB_APP_CLIENT_ID = process.env.GITHUB_APP_CLIENT_ID;
+export const GITHUB_APP_CLIENT_SECRET = process.env.GITHUB_APP_CLIENT_SECRET;
+
 // Algolia search configuration for Terraform Registry
 export const ALGOLIA_CONFIG = {
   APPLICATION_ID: process.env.ALGOLIA_APPLICATION_ID || "YY0FFNI7MF",
