@@ -1,0 +1,54 @@
+{
+  "mcpServers": {
+    "terry-github": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "C:\\Users\\YourUsername\\terraform-projects:/mnt/workspace",
+        "-e", "GITHUB_APP_ID=123456",
+        "-e", "GITHUB_APP_INSTALLATION_ID=12345678",
+        "-e", "GITHUB_APP_PRIVATE_KEY_PATH=/app/github-app-key.pem",
+        "-v", "C:\\Users\\YourUsername\\.github\\terry-form-app.pem:/app/github-app-key.pem:ro",
+        "terry-form-mcp-github"
+      ]
+    },
+    "terry-github-macos": {
+      "comment": "macOS configuration example",
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "/Users/YourUsername/terraform-projects:/mnt/workspace",
+        "-e", "GITHUB_APP_ID=123456",
+        "-e", "GITHUB_APP_INSTALLATION_ID=12345678",
+        "-e", "GITHUB_APP_PRIVATE_KEY_PATH=/app/github-app-key.pem",
+        "-v", "/Users/YourUsername/.github/terry-form-app.pem:/app/github-app-key.pem:ro",
+        "terry-form-mcp-github"
+      ]
+    },
+    "terry-github-linux": {
+      "comment": "Linux configuration example",
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "/home/YourUsername/terraform-projects:/mnt/workspace",
+        "-e", "GITHUB_APP_ID=123456",
+        "-e", "GITHUB_APP_INSTALLATION_ID=12345678",
+        "-e", "GITHUB_APP_PRIVATE_KEY_PATH=/app/github-app-key.pem",
+        "-v", "/home/YourUsername/.github/terry-form-app.pem:/app/github-app-key.pem:ro",
+        "terry-form-mcp-github"
+      ]
+    },
+    "terry-github-env": {
+      "comment": "Using environment variables for private key (more secure for some setups)",
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "${TERRAFORM_WORKSPACE}:/mnt/workspace",
+        "-e", "GITHUB_APP_ID=${GITHUB_APP_ID}",
+        "-e", "GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID}",
+        "-e", "GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}",
+        "terry-form-mcp-github"
+      ]
+    }
+  }
+}
