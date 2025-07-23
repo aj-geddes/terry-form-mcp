@@ -1,0 +1,81 @@
+# Terry-Form MCP GitHub Enhanced Dockerfile
+# Includes GitHub App integration support
+FROM hashicorp/terraform:1.6.6-alpine3.19
+
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    git \
+    curl \
+    ca-certificates \
+    openssh-client \
+    && rm -rf /var/cache/apk/*
+
+# Install terraform-ls for LSP support
+RUN TERRAFORM_LS_VERSION=$(curl -s https://api.github.com/repos/hashicorp/terraform-ls/releases/latest | sed -n 's/.*"tag_name": "v\(.*\)".*/\1/p' | head -1) && \
+    wget -q https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip && \
+    unzip terraform-ls_*.zip && \
+    mv terraform-ls /usr/local/bin/ && \
+    rm terraform-ls_*.zip && \
+    chmod +x /usr/local/bin/terraform-ls
+
+# Set Python environment
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Create app directory and workspace directories
+WORKDIR /app
+RUN mkdir -p /mnt/workspace/github-repos /mnt/workspace/terraform-workspaces
+
+# Copy requirements first for better caching
+COPY requirements.txt /app/
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+# Copy application files
+COPY *.py /app/
+COPY internal/ /app/internal/
+
+# Copy GitHub App specific files
+COPY github_app_auth.py /app/
+COPY github_repo_handler.py /app/
+
+# Copy static files for dashboard
+COPY static/ /app/static/
+
+# Copy startup script
+COPY start.sh /app/
+RUN chmod +x /app/start.sh
+
+# Create non-root user for security
+RUN adduser -D -h /app -s /bin/sh terry && \
+    chown -R terry:terry /app /mnt/workspace
+
+# Set up git config for GitHub operations
+RUN git config --global user.email "terry-form@mcp.local" && \
+    git config --global user.name "Terry-Form MCP"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Security: Drop capabilities not needed
+USER terry
+
+# Environment variables for GitHub App (to be provided at runtime)
+ENV GITHUB_APP_ID=""
+ENV GITHUB_APP_INSTALLATION_ID=""
+ENV GITHUB_APP_PRIVATE_KEY=""
+ENV GITHUB_APP_PRIVATE_KEY_PATH=""
+
+# Expose ports
+EXPOSE 8000 8001
+
+# Labels for container metadata
+LABEL org.opencontainers.image.title="Terry-Form MCP GitHub Enhanced"
+LABEL org.opencontainers.image.description="MCP server for Terraform with GitHub App integration"
+LABEL org.opencontainers.image.version="3.0.0-github"
+LABEL org.opencontainers.image.source="https://github.com/yourusername/terry-form-mcp"
+
+# Run the enhanced server
+ENTRYPOINT ["/bin/sh", "/app/start.sh"]

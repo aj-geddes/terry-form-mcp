@@ -91,7 +91,26 @@ temp/
 *.pfx
 .secrets
 secrets.json
+*-credentials.json
+*-creds.json
+
+# Test deployments with real secrets
+deploy/kubernetes/test-deployment.yaml
+deploy/kubernetes/test-deployment-*.yaml
+!deploy/kubernetes/test-deployment-example.yaml
+test_ai_simple.py
+test_*_secret*.py
+**/secrets/*
+!**/secrets/.gitkeep
+
+# Local test files
+/tmp/
+test_*.py
+debug_*.py
 
 # Claude MCP specific
 mcp-test-output/
 test-results/
+
+# Security findings and assessments
+orca-findings.md
