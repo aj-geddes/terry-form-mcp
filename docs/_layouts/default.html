@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  {% seo %}
+  
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  {% feed_meta %}
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="{{ site.baseurl }}/" class="nav-logo">
+        <img src="{{ site.baseurl }}/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        {% for item in site.navigation %}
+        <a href="{% if item.url contains 'http' %}{{ item.url }}{% else %}{{ site.baseurl }}{{ item.url }}{% endif %}" 
+           class="nav-link {% if page.url == item.url %}active{% endif %}"
+           {% if item.url contains 'http' %}target="_blank" rel="noopener"{% endif %}>
+          {{ item.title }}
+          {% if item.url contains 'github' %}<i class="fab fa-github"></i>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="{{ site.baseurl }}/getting-started">Getting Started</a></li>
+          <li><a href="{{ site.baseurl }}/guides/">Guides</a></li>
+          <li><a href="{{ site.baseurl }}/api/">API Reference</a></li>
+          <li><a href="{{ site.baseurl }}/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="{{ site.baseurl }}/contributing">Contributing</a></li>
+          <li><a href="{{ site.baseurl }}/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="{{ site.baseurl }}/security">Security</a></li>
+          <li><a href="{{ site.baseurl }}/architecture/">Architecture</a></li>
+          <li><a href="{{ site.baseurl }}/deployment/">Deployment</a></li>
+          <li><a href="{{ site.baseurl }}/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; {{ 'now' | date: '%Y' }} Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

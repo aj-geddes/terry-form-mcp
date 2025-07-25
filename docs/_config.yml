@@ -1,0 +1,121 @@
+# Terry-Form MCP Documentation
+title: Terry-Form MCP
+description: Enterprise-grade Terraform automation through Model Context Protocol - Secure, intelligent infrastructure management
+author: AJ Geddes
+email: contact@terry-form.io
+url: "https://aj-geddes.github.io"
+baseurl: "/terry-form-mcp"
+
+# Theme and Appearance
+theme: minima
+remote_theme: pages-themes/cayman@v0.2.0
+skin: dark
+logo: /assets/images/terry-form-logo.png
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-relative-links
+  - jekyll-include-cache
+  - jekyll-github-metadata
+  - jekyll-mermaid
+
+# Collections
+collections:
+  guides:
+    output: true
+    permalink: /:collection/:name
+  api:
+    output: true
+    permalink: /:collection/:name
+  architecture:
+    output: true
+    permalink: /:collection/:name
+  tutorials:
+    output: true
+    permalink: /:collection/:name
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "guides"
+    values:
+      layout: "guide"
+      toc: true
+  - scope:
+      path: ""
+      type: "api"
+    values:
+      layout: "api"
+      toc: true
+  - scope:
+      path: ""
+      type: "tutorials"
+    values:
+      layout: "tutorial"
+      toc: true
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Getting Started
+    url: /getting-started
+  - title: Guides
+    url: /guides/
+  - title: API Reference
+    url: /api/
+  - title: Architecture
+    url: /architecture/
+  - title: Tutorials
+    url: /tutorials/
+  - title: GitHub
+    url: https://github.com/aj-geddes/terry-form-mcp
+
+# SEO
+twitter:
+  username: terryform
+  card: summary_large_image
+
+social:
+  name: Terry-Form MCP
+  links:
+    - https://github.com/aj-geddes/terry-form-mcp
+
+# Analytics
+google_analytics: UA-XXXXXXXXX-X
+
+# Repository
+repository: aj-geddes/terry-form-mcp
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .github/workflows/
