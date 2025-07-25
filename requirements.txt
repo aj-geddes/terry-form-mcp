@@ -1,0 +1,29 @@
+# Terry-Form MCP Server Requirements
+# Core dependencies
+fastmcp>=0.1.0
+aiohttp>=3.8.0
+asyncio-lru>=2.0.0
+
+# GitHub OAuth integration
+PyJWT>=2.8.0
+cryptography>=41.0.0
+requests>=2.31.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+pytest-timeout>=2.1.0
+
+# Development tools
+ruff>=0.1.0
+bandit>=1.7.0
+black>=23.7.0
+mypy>=1.5.0
+
+# Optional AI integration dependencies
+openai>=1.0.0
+anthropic>=0.7.0
+
+# Security
+jsonschema>=4.19.0
