@@ -1,337 +1,257 @@
+#!/usr/bin/env python3
 """
 MCP Request Validator
-Provides JSON schema validation for MCP protocol requests
-to prevent malicious inputs and ensure protocol compliance.
+Validates incoming MCP protocol requests for security and compliance.
+
+Security hardened:
+- Path traversal prevention
+- Command injection prevention
+- Input sanitization
+- Action whitelisting
 """
 
-from jsonschema import validate, ValidationError
-from typing import Dict, Any, Optional, List
 import logging
+import re
+from pathlib import Path
+from typing import Any, Dict, Tuple
 
 logger = logging.getLogger(__name__)
-
-# Define JSON schemas for MCP requests
-MCP_TOOL_CALL_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "method": {"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"},
-        "params": {"type": "object"},
-        "id": {"type": ["string", "number"]}
-    },
-    "required": ["method", "params"],
-    "additionalProperties": False
-}
-
-# Schema for terry tool parameters
-TERRY_PARAMS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "path": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 4096,
-            # Disallow certain patterns that might be malicious
-            "not": {
-                "pattern": "(\\.\\./|\\\\|\\$|`|;|&|\\||>|<|\\(|\\)|{|})"
-            }
-        },
-        "actions": {
-            "type": "array",
-            "items": {
-                "type": "string",
-                "enum": ["init", "validate", "fmt", "plan", "show", "graph", "providers", "version"]
-            },
-            "minItems": 1,
-            "maxItems": 10
-        },
-        "vars": {
-            "type": "object",
-            "patternProperties": {
-                "^[a-zA-Z_][a-zA-Z0-9_-]*$": {
-                    "type": ["string", "number", "boolean"],
-                    "maxLength": 1024
-                }
-            },
-            "additionalProperties": False,
-            "maxProperties": 100
-        },
-        "auto_approve": {"type": "boolean"},
-        "destroy": {"type": "boolean"}
-    },
-    "required": ["path"],
-    "additionalProperties": False
-}
-
-# Schema for GitHub tool parameters
-GITHUB_PARAMS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "owner": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-_]*$",
-            "minLength": 1,
-            "maxLength": 100
-        },
-        "repo": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-_.]*$",
-            "minLength": 1,
-            "maxLength": 100
-        },
-        "branch": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-_/]*$",
-            "maxLength": 255
-        },
-        "path": {
-            "type": "string",
-            "maxLength": 4096
-        },
-        "pattern": {
-            "type": "string",
-            "maxLength": 100
-        },
-        "config_path": {
-            "type": "string",
-            "maxLength": 4096
-        },
-        "workspace_name": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-_]*$",
-            "maxLength": 100
-        },
-        "force": {"type": "boolean"},
-        "days_old": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 365
-        }
-    },
-    "additionalProperties": False
-}
-
-# Schema for LSP tool parameters
-LSP_PARAMS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "file_path": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 4096,
-            "not": {
-                "pattern": "(\\.\\./|\\\\|\\$|`)"
-            }
-        },
-        "line": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 1000000
-        },
-        "character": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 10000
-        }
-    },
-    "required": ["file_path"],
-    "additionalProperties": False
-}
-
-# Map tool names to their parameter schemas
-TOOL_SCHEMAS = {
-    "terry": TERRY_PARAMS_SCHEMA,
-    "terry_validate": LSP_PARAMS_SCHEMA,
-    "terry_hover": LSP_PARAMS_SCHEMA,
-    "terry_complete": LSP_PARAMS_SCHEMA,
-    "terry_format": LSP_PARAMS_SCHEMA,
-    "terry_workspace_info": {
-        "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "maxLength": 4096
-            }
-        },
-        "additionalProperties": False
-    },
-    # GitHub tools
-    "github_clone_repo": GITHUB_PARAMS_SCHEMA,
-    "github_list_terraform_files": GITHUB_PARAMS_SCHEMA,
-    "github_get_terraform_config": GITHUB_PARAMS_SCHEMA,
-    "github_prepare_workspace": GITHUB_PARAMS_SCHEMA,
-    "github_repo_info": GITHUB_PARAMS_SCHEMA,
-    "github_cleanup_repos": GITHUB_PARAMS_SCHEMA,
-    # No params tools
-    "terry_lsp_status": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": False
-    },
-    "github_list_installations": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": False
-    }
-}
 
 
 class MCPRequestValidator:
     """Validates MCP protocol requests for security and compliance"""
 
-    def __init__(self, custom_schemas: Optional[Dict[str, Dict]] = None):
+    def __init__(self, workspace_root: str = "/mnt/workspace"):
+        self.workspace_root = Path(workspace_root)
+
+        # Define allowed actions for terry tool
+        self.allowed_terraform_actions = {
+            "init",
+            "validate",
+            "fmt",
+            "plan",
+            "show",
+            "graph",
+            "providers",
+            "version",
+        }
+        self.blocked_terraform_actions = {
+            "apply",
+            "destroy",
+            "import",
+            "taint",
+            "untaint",
+        }
+
+        # Define validation patterns
+        self.valid_name_pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
+        self.dangerous_chars_pattern = re.compile(r'[$`\\"\';|&><(){}]')
+
+    def validate_request(self, request: Dict[str, Any]) -> Tuple[bool, str]:
         """
-        Initialize the validator with optional custom schemas.
-
-        Args:
-            custom_schemas: Additional tool schemas to register
-        """
-        self.tool_schemas = TOOL_SCHEMAS.copy()
-        if custom_schemas:
-            self.tool_schemas.update(custom_schemas)
-
-    def validate_request(self, request: Dict[str, Any]) -> tuple[bool, Optional[str]]:
-        """
-        Validate an MCP request structure.
-
-        Args:
-            request: The request dictionary to validate
-
-        Returns:
-            Tuple of (is_valid, error_message)
+        Validate an MCP request.
+        Returns (is_valid, error_message)
         """
         try:
-            # Validate basic structure
-            validate(instance=request, schema=MCP_TOOL_CALL_SCHEMA)
+            # Check basic structure
+            if not isinstance(request, dict):
+                return False, "Request must be a dictionary"
 
-            # Get method name
             method = request.get("method", "")
+            if method != "tools/call":
+                # Non-tool calls are allowed (handled by MCP framework)
+                return True, ""
 
-            # Check if tool is known
-            if method not in self.tool_schemas:
-                return False, f"Unknown tool: {method}"
-
-            # Validate parameters for the specific tool
             params = request.get("params", {})
-            tool_schema = self.tool_schemas[method]
+            if not isinstance(params, dict):
+                return False, "Params must be a dictionary"
 
-            try:
-                validate(instance=params, schema=tool_schema)
-            except ValidationError as e:
-                return False, f"Invalid parameters for {method}: {e.message}"
+            tool_name = params.get("name", "")
+            arguments = params.get("arguments", {})
 
-            # Additional security checks
-            if not self._security_checks(method, params):
-                return False, "Security validation failed"
+            # Validate based on tool
+            if tool_name == "terry":
+                return self._validate_terry_request(arguments)
+            elif tool_name.startswith("github_"):
+                return self._validate_github_request(tool_name, arguments)
+            elif tool_name.startswith("tf_cloud_"):
+                return self._validate_tf_cloud_request(tool_name, arguments)
+            elif tool_name.startswith("terry_"):
+                return self._validate_terry_extended_request(tool_name, arguments)
+            else:
+                # Unknown tools are allowed (handled by MCP framework)
+                return True, ""
 
-            return True, None
-
-        except ValidationError as e:
-            return False, f"Invalid request structure: {e.message}"
         except Exception as e:
             logger.error(f"Validation error: {e}")
             return False, f"Validation error: {str(e)}"
 
-    def _security_checks(self, method: str, params: Dict[str, Any]) -> bool:
-        """
-        Perform additional security checks beyond schema validation.
+    def _validate_terry_request(self, arguments: Dict[str, Any]) -> Tuple[bool, str]:
+        """Validate terry tool request"""
+        # Validate path
+        path = arguments.get("path", "")
+        if not path:
+            return False, "Path is required"
 
-        Args:
-            method: The method being called
-            params: The parameters for the method
+        # Check for path traversal
+        if not self._is_safe_path(path):
+            return False, "Invalid path: access outside workspace is not allowed"
 
-        Returns:
-            True if security checks pass
-        """
-        # Check for specific dangerous patterns
-        if method.startswith("terry"):
-            # Ensure no command injection attempts
-            if "path" in params:
-                path = params["path"]
-                dangerous_patterns = [
-                    "$(", "${", "`", "\\n", "\\r", "\\0",
-                    ";", "&", "|", ">>", "<<", "&&", "||"
-                ]
-                if any(pattern in str(path) for pattern in dangerous_patterns):
-                    logger.warning(f"Dangerous pattern detected in path: {path}")
-                    return False
+        # Validate actions
+        actions = arguments.get("actions", [])
+        if not isinstance(actions, list):
+            return False, "Actions must be a list"
 
-            # Check vars for injection attempts
-            if "vars" in params:
-                for key, value in params["vars"].items():
-                    str_value = str(value)
-                    if len(str_value) > 1024:
-                        logger.warning(f"Variable value too long: {key}")
-                        return False
+        for action in actions:
+            if action in self.blocked_terraform_actions:
+                return False, f"Action '{action}' is blocked for security reasons"
+            if action not in self.allowed_terraform_actions:
+                return False, f"Unknown action '{action}'"
 
-                    # Check for template injection
-                    if "{{" in str_value or "${" in str_value:
-                        logger.warning(f"Template injection attempt in variable: {key}")
-                        return False
+        # Validate variables
+        vars_dict = arguments.get("vars", {})
+        if vars_dict and not isinstance(vars_dict, dict):
+            return False, "Variables must be a dictionary"
 
-        return True
+        if vars_dict:
+            is_valid, error = self._validate_terraform_vars(vars_dict)
+            if not is_valid:
+                return False, error
 
-    def sanitize_params(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Sanitize parameters to ensure they're safe to use.
+        # Check blocked flags
+        if arguments.get("auto_approve", False):
+            return False, "auto_approve is blocked for security reasons"
+        if arguments.get("destroy", False):
+            return False, "destroy is blocked for security reasons"
 
-        Args:
-            method: The method being called
-            params: The parameters to sanitize
+        return True, ""
 
-        Returns:
-            Sanitized parameters
-        """
+    def _validate_github_request(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Tuple[bool, str]:
+        """Validate GitHub tool requests"""
+        # Validate owner/repo names
+        owner = arguments.get("owner", "")
+        repo = arguments.get("repo", "")
+
+        if owner and not self.valid_name_pattern.match(owner):
+            return False, f"Invalid repository owner name: {owner}"
+
+        if repo:
+            # Allow dots in repo names
+            if not re.match(r"^[a-zA-Z0-9_.-]+$", repo):
+                return False, f"Invalid repository name: {repo}"
+
+        # Validate other parameters based on tool
+        if tool_name == "github_cleanup_repos":
+            days = arguments.get("days_old", 7)
+            if not isinstance(days, int) or days < 0 or days > 365:
+                return False, "Invalid days_old parameter"
+
+        return True, ""
+
+    def _validate_tf_cloud_request(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Tuple[bool, str]:
+        """Validate Terraform Cloud tool requests"""
+        # Basic validation for organization/workspace names
+        org = arguments.get("organization", "")
+        workspace = arguments.get("workspace", "")
+
+        if org and not self.valid_name_pattern.match(org):
+            return False, f"Invalid organization name: {org}"
+
+        if workspace and not self.valid_name_pattern.match(workspace):
+            return False, f"Invalid workspace name: {workspace}"
+
+        # Validate limit parameter
+        if "limit" in arguments:
+            limit = arguments["limit"]
+            if not isinstance(limit, int) or limit < 1 or limit > 100:
+                return False, "Invalid limit parameter"
+
+        return True, ""
+
+    def _validate_terry_extended_request(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Tuple[bool, str]:
+        """Validate extended terry tool requests"""
+        # Most extended tools work with file paths
+        if "file_path" in arguments or "path" in arguments:
+            path = arguments.get("file_path") or arguments.get("path", "")
+            if not self._is_safe_path(path):
+                return False, "Invalid path: access outside workspace is not allowed"
+
+        return True, ""
+
+    def _validate_terraform_vars(self, vars: Dict[str, Any]) -> Tuple[bool, str]:
+        """Validate Terraform variables for security"""
+        for key, value in vars.items():
+            # Validate key format
+            if (
+                not isinstance(key, str)
+                or not key.replace("_", "").replace("-", "").isalnum()
+            ):
+                return False, f"Invalid variable name: {key}"
+
+            # Check for dangerous characters in value
+            str_value = str(value)
+            if self.dangerous_chars_pattern.search(str_value):
+                return False, f"Variable value contains dangerous characters: {key}"
+
+        return True, ""
+
+    def _is_safe_path(self, path: str) -> bool:
+        """Check if a path is safe (no traversal attacks)"""
+        # Handle special prefixes
+        if path.startswith(("github://", "workspace://")):
+            return True
+
+        try:
+            # Convert to Path object
+            if path.startswith("/"):
+                target_path = Path(path)
+            else:
+                target_path = self.workspace_root / path
+
+            # Resolve to real path
+            real_path = target_path.resolve()
+
+            # Ensure path is within workspace
+            real_path.relative_to(self.workspace_root.resolve())
+            return True
+        except (ValueError, Exception):
+            return False
+
+    def _sanitize_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize parameters (for internal use)"""
         sanitized = params.copy()
 
-        # Remove any keys not in the schema
-        if method in self.tool_schemas:
-            schema = self.tool_schemas[method]
-            allowed_keys = schema.get("properties", {}).keys()
-            sanitized = {k: v for k, v in sanitized.items() if k in allowed_keys}
-
-        # Additional sanitization based on method
-        if method.startswith("terry"):
-            # Ensure certain flags are always false for security
-            sanitized["auto_approve"] = False
-            sanitized["destroy"] = False
+        # Sanitize paths
+        if "path" in sanitized:
+            path = sanitized["path"]
+            if self._is_safe_path(path):
+                try:
+                    if not path.startswith(("github://", "workspace://")):
+                        if path.startswith("/"):
+                            sanitized["path"] = str(Path(path).resolve())
+                        else:
+                            sanitized["path"] = str(
+                                (self.workspace_root / path).resolve()
+                            )
+                except Exception:
+                    # Keep original path if resolution fails
+                    logger.debug(f"Failed to resolve path: {path}")
 
         return sanitized
 
-    def get_allowed_tools(self) -> List[str]:
-        """Get list of allowed tool names"""
-        return list(self.tool_schemas.keys())
 
-    def get_tool_schema(self, tool_name: str) -> Optional[Dict[str, Any]]:
-        """Get the schema for a specific tool"""
-        return self.tool_schemas.get(tool_name)
-
-
-# Create a default validator instance
-default_validator = MCPRequestValidator()
-
-
-def validate_mcp_request(request: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+def validate_mcp_request(
+    request: Dict[str, Any], workspace_root: str = "/mnt/workspace"
+) -> Tuple[bool, str]:
     """
-    Convenience function to validate an MCP request.
-
-    Args:
-        request: The request to validate
-
-    Returns:
-        Tuple of (is_valid, error_message)
+    Convenience function to validate MCP requests.
+    Returns (is_valid, error_message)
     """
-    return default_validator.validate_request(request)
-
-
-def sanitize_mcp_params(method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Convenience function to sanitize MCP parameters.
-
-    Args:
-        method: The method being called
-        params: The parameters to sanitize
-
-    Returns:
-        Sanitized parameters
-    """
-    return default_validator.sanitize_params(method, params)
+    validator = MCPRequestValidator(workspace_root)
+    return validator.validate_request(request)

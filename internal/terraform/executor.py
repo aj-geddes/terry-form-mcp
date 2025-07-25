@@ -5,8 +5,8 @@ Enhanced version of the Terraform execution logic
 
 import asyncio
 import logging
-import subprocess
 import shlex
+import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,8 +22,14 @@ class TerraformExecutor:
     def __init__(self, workspace_root: str = WORKSPACE_ROOT):
         self.workspace_root = workspace_root
         self.allowed_actions = [
-            "init", "validate", "fmt", "plan", "show",
-            "graph", "providers", "version"
+            "init",
+            "validate",
+            "fmt",
+            "plan",
+            "show",
+            "graph",
+            "providers",
+            "version",
         ]
         # Security: explicitly disallow destructive operations
         self.disallowed_actions = ["apply", "destroy", "import"]
@@ -33,7 +39,7 @@ class TerraformExecutor:
         args = []
         for key, val in vars_dict.items():
             # Security: Validate variable name (alphanumeric, underscore, dash only)
-            if not key.replace('_', '').replace('-', '').isalnum():
+            if not key.replace("_", "").replace("-", "").isalnum():
                 raise ValueError(f"Invalid variable name: {key}")
 
             # Security: Quote the value to prevent injection
@@ -47,7 +53,7 @@ class TerraformExecutor:
         action: str,
         path: Path,
         extra_args: Optional[List[str]] = None,
-        vars_dict: Optional[Dict[str, str]] = None
+        vars_dict: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Execute Terraform command asynchronously"""
 
@@ -57,7 +63,7 @@ class TerraformExecutor:
                 "success": False,
                 "exit_code": 1,
                 "output": "",
-                "error": f"Action '{action}' is not allowed for security reasons"
+                "error": f"Action '{action}' is not allowed for security reasons",
             }
 
         if action not in self.allowed_actions:
@@ -65,7 +71,7 @@ class TerraformExecutor:
                 "success": False,
                 "exit_code": 1,
                 "output": "",
-                "error": f"Unknown action '{action}'"
+                "error": f"Unknown action '{action}'",
             }
 
         # Build command
@@ -77,7 +83,7 @@ class TerraformExecutor:
                 *cmd,
                 cwd=str(path),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate()
@@ -85,24 +91,19 @@ class TerraformExecutor:
             return {
                 "success": process.returncode == 0,
                 "exit_code": process.returncode,
-                "output": stdout.decode('utf-8', errors='replace'),
-                "error": stderr.decode('utf-8', errors='replace')
+                "output": stdout.decode("utf-8", errors="replace"),
+                "error": stderr.decode("utf-8", errors="replace"),
             }
 
         except Exception as e:
             logger.exception(f"Error executing terraform {action}")
-            return {
-                "success": False,
-                "exit_code": -1,
-                "output": "",
-                "error": str(e)
-            }
+            return {"success": False, "exit_code": -1, "output": "", "error": str(e)}
 
     def _build_command(
         self,
         action: str,
         extra_args: Optional[List[str]] = None,
-        vars_dict: Optional[Dict[str, str]] = None
+        vars_dict: Optional[Dict[str, str]] = None,
     ) -> List[str]:
         """Build the Terraform command"""
         base_cmds = {
@@ -112,7 +113,7 @@ class TerraformExecutor:
             "version": ["terraform", "version"],
             "providers": ["terraform", "providers"],
             "show": ["terraform", "show"],
-            "graph": ["terraform", "graph"]
+            "graph": ["terraform", "graph"],
         }
 
         if action == "plan":
@@ -129,7 +130,9 @@ class TerraformExecutor:
 
         return cmd
 
-    def run_terraform(self, path: str, action: str, vars_dict: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def run_terraform(
+        self, path: str, action: str, vars_dict: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
         """Synchronous wrapper for backward compatibility"""
         # This is the original synchronous function for compatibility
         base_cmds = {
@@ -150,7 +153,7 @@ class TerraformExecutor:
                 "exit_code": 1,
                 "stdout": "",
                 "stderr": f"Unknown action: {action}",
-                "raw_result": {}
+                "raw_result": {},
             }
 
         try:
@@ -160,7 +163,7 @@ class TerraformExecutor:
                 capture_output=True,
                 text=True,
                 timeout=300,
-                shell=False  # Explicit for security
+                shell=False,  # Explicit for security
             )
 
             return {
@@ -172,8 +175,8 @@ class TerraformExecutor:
                     "action": action,
                     "path": path,
                     "command": " ".join(cmd),
-                    "returncode": result.returncode
-                }
+                    "returncode": result.returncode,
+                },
             }
 
         except subprocess.TimeoutExpired:
@@ -182,7 +185,7 @@ class TerraformExecutor:
                 "exit_code": 124,
                 "stdout": "",
                 "stderr": "Command timed out after 300 seconds",
-                "raw_result": {"action": action, "path": path, "error": "timeout"}
+                "raw_result": {"action": action, "path": path, "error": "timeout"},
             }
         except Exception as e:
             return {
@@ -190,5 +193,5 @@ class TerraformExecutor:
                 "exit_code": 1,
                 "stdout": "",
                 "stderr": str(e),
-                "raw_result": {"action": action, "path": path, "error": str(e)}
+                "raw_result": {"action": action, "path": path, "error": str(e)},
             }
