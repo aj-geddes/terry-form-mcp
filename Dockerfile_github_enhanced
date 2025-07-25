@@ -1,81 +1,69 @@
-# Terry-Form MCP GitHub Enhanced Dockerfile
-# Includes GitHub App integration support
-FROM hashicorp/terraform:1.6.6-alpine3.19
+FROM hashicorp/terraform:latest
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    git \
-    curl \
-    ca-certificates \
-    openssh-client \
-    && rm -rf /var/cache/apk/*
+# Install Python, pip, git and other dependencies
+RUN apk add --no-cache python3 py3-pip curl unzip bash git
 
-# Install terraform-ls for LSP support
-RUN TERRAFORM_LS_VERSION=$(curl -s https://api.github.com/repos/hashicorp/terraform-ls/releases/latest | sed -n 's/.*"tag_name": "v\(.*\)".*/\1/p' | head -1) && \
-    wget -q https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip && \
-    unzip terraform-ls_*.zip && \
+# Install terraform-ls
+RUN TERRAFORM_LS_VERSION="0.33.2" && \
+    curl -sSL "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -o terraform-ls.zip && \
+    unzip terraform-ls.zip && \
     mv terraform-ls /usr/local/bin/ && \
-    rm terraform-ls_*.zip && \
-    chmod +x /usr/local/bin/terraform-ls
-
-# Set Python environment
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
-
-# Create app directory and workspace directories
-WORKDIR /app
-RUN mkdir -p /mnt/workspace/github-repos /mnt/workspace/terraform-workspaces
-
-# Copy requirements first for better caching
-COPY requirements.txt /app/
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
-
-# Copy application files
-COPY *.py /app/
-COPY internal/ /app/internal/
-
-# Copy GitHub App specific files
-COPY github_app_auth.py /app/
-COPY github_repo_handler.py /app/
-
-# Copy static files for dashboard
-COPY static/ /app/static/
-
-# Copy startup script
-COPY start.sh /app/
-RUN chmod +x /app/start.sh
+    chmod +x /usr/local/bin/terraform-ls && \
+    rm terraform-ls.zip
 
 # Create non-root user for security
-RUN adduser -D -h /app -s /bin/sh terry && \
-    chown -R terry:terry /app /mnt/workspace
+RUN addgroup -g 1000 terry && \
+    adduser -D -u 1000 -G terry -h /home/terry terry
 
-# Set up git config for GitHub operations
-RUN git config --global user.email "terry-form@mcp.local" && \
-    git config --global user.name "Terry-Form MCP"
+# Create app directory
+WORKDIR /app
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/health || exit 1
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with break-system-packages for Alpine
+RUN pip install --break-system-packages -r requirements.txt
+
+# Copy application files
+COPY terry-form-mcp.py .
+COPY terraform_lsp_client.py .
+COPY server_enhanced_with_lsp.py .
+COPY server_mcp_only.py .
+COPY server_web_only.py .
+COPY github_app_auth.py .
+COPY github_repo_handler.py .
+COPY mcp_request_validator.py .
+
+# Copy internal modules
+COPY internal/ ./internal/
+
+# Create workspace directory
+RUN mkdir -p /mnt/workspace && \
+    chown -R terry:terry /mnt/workspace
+
+# Security: Set proper permissions
+RUN chown -R terry:terry /app && \
+    chmod -R 755 /app && \
+    chmod 644 /app/*.py
 
 # Security: Drop capabilities not needed
 USER terry
 
-# Environment variables for GitHub App (to be provided at runtime)
-ENV GITHUB_APP_ID=""
-ENV GITHUB_APP_INSTALLATION_ID=""
-ENV GITHUB_APP_PRIVATE_KEY=""
-ENV GITHUB_APP_PRIVATE_KEY_PATH=""
+# Volume for workspace
+VOLUME ["/mnt/workspace"]
 
-# Expose ports
+# Expose MCP and web dashboard ports
 EXPOSE 8000 8001
 
-# Labels for container metadata
-LABEL org.opencontainers.image.title="Terry-Form MCP GitHub Enhanced"
-LABEL org.opencontainers.image.description="MCP server for Terraform with GitHub App integration"
-LABEL org.opencontainers.image.version="3.0.0-github"
-LABEL org.opencontainers.image.source="https://github.com/yourusername/terry-form-mcp"
+# Default to running the enhanced server
+ENTRYPOINT ["python3"]
+CMD ["server_enhanced_with_lsp.py"]
 
-# Run the enhanced server
-ENTRYPOINT ["/bin/sh", "/app/start.sh"]
+# Health check for MCP server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.settimeout(2); s.connect(('localhost', 8000)); s.close()" || exit 1
+
+# Labels for documentation
+LABEL maintainer="aj-geddes" \
+      description="Terry-Form MCP Server with GitHub OAuth integration" \
+      version="3.0.0-github"
