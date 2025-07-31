@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import shlex
 import subprocess
 import sys
 
@@ -9,9 +10,14 @@ WORKSPACE_ROOT = "/mnt/workspace"
 
 
 def build_var_args(vars_dict):
+    """Build Terraform variable arguments with proper shell escaping."""
     args = []
     for key, val in vars_dict.items():
-        args += ["-var", f"{key}={val}"]
+        # Validate key to prevent injection
+        if not key.replace("_", "").replace("-", "").isalnum():
+            raise ValueError(f"Invalid variable name: {key}")
+        # Use shlex.quote for safe shell escaping
+        args += ["-var", f"{key}={shlex.quote(str(val))}"]
     return args
 
 
