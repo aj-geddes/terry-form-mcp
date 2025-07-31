@@ -2,16 +2,146 @@
 import asyncio
 import importlib.util
 import json
+import logging
 import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Tuple
 
 from fastmcp import FastMCP
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 # Initialize the MCP server
 mcp = FastMCP("terry-form")
+
+# Import security validator
+try:
+    spec_validator = importlib.util.spec_from_file_location(
+        "mcp_request_validator", "./mcp_request_validator.py"
+    )
+    mcp_request_validator = importlib.util.module_from_spec(spec_validator)
+    spec_validator.loader.exec_module(mcp_request_validator)
+    
+    # Initialize validator
+    request_validator = mcp_request_validator.MCPRequestValidator()
+    logger.info("Security validator initialized")
+except Exception as e:
+    logger.error(f"Failed to load security validator: {e}")
+    request_validator = None
+
+# Security validation decorator
+def validate_request(tool_name: str):
+    """Decorator to validate MCP requests before tool execution"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Log tool invocation for audit trail
+            logger.info(f"Tool invoked: {tool_name} with args: {kwargs}")
+            
+            # Validate request if validator is available
+            if request_validator:
+                # Construct MCP request format
+                request = {
+                    "method": "tools/call",
+                    "params": {
+                        "name": tool_name,
+                        "arguments": kwargs
+                    }
+                }
+                
+                is_valid, error_msg = request_validator.validate_request(request)
+                if not is_valid:
+                    logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
+                    return {"error": f"Validation failed: {error_msg}"}
+            
+            # Path validation for path-based tools
+            if "path" in kwargs:
+                path = kwargs["path"]
+                if not validate_safe_path(path):
+                    return {"error": "Invalid path: Access outside workspace is not allowed"}
+            
+            # Execute the tool
+            try:
+                result = func(*args, **kwargs)
+                logger.info(f"Tool {tool_name} completed successfully")
+                return result
+            except Exception as e:
+                logger.error(f"Tool {tool_name} failed with error: {e}")
+                return {"error": f"Tool execution failed: {str(e)}"}
+        
+        # Preserve async functions
+        if asyncio.iscoroutinefunction(func):
+            async def async_wrapper(*args, **kwargs):
+                # Log tool invocation for audit trail
+                logger.info(f"Tool invoked: {tool_name} with args: {kwargs}")
+                
+                # Validate request if validator is available
+                if request_validator:
+                    # Construct MCP request format
+                    request = {
+                        "method": "tools/call",
+                        "params": {
+                            "name": tool_name,
+                            "arguments": kwargs
+                        }
+                    }
+                    
+                    is_valid, error_msg = request_validator.validate_request(request)
+                    if not is_valid:
+                        logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
+                        return {"error": f"Validation failed: {error_msg}"}
+                
+                # Path validation for path-based tools
+                if "path" in kwargs:
+                    path = kwargs["path"]
+                    if not validate_safe_path(path):
+                        return {"error": "Invalid path: Access outside workspace is not allowed"}
+                
+                # Execute the tool
+                try:
+                    result = await func(*args, **kwargs)
+                    logger.info(f"Tool {tool_name} completed successfully")
+                    return result
+                except Exception as e:
+                    logger.error(f"Tool {tool_name} failed with error: {e}")
+                    return {"error": f"Tool execution failed: {str(e)}"}
+            
+            return async_wrapper
+        
+        return wrapper
+    return decorator
+
+
+def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> bool:
+    """Validate that a path is safe and within workspace bounds"""
+    try:
+        # Handle special prefixes
+        if path.startswith(("github://", "workspace://")):
+            return True
+        
+        workspace_base = Path(workspace_root)
+        
+        # Convert to absolute path
+        if path.startswith("/"):
+            target_path = Path(path)
+        else:
+            target_path = workspace_base / path
+        
+        # Resolve to real path
+        real_path = target_path.resolve()
+        
+        # Ensure path is within workspace
+        real_path.relative_to(workspace_base.resolve())
+        return True
+    except (ValueError, Exception):
+        return False
+
 
 # Load the existing Terraform tool logic (kebab-case)
 spec = importlib.util.spec_from_file_location("terry_form", "./terry-form-mcp.py")
@@ -31,6 +161,7 @@ spec_lsp.loader.exec_module(terraform_lsp_client)
 
 
 @mcp.tool()
+@validate_request("terry")
 def terry(
     path: str, actions: List[str] = ["plan"], vars: Dict[str, str] = {}
 ) -> Dict[str, object]:
@@ -57,6 +188,7 @@ def terry(
 
 
 @mcp.tool()
+@validate_request("terry_workspace_list")
 def terry_workspace_list() -> Dict[str, object]:
     """
     List all available Terraform workspaces in /mnt/workspace.
@@ -119,6 +251,7 @@ def terry_workspace_list() -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_version")
 def terry_version() -> Dict[str, object]:
     """
     Get Terraform version information and provider selections.
@@ -181,6 +314,7 @@ def terry_version() -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_environment_check")
 def terry_environment_check() -> Dict[str, object]:
     """
     Comprehensive environment check for Terraform and LSP integration.
@@ -261,6 +395,7 @@ def terry_environment_check() -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_lsp_debug")
 def terry_lsp_debug() -> Dict[str, object]:
     """
     Debug terraform-ls functionality and LSP client state.
@@ -335,6 +470,7 @@ def terry_lsp_debug() -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_workspace_info")
 def terry_workspace_info(path: str = ".") -> Dict[str, object]:
     """
     Analyze Terraform workspace structure and provide recommendations.
@@ -410,6 +546,7 @@ def terry_workspace_info(path: str = ".") -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_lsp_init")
 async def terry_lsp_init(workspace_path: str) -> Dict[str, object]:
     """
     Manually initialize LSP client for a specific workspace.
@@ -457,6 +594,7 @@ async def terry_lsp_init(workspace_path: str) -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_file_check")
 def terry_file_check(file_path: str) -> Dict[str, object]:
     """
     Check Terraform file syntax and readiness for LSP operations.
@@ -503,6 +641,7 @@ def terry_file_check(file_path: str) -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_workspace_setup")
 def terry_workspace_setup(
     path: str, project_name: str = "terraform-project"
 ) -> Dict[str, object]:
@@ -601,6 +740,7 @@ variable "project_name" {{
 
 
 @mcp.tool()
+@validate_request("terraform_validate_lsp")
 async def terraform_validate_lsp(
     file_path: str, workspace_path: Optional[str] = None
 ) -> Dict[str, object]:
@@ -650,6 +790,7 @@ async def terraform_validate_lsp(
 
 
 @mcp.tool()
+@validate_request("terraform_hover")
 async def terraform_hover(
     file_path: str, line: int, character: int, workspace_path: Optional[str] = None
 ) -> Dict[str, object]:
@@ -706,6 +847,7 @@ async def terraform_hover(
 
 
 @mcp.tool()
+@validate_request("terraform_complete")
 async def terraform_complete(
     file_path: str, line: int, character: int, workspace_path: Optional[str] = None
 ) -> Dict[str, object]:
@@ -762,6 +904,7 @@ async def terraform_complete(
 
 
 @mcp.tool()
+@validate_request("terraform_format_lsp")
 async def terraform_format_lsp(
     file_path: str, workspace_path: Optional[str] = None
 ) -> Dict[str, object]:
@@ -803,6 +946,7 @@ async def terraform_format_lsp(
 
 
 @mcp.tool()
+@validate_request("terraform_lsp_status")
 def terraform_lsp_status() -> Dict[str, object]:
     """
     Get the status of the terraform-ls Language Server integration.
@@ -836,6 +980,7 @@ def terraform_lsp_status() -> Dict[str, object]:
 # ============================================================================
 
 @mcp.tool()
+@validate_request("terry_analyze")
 def terry_analyze(path: str) -> Dict[str, object]:
     """
     Analyze Terraform configuration for best practices.
@@ -953,6 +1098,7 @@ def terry_analyze(path: str) -> Dict[str, object]:
 
 
 @mcp.tool()
+@validate_request("terry_security_scan")
 def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object]:
     """
     Run security scan on Terraform configuration.
@@ -1086,6 +1232,7 @@ def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object
 
 
 @mcp.tool()
+@validate_request("terry_recommendations")
 def terry_recommendations(path: str, focus: str = "security") -> Dict[str, object]:
     """
     Get recommendations for Terraform configuration improvement.
@@ -1210,6 +1357,241 @@ def terry_recommendations(path: str, focus: str = "security") -> Dict[str, objec
 
 
 # ============================================================================
+# TERRAFORM CLOUD TOOLS
+# ============================================================================
+
+@mcp.tool()
+@validate_request("tf_cloud_list_workspaces")
+def tf_cloud_list_workspaces(organization: str, limit: int = 20) -> Dict[str, object]:
+    """
+    List Terraform Cloud workspaces for an organization.
+    
+    Args:
+        organization: Terraform Cloud organization name
+        limit: Maximum number of workspaces to return (default: 20, max: 100)
+    
+    Returns:
+        List of workspaces with metadata
+    """
+    # Validate inputs
+    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+        return {"error": "Invalid organization name"}
+    
+    if limit < 1 or limit > 100:
+        return {"error": "Limit must be between 1 and 100"}
+    
+    try:
+        # Check for TF Cloud token
+        token = os.environ.get("TF_CLOUD_TOKEN")
+        if not token:
+            return {"error": "Terraform Cloud token not configured. Set TF_CLOUD_TOKEN environment variable"}
+        
+        # Mock implementation - in production, this would call TF Cloud API
+        # For now, return example structure as documented
+        return {
+            "workspaces": [
+                {
+                    "id": f"ws-example-{i}",
+                    "name": f"{organization}-workspace-{i}",
+                    "environment": "production" if i == 1 else "development",
+                    "terraform_version": "1.6.5",
+                    "current_run": {
+                        "id": f"run-example-{i}",
+                        "status": "applied" if i % 2 == 0 else "planned",
+                        "created_at": "2024-01-15T10:30:00Z"
+                    },
+                    "resource_count": 42 + i * 10,
+                    "auto_apply": i == 1
+                }
+                for i in range(1, min(limit + 1, 4))  # Return max 3 example workspaces
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to list TF Cloud workspaces: {e}")
+        return {"error": f"Failed to list workspaces: {str(e)}"}
+
+
+@mcp.tool()
+@validate_request("tf_cloud_get_workspace")
+def tf_cloud_get_workspace(organization: str, workspace: str) -> Dict[str, object]:
+    """
+    Get detailed information about a specific Terraform Cloud workspace.
+    
+    Args:
+        organization: Terraform Cloud organization name
+        workspace: Workspace name
+    
+    Returns:
+        Detailed workspace information
+    """
+    # Validate inputs
+    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+        return {"error": "Invalid organization name"}
+    
+    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+        return {"error": "Invalid workspace name"}
+    
+    try:
+        # Check for TF Cloud token
+        token = os.environ.get("TF_CLOUD_TOKEN")
+        if not token:
+            return {"error": "Terraform Cloud token not configured"}
+        
+        # Mock implementation
+        return {
+            "workspace": {
+                "id": f"ws-{workspace}",
+                "name": workspace,
+                "organization": organization,
+                "environment": "production",
+                "terraform_version": "1.6.5",
+                "auto_apply": False,
+                "execution_mode": "remote",
+                "working_directory": "",
+                "vcs_repo": {
+                    "identifier": f"{organization}/infrastructure",
+                    "branch": "main",
+                    "oauth_token_id": "ot-example"
+                },
+                "current_state_version": {
+                    "id": "sv-example",
+                    "serial": 42,
+                    "state_version": 42,
+                    "created_at": "2024-01-15T10:00:00Z"
+                },
+                "resource_count": 75,
+                "tags": ["production", "aws", "managed"]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get TF Cloud workspace: {e}")
+        return {"error": f"Failed to get workspace: {str(e)}"}
+
+
+@mcp.tool()
+@validate_request("tf_cloud_list_runs")
+def tf_cloud_list_runs(organization: str, workspace: str, limit: int = 10) -> Dict[str, object]:
+    """
+    List runs for a Terraform Cloud workspace.
+    
+    Args:
+        organization: Terraform Cloud organization name
+        workspace: Workspace name
+        limit: Maximum number of runs to return (default: 10)
+    
+    Returns:
+        List of runs with status and metadata
+    """
+    # Validate inputs
+    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+        return {"error": "Invalid organization name"}
+    
+    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+        return {"error": "Invalid workspace name"}
+    
+    if limit < 1 or limit > 100:
+        return {"error": "Limit must be between 1 and 100"}
+    
+    try:
+        # Check for TF Cloud token
+        token = os.environ.get("TF_CLOUD_TOKEN")
+        if not token:
+            return {"error": "Terraform Cloud token not configured"}
+        
+        # Mock implementation
+        statuses = ["applied", "planned", "planning", "applying", "errored", "canceled"]
+        return {
+            "runs": [
+                {
+                    "id": f"run-{i}",
+                    "status": statuses[i % len(statuses)],
+                    "created_at": f"2024-01-{15-i:02d}T{10+i}:00:00Z",
+                    "message": f"Run triggered by API - commit {i}",
+                    "is_destroy": False,
+                    "has_changes": i % 2 == 0,
+                    "resource_additions": i * 2,
+                    "resource_changes": i,
+                    "resource_destructions": 0,
+                    "cost_estimation": {
+                        "enabled": True,
+                        "delta": f"+${i * 10}.00",
+                        "monthly": f"${100 + i * 10}.00"
+                    } if i % 3 == 0 else None
+                }
+                for i in range(1, min(limit + 1, 6))
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to list TF Cloud runs: {e}")
+        return {"error": f"Failed to list runs: {str(e)}"}
+
+
+@mcp.tool()
+@validate_request("tf_cloud_get_state_outputs")
+def tf_cloud_get_state_outputs(organization: str, workspace: str) -> Dict[str, object]:
+    """
+    Get state outputs from a Terraform Cloud workspace.
+    
+    Args:
+        organization: Terraform Cloud organization name
+        workspace: Workspace name
+    
+    Returns:
+        Current state outputs with values and metadata
+    """
+    # Validate inputs
+    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+        return {"error": "Invalid organization name"}
+    
+    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+        return {"error": "Invalid workspace name"}
+    
+    try:
+        # Check for TF Cloud token
+        token = os.environ.get("TF_CLOUD_TOKEN")
+        if not token:
+            return {"error": "Terraform Cloud token not configured"}
+        
+        # Mock implementation
+        return {
+            "outputs": {
+                "vpc_id": {
+                    "value": "vpc-12345678",
+                    "type": "string",
+                    "sensitive": False
+                },
+                "subnet_ids": {
+                    "value": ["subnet-12345", "subnet-67890"],
+                    "type": "list(string)",
+                    "sensitive": False
+                },
+                "database_endpoint": {
+                    "value": "[SENSITIVE]",
+                    "type": "string",
+                    "sensitive": True
+                },
+                "load_balancer_dns": {
+                    "value": "lb-example.us-east-1.elb.amazonaws.com",
+                    "type": "string",
+                    "sensitive": False
+                },
+                "instance_count": {
+                    "value": 3,
+                    "type": "number",
+                    "sensitive": False
+                }
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get TF Cloud state outputs: {e}")
+        return {"error": f"Failed to get state outputs: {str(e)}"}
+
+
+# ============================================================================
 # GITHUB INTEGRATION TOOLS
 # ============================================================================
 
@@ -1244,6 +1626,7 @@ except Exception as e:
 
 
 @mcp.tool()
+@validate_request("github_clone_repo")
 async def github_clone_repo(
     owner: str, repo: str, branch: Optional[str] = None, force: bool = False
 ) -> Dict[str, object]:
@@ -1270,6 +1653,7 @@ async def github_clone_repo(
 
 
 @mcp.tool()
+@validate_request("github_list_terraform_files")
 async def github_list_terraform_files(
     owner: str, repo: str, path: str = "", pattern: str = "*.tf"
 ) -> Dict[str, object]:
@@ -1296,6 +1680,7 @@ async def github_list_terraform_files(
 
 
 @mcp.tool()
+@validate_request("github_get_terraform_config")
 async def github_get_terraform_config(
     owner: str, repo: str, config_path: str
 ) -> Dict[str, object]:
@@ -1321,6 +1706,7 @@ async def github_get_terraform_config(
 
 
 @mcp.tool()
+@validate_request("github_prepare_workspace")
 async def github_prepare_workspace(
     owner: str, repo: str, config_path: str, workspace_name: Optional[str] = None
 ) -> Dict[str, object]:
