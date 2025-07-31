@@ -22,10 +22,17 @@ def build_var_args(vars_dict):
 
 
 def run_terraform(path, action, vars_dict=None):
+    import time
+    import re
+    
     base_cmds = {
         "init": ["terraform", "init", "-input=false"],
         "validate": ["terraform", "validate"],
         "fmt": ["terraform", "fmt", "-check", "-recursive"],
+        "show": ["terraform", "show"],
+        "graph": ["terraform", "graph"],
+        "providers": ["terraform", "providers"],
+        "version": ["terraform", "version"],
     }
 
     if action == "plan":
@@ -36,22 +43,97 @@ def run_terraform(path, action, vars_dict=None):
         cmd = base_cmds[action]
     else:
         return {
-            "success": False,
             "action": action,
-            "error": f"Unsupported action '{action}'",
+            "success": False,
+            "exit_code": 1,
+            "stdout": "",
+            "stderr": f"Unsupported action '{action}'",
+            "duration": 0.0,
         }
 
     try:
-        result = subprocess.run(cmd, cwd=path, capture_output=True, text=True)
-        return {
-            "success": result.returncode == 0,
+        start_time = time.time()
+        result = subprocess.run(cmd, cwd=path, capture_output=True, text=True, shell=False)
+        duration = round(time.time() - start_time, 2)
+        
+        response = {
             "action": action,
+            "success": result.returncode == 0,
+            "exit_code": result.returncode,
             "stdout": result.stdout.strip(),
             "stderr": result.stderr.strip(),
-            "returncode": result.returncode,
+            "duration": duration,
         }
+        
+        # Add plan-specific parsing for plan actions
+        if action == "plan" and result.returncode == 0:
+            plan_summary = parse_terraform_plan_output(result.stdout)
+            if plan_summary:
+                response["plan_summary"] = plan_summary
+                response["resources"] = extract_resources_from_plan(result.stdout)
+        
+        return response
     except Exception as e:
-        return {"success": False, "action": action, "error": str(e)}
+        return {
+            "action": action,
+            "success": False,
+            "exit_code": 1,
+            "stdout": "",
+            "stderr": str(e),
+            "duration": 0.0,
+        }
+
+
+def parse_terraform_plan_output(stdout):
+    """Parse Terraform plan output to extract summary information."""
+    try:
+        # Look for plan summary in output
+        add_pattern = r"Plan: (?:(\d+) to add,)? ?(?:(\d+) to change,)? ?(?:(\d+) to destroy)?"
+        match = re.search(add_pattern, stdout)
+        
+        if match:
+            add_count = int(match.group(1)) if match.group(1) else 0
+            change_count = int(match.group(2)) if match.group(2) else 0
+            destroy_count = int(match.group(3)) if match.group(3) else 0
+            
+            return {
+                "add": add_count,
+                "change": change_count,
+                "destroy": destroy_count
+            }
+        
+        # If no changes
+        if "No changes" in stdout:
+            return {"add": 0, "change": 0, "destroy": 0}
+            
+    except Exception:
+        pass
+    
+    return None
+
+
+def extract_resources_from_plan(stdout):
+    """Extract resource information from Terraform plan output."""
+    resources = []
+    try:
+        # Basic resource extraction - this is a simplified version
+        # In a full implementation, you'd parse the entire plan JSON
+        lines = stdout.split('\n')
+        for line in lines:
+            if line.strip().startswith('# ') and ('will be created' in line or 'will be updated' in line or 'will be destroyed' in line):
+                resource_match = re.search(r'# (.+?) will be', line)
+                if resource_match:
+                    resource_name = resource_match.group(1)
+                    action = "create" if "created" in line else "update" if "updated" in line else "destroy"
+                    resources.append({
+                        "address": resource_name,
+                        "action": action,
+                        "type": resource_name.split('.')[0] if '.' in resource_name else "unknown"
+                    })
+    except Exception:
+        pass
+    
+    return resources
 
 
 def main():

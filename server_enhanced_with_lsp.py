@@ -36,13 +36,186 @@ except Exception as e:
     logger.error(f"Failed to load security validator: {e}")
     request_validator = None
 
+# ============================================================================
+# RATE LIMITING SYSTEM
+# ============================================================================
+
+import time
+from collections import defaultdict, deque
+from threading import Lock
+
+class RateLimiter:
+    """Thread-safe rate limiter with per-tool limits"""
+    
+    def __init__(self):
+        self.requests = defaultdict(deque)  # tool_name -> deque of timestamps
+        self.lock = Lock()
+        
+        # Rate limits per tool type (requests per minute)
+        self.limits = {
+            "default": 100,
+            "terraform": 20,  # terry, terry_* tools
+            "github": 30,     # github_* tools
+            "tf_cloud": 30,   # tf_cloud_* tools
+        }
+    
+    def get_tool_category(self, tool_name: str) -> str:
+        """Determine rate limit category for a tool"""
+        if tool_name.startswith(("terry", "terraform_")):
+            return "terraform"
+        elif tool_name.startswith("github_"):
+            return "github"
+        elif tool_name.startswith("tf_cloud_"):
+            return "tf_cloud"
+        else:
+            return "default"
+    
+    def is_allowed(self, tool_name: str) -> tuple[bool, dict]:
+        """
+        Check if request is allowed under rate limits.
+        Returns (allowed, rate_limit_info)
+        """
+        with self.lock:
+            now = time.time()
+            category = self.get_tool_category(tool_name)
+            limit = self.limits[category]
+            
+            # Clean old requests (older than 1 minute)
+            minute_ago = now - 60
+            requests_queue = self.requests[category]
+            
+            while requests_queue and requests_queue[0] < minute_ago:
+                requests_queue.popleft()
+            
+            # Check if under limit
+            current_count = len(requests_queue)
+            allowed = current_count < limit
+            
+            if allowed:
+                requests_queue.append(now)
+            
+            # Calculate reset time (when oldest request will expire)
+            reset_time = int(requests_queue[0] + 60) if requests_queue else int(now + 60)
+            
+            rate_limit_info = {
+                "limit": limit,
+                "remaining": max(0, limit - current_count - (1 if allowed else 0)),
+                "reset": reset_time,
+                "category": category
+            }
+            
+            return allowed, rate_limit_info
+
+# Initialize global rate limiter
+rate_limiter = RateLimiter()
+logger.info("Rate limiter initialized")
+
+# ============================================================================
+# AUTHENTICATION AND AUTHORIZATION
+# ============================================================================
+
+class AuthManager:
+    """Manages authentication and authorization for MCP requests"""
+    
+    def __init__(self):
+        # API key for authentication (if configured)
+        self.api_key = os.environ.get("TERRY_FORM_API_KEY")
+        
+        # Role-based permissions
+        self.permissions = {
+            "admin": {"*"},  # Full access
+            "user": {"terry", "terry_*", "github_*", "terraform_*"},  # Standard operations
+            "readonly": {"terry_workspace_list", "terry_version", "terry_environment_check"},  # Read-only
+        }
+        
+        # Default role if no authentication
+        self.default_role = "user"
+        
+    def authenticate(self, headers: dict = None) -> tuple[bool, str, str]:
+        """
+        Authenticate request and return (authenticated, user_id, role)
+        """
+        # If no API key configured, allow with default role
+        if not self.api_key:
+            return True, "anonymous", self.default_role
+        
+        # Check for API key in environment or headers
+        provided_key = None
+        if headers:
+            auth_header = headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                provided_key = auth_header[7:]
+        
+        # Validate API key
+        if provided_key == self.api_key:
+            return True, "api_user", "admin"
+        elif not provided_key:
+            # No key provided but key required
+            return False, "", ""
+        else:
+            # Invalid key
+            return False, "", ""
+    
+    def authorize(self, tool_name: str, role: str) -> bool:
+        """Check if role has permission to use tool"""
+        if role not in self.permissions:
+            return False
+            
+        allowed_patterns = self.permissions[role]
+        
+        # Check for wildcard permission
+        if "*" in allowed_patterns:
+            return True
+            
+        # Check exact match
+        if tool_name in allowed_patterns:
+            return True
+            
+        # Check pattern matches
+        for pattern in allowed_patterns:
+            if pattern.endswith("*"):
+                prefix = pattern[:-1]
+                if tool_name.startswith(prefix):
+                    return True
+                    
+        return False
+
+# Initialize auth manager
+auth_manager = AuthManager()
+logger.info("Authentication manager initialized")
+
 # Security validation decorator
 def validate_request(tool_name: str):
     """Decorator to validate MCP requests before tool execution"""
     def decorator(func):
-        def wrapper(*args, **kwargs):
+        import functools
+        import inspect
+        
+        @functools.wraps(func)
+        def wrapper(**kwargs):
+            # Authentication and authorization check
+            # Note: In MCP context, we'll use default role since headers aren't easily accessible
+            authenticated, user_id, role = auth_manager.authenticate()
+            if not authenticated:
+                logger.warning(f"Authentication failed for {tool_name}")
+                return {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
+            
+            # Check authorization
+            if not auth_manager.authorize(tool_name, role):
+                logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
+                return {"error": f"Access denied. Role '{role}' not authorized for tool '{tool_name}'"}
+            
+            # Check rate limits
+            allowed, rate_info = rate_limiter.is_allowed(tool_name)
+            if not allowed:
+                logger.warning(f"Rate limit exceeded for {tool_name}: {rate_info}")
+                return {
+                    "error": f"Rate limit exceeded. Limit: {rate_info['limit']}/min, Reset: {rate_info['reset']}",
+                    "rate_limit": rate_info
+                }
+            
             # Log tool invocation for audit trail
-            logger.info(f"Tool invoked: {tool_name} with args: {kwargs}")
+            logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
             
             # Validate request if validator is available
             if request_validator:
@@ -68,8 +241,14 @@ def validate_request(tool_name: str):
             
             # Execute the tool
             try:
-                result = func(*args, **kwargs)
-                logger.info(f"Tool {tool_name} completed successfully")
+                result = func(**kwargs)
+                logger.info(f"Tool {tool_name} completed successfully for user {user_id}")
+                
+                # Add metadata to response
+                if isinstance(result, dict):
+                    result["_rate_limit"] = rate_info
+                    result["_auth"] = {"user": user_id, "role": role}
+                
                 return result
             except Exception as e:
                 logger.error(f"Tool {tool_name} failed with error: {e}")
@@ -77,9 +256,30 @@ def validate_request(tool_name: str):
         
         # Preserve async functions
         if asyncio.iscoroutinefunction(func):
-            async def async_wrapper(*args, **kwargs):
+            @functools.wraps(func)
+            async def async_wrapper(**kwargs):
+                # Authentication and authorization check
+                authenticated, user_id, role = auth_manager.authenticate()
+                if not authenticated:
+                    logger.warning(f"Authentication failed for {tool_name}")
+                    return {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
+                
+                # Check authorization
+                if not auth_manager.authorize(tool_name, role):
+                    logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
+                    return {"error": f"Access denied. Role '{role}' not authorized for tool '{tool_name}'"}
+                
+                # Check rate limits
+                allowed, rate_info = rate_limiter.is_allowed(tool_name)
+                if not allowed:
+                    logger.warning(f"Rate limit exceeded for {tool_name}: {rate_info}")
+                    return {
+                        "error": f"Rate limit exceeded. Limit: {rate_info['limit']}/min, Reset: {rate_info['reset']}",
+                        "rate_limit": rate_info
+                    }
+                
                 # Log tool invocation for audit trail
-                logger.info(f"Tool invoked: {tool_name} with args: {kwargs}")
+                logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
                 
                 # Validate request if validator is available
                 if request_validator:
@@ -105,8 +305,14 @@ def validate_request(tool_name: str):
                 
                 # Execute the tool
                 try:
-                    result = await func(*args, **kwargs)
-                    logger.info(f"Tool {tool_name} completed successfully")
+                    result = await func(**kwargs)
+                    logger.info(f"Tool {tool_name} completed successfully for user {user_id}")
+                    
+                    # Add metadata to response
+                    if isinstance(result, dict):
+                        result["_rate_limit"] = rate_info
+                        result["_auth"] = {"user": user_id, "role": role}
+                    
                     return result
                 except Exception as e:
                     logger.error(f"Tool {tool_name} failed with error: {e}")
@@ -163,13 +369,20 @@ spec_lsp.loader.exec_module(terraform_lsp_client)
 @mcp.tool()
 @validate_request("terry")
 def terry(
-    path: str, actions: List[str] = ["plan"], vars: Dict[str, str] = {}
+    path: str, actions: List[str] = ["plan"], vars: Dict[str, Any] = {}
 ) -> Dict[str, object]:
     """
-    Runs terraform actions in /mnt/workspace/<path> using provided variables.
-    Returns a raw JSON result dictionary under `terry-results`.
-
-    Supported actions: init, validate, fmt, plan
+    Execute Terraform operations with comprehensive output and security validation.
+    
+    Args:
+        path: Workspace path relative to /mnt/workspace
+        actions: Array of Terraform actions to execute (default: ["plan"])
+        vars: Terraform variables (optional)
+    
+    Returns:
+        Execution results with detailed output matching API specification
+        
+    Supported actions: init, validate, fmt, plan, show, graph, providers, version
     """
     full_path = str(Path("/mnt/workspace") / path)
     results = []
