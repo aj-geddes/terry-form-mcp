@@ -25,48 +25,22 @@ Before you begin, ensure you have the following installed:
 Docker provides the easiest and most secure way to run Terry-Form MCP.
 
 ```bash
-# Pull the latest image
-docker pull aj-geddes/terry-form-mcp:latest
+# Clone the repository
+git clone https://github.com/aj-geddes/terry-form-mcp.git
+cd terry-form-mcp
 
-# Run the container
-docker run -d \
-  --name terry-form \
-  -p 3000:3000 \
-  -v /path/to/your/workspace:/mnt/workspace \
-  -e TERRAFORM_CLOUD_TOKEN=your-token \
-  aj-geddes/terry-form-mcp:latest
+# Build the image
+./build.sh
+
+# Run the server (MCP uses stdio, not HTTP)
+docker run -it --rm \
+  -v "$(pwd)":/mnt/workspace \
+  terry-form-mcp:latest
 ```
 
-### Option 2: Docker Compose
+**Note**: This server uses stdio transport for MCP protocol, not HTTP. It should be invoked by your MCP client (e.g., Claude Desktop), not run as a daemon.
 
-Create a `docker-compose.yml` file:
-
-```yaml
-version: '3.8'
-
-services:
-  terry-form:
-    image: aj-geddes/terry-form-mcp:latest
-    container_name: terry-form
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./workspace:/mnt/workspace
-      - ./config:/app/config
-    environment:
-      - TERRAFORM_CLOUD_TOKEN=${TERRAFORM_CLOUD_TOKEN}
-      - GITHUB_APP_ID=${GITHUB_APP_ID}
-      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
-    restart: unless-stopped
-```
-
-Then run:
-
-```bash
-docker-compose up -d
-```
-
-### Option 3: Local Development
+### Option 2: Local Development
 
 For development or testing:
 
@@ -78,15 +52,15 @@ cd terry-form-mcp
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the server
-python server_mcp_only.py
+# Run the server directly
+python3 server_enhanced_with_lsp.py
 ```
 
 ## Configuration
 
 ### 1. AI Assistant Configuration
 
-Configure your AI assistant to use Terry-Form MCP. For Claude Desktop:
+Configure your AI assistant to use Terry-Form MCP. For Claude Desktop, edit your `claude_desktop_config.json`:
 
 ```json
 {
@@ -99,7 +73,7 @@ Configure your AI assistant to use Terry-Form MCP. For Claude Desktop:
         "--rm",
         "-v",
         "/path/to/workspace:/mnt/workspace",
-        "aj-geddes/terry-form-mcp:latest"
+        "terry-form-mcp:latest"
       ]
     }
   }

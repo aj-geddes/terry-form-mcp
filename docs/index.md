@@ -43,14 +43,14 @@ description: Secure, intelligent infrastructure management through Model Context
   
   <div class="feature-card">
     <div class="feature-icon">📊</div>
-    <h3>Analytics & Insights</h3>
-    <p>Module intelligence, security scanning, and best practice recommendations</p>
+    <h3>Code Intelligence</h3>
+    <p>LSP-powered validation, security scanning, and best practice recommendations</p>
   </div>
-  
+
   <div class="feature-card">
     <div class="feature-icon">🚀</div>
     <h3>Production Ready</h3>
-    <p>Docker, Kubernetes, and cloud-native deployment options with monitoring</p>
+    <p>Docker containerization with comprehensive security controls and rate limiting</p>
   </div>
 </div>
 
@@ -86,14 +86,14 @@ graph LR
 ### 🏗️ **Infrastructure Management**
 - **Multi-Workspace**: Manage multiple Terraform workspaces
 - **State Management**: Secure state file handling
-- **Plan Analysis**: Intelligent plan review and recommendations
-- **Module Intelligence**: Best practice analysis and optimization
+- **Plan Analysis**: Terraform plan execution and validation
+- **LSP Integration**: terraform-ls v0.33.2 for code intelligence
 
 ### 🔗 **Integrations**
-- **GitHub App**: Direct repository integration
-- **Terraform Cloud**: Native Terraform Cloud support
-- **LSP Support**: Language Server Protocol for IDE integration
-- **Web Dashboard**: Real-time monitoring and control
+- **GitHub App**: Optional repository integration via GitHub OAuth
+- **Terraform Cloud**: Basic workspace and run monitoring (mock data)
+- **LSP Support**: Full Language Server Protocol integration via terraform-ls
+- **MCP Protocol**: Native Model Context Protocol for AI assistants
 
 ## Quick Start
 
