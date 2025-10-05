@@ -18,9 +18,8 @@ RUN pip install --break-system-packages fastmcp
 WORKDIR /app
 
 # Copy only the required files
-COPY terry-form-mcp.py .
-COPY terraform_lsp_client.py .
 COPY server_enhanced_with_lsp.py .
+COPY terraform_lsp_client.py .
 COPY mcp_request_validator.py .
 COPY github_app_auth.py .
 COPY github_repo_handler.py .

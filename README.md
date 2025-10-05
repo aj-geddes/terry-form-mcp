@@ -674,6 +674,293 @@ terry_workspace_setup(
 }
 ```
 
+### Additional Tools
+
+#### `terry_version`
+Get Terraform and server version information
+
+```javascript
+terry_version()
+```
+
+**Returns**: Version details
+```json
+{
+  "terry-version": {
+    "server_version": "3.0.0",
+    "terraform_version": "1.12.0",
+    "terraform_ls_version": "0.33.2",
+    "python_version": "3.12.11"
+  }
+}
+```
+
+#### `terry_workspace_list`
+List all Terraform workspaces in the mounted directory
+
+```javascript
+terry_workspace_list()
+```
+
+**Returns**: List of all workspaces
+```json
+{
+  "terry-workspaces": {
+    "workspaces": [
+      {
+        "path": "project1",
+        "initialized": true,
+        "has_terraform_files": true,
+        "file_count": 5
+      }
+    ],
+    "total_count": 1
+  }
+}
+```
+
+#### `terry_analyze`
+Analyze Terraform configuration for best practices
+
+```javascript
+terry_analyze(
+    path: string  // Required: Path to Terraform configuration
+)
+```
+
+**Returns**: Best practices analysis
+```json
+{
+  "terry-analyze": {
+    "path": "/mnt/workspace/project",
+    "analysis": {
+      "structure": "good",
+      "recommendations": [
+        "Consider adding outputs.tf for better documentation",
+        "Add version constraints in terraform block"
+      ],
+      "issues_found": 2,
+      "files_analyzed": 3
+    }
+  }
+}
+```
+
+#### `terry_recommendations`
+Get improvement recommendations for Terraform code
+
+```javascript
+terry_recommendations(
+    path: string  // Required: Path to Terraform configuration
+)
+```
+
+**Returns**: Actionable recommendations
+```json
+{
+  "terry-recommendations": {
+    "recommendations": [
+      {
+        "type": "security",
+        "priority": "high",
+        "message": "Use variables for sensitive values",
+        "file": "main.tf",
+        "line": 15
+      }
+    ]
+  }
+}
+```
+
+#### `terry_security_scan`
+Scan Terraform configuration for security issues
+
+```javascript
+terry_security_scan(
+    path: string  // Required: Path to Terraform configuration
+)
+```
+
+**Returns**: Security scan results
+```json
+{
+  "terry-security-scan": {
+    "path": "/mnt/workspace/project",
+    "findings": [
+      {
+        "severity": "medium",
+        "rule": "Hardcoded credentials detected",
+        "file": "main.tf",
+        "line": 23,
+        "remediation": "Use variables or secrets management"
+      }
+    ],
+    "total_findings": 1,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 0
+  }
+}
+```
+
+### GitHub Integration Tools
+
+#### `github_clone_repo`
+Clone or update a GitHub repository
+
+```javascript
+github_clone_repo(
+    owner: string,         // Required: Repository owner
+    repo: string,          // Required: Repository name
+    branch: string = null, // Optional: Branch to clone
+    force: boolean = false // Optional: Force update if exists
+)
+```
+
+**Returns**: Clone operation result
+```json
+{
+  "github-clone": {
+    "success": true,
+    "owner": "myorg",
+    "repo": "infrastructure",
+    "branch": "main",
+    "local_path": "/mnt/workspace/github-repos/myorg/infrastructure",
+    "action": "cloned"
+  }
+}
+```
+
+#### `github_list_terraform_files`
+List Terraform files in a GitHub repository
+
+```javascript
+github_list_terraform_files(
+    owner: string,           // Required: Repository owner
+    repo: string,            // Required: Repository name
+    path: string = "",       // Optional: Path within repo
+    pattern: string = "*.tf" // Optional: File pattern
+)
+```
+
+**Returns**: List of Terraform files
+```json
+{
+  "terraform_files": [
+    "environments/prod/main.tf",
+    "environments/prod/variables.tf",
+    "modules/vpc/main.tf"
+  ],
+  "count": 3
+}
+```
+
+#### `github_get_terraform_config`
+Get information about Terraform configuration in a repository
+
+```javascript
+github_get_terraform_config(
+    owner: string,      // Required: Repository owner
+    repo: string,       // Required: Repository name
+    config_path: string // Required: Path to Terraform config
+)
+```
+
+**Returns**: Configuration details
+```json
+{
+  "config_info": {
+    "path": "environments/prod",
+    "files": ["main.tf", "variables.tf", "outputs.tf"],
+    "modules_used": ["vpc", "eks"],
+    "providers": ["aws", "kubernetes"]
+  }
+}
+```
+
+#### `github_prepare_workspace`
+Prepare a Terraform workspace from a GitHub repository
+
+```javascript
+github_prepare_workspace(
+    owner: string,                 // Required: Repository owner
+    repo: string,                  // Required: Repository name
+    config_path: string,           // Required: Path to config in repo
+    workspace_name: string = null  // Optional: Custom workspace name
+)
+```
+
+**Returns**: Prepared workspace details
+```json
+{
+  "workspace_prepared": {
+    "success": true,
+    "workspace_path": "/mnt/workspace/myorg-infrastructure-prod",
+    "config_path": "environments/prod",
+    "ready_for_terraform": true
+  }
+}
+```
+
+### Terraform Cloud Tools
+
+**Note**: These tools currently return mock data for demonstration purposes.
+
+#### `tf_cloud_list_workspaces`
+List Terraform Cloud workspaces in an organization
+
+```javascript
+tf_cloud_list_workspaces(
+    organization: string  // Required: TF Cloud organization name
+)
+```
+
+**Returns**: List of workspaces (mock data)
+```json
+{
+  "workspaces": [
+    {
+      "id": "ws-example-1",
+      "name": "production",
+      "terraform_version": "1.5.0",
+      "locked": false
+    }
+  ]
+}
+```
+
+#### `tf_cloud_get_workspace`
+Get detailed workspace information
+
+```javascript
+tf_cloud_get_workspace(
+    organization: string,  // Required: Organization name
+    workspace: string      // Required: Workspace name
+)
+```
+
+#### `tf_cloud_list_runs`
+List recent runs for a workspace
+
+```javascript
+tf_cloud_list_runs(
+    organization: string,  // Required: Organization name
+    workspace: string,     // Required: Workspace name
+    limit: number = 10     // Optional: Number of runs to return
+)
+```
+
+#### `tf_cloud_get_state_outputs`
+Get state outputs from a workspace
+
+```javascript
+tf_cloud_get_state_outputs(
+    organization: string,  // Required: Organization name
+    workspace: string      // Required: Workspace name
+)
+```
+
 ## Usage Examples
 
 ### Basic Terraform Execution
@@ -1000,27 +1287,26 @@ docker run -i --rm \
 
 ```
 terry-form-mcp/
-├── server_enhanced_with_lsp.py   # Primary MCP server with LSP integration (25 tools)
-├── terry-form-mcp.py             # Core Terraform execution logic
-├── terraform_lsp_client.py       # LSP client implementation
-├── mcp_request_validator.py      # Security validation and sanitization
+├── server_enhanced_with_lsp.py   # Main MCP server (imports all modules below)
+├── terraform_lsp_client.py       # LSP client for terraform-ls integration
+├── mcp_request_validator.py      # Security validation and input sanitization
 ├── github_app_auth.py            # GitHub App OAuth authentication
 ├── github_repo_handler.py        # GitHub repository operations
 ├── Dockerfile                    # Production container build configuration
 ├── build.sh                      # Build script (Linux/macOS)
 ├── build.bat                     # Build script (Windows)
+├── verify.sh                     # Verification script for Docker image
 ├── requirements.txt              # Python dependencies
+├── QUICKSTART.md                 # Quick start guide
 ├── examples/                     # Usage examples and documentation
 │   └── README.md                 # Examples documentation
 ├── docs/                         # Jekyll documentation site
 │   ├── index.md                  # Documentation homepage
 │   ├── getting-started.md        # Quick start guide
 │   └── api.md                    # API reference
-├── tests/                        # Test suite
-│   └── unit/                     # Unit tests
 ├── test-terraform-project/       # Sample Terraform project for testing
 │   └── main.tf                   # Example Terraform configuration
-├── README.md                     # This file - project documentation
+├── README.md                     # This file - complete documentation
 ├── CHANGELOG.md                  # Version history
 ├── CONTRIBUTING.md               # Contribution guidelines
 └── LICENSE                       # MIT License
