@@ -10,44 +10,41 @@ Explore the technical architecture of Terry-Form MCP.
 
 <div class="architecture-overview">
   <div class="arch-diagram">
-    <pre class="mermaid">
-    graph TB
-        subgraph External
-            A[AI Assistants]
-            B[Web Clients]
-            C[CI/CD Systems]
-        end
 
-        subgraph Terry-Form MCP
-            D[Protocol Layer]
-            E[Security Layer]
-            F[Execution Engine]
-            G[Integration Layer]
-        end
+```mermaid
+graph TB
+    subgraph External
+        A[AI Assistants]
+        B[Web Clients]
+        C[CI/CD Systems]
+    end
 
-        subgraph Infrastructure
-            H[Cloud Providers]
-            I[Terraform State]
-            J[Git Repositories]
-        end
+    subgraph "Terry-Form MCP"
+        D[Protocol Layer]
+        E[Security Layer]
+        F[Execution Engine]
+        G[Integration Layer]
+    end
 
-        A --> D
-        B --> D
-        C --> D
-        D --> E
-        E --> F
-        E --> G
-        F --> H
-        F --> I
-        G --> J
-    </pre>
+    subgraph Infrastructure
+        H[Cloud Providers]
+        I[Terraform State]
+        J[Git Repositories]
+    end
+
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    E --> G
+    F --> H
+    F --> I
+    G --> J
+```
+
   </div>
 </div>
-
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true });
-</script>
 
 ## Architecture Documents
 
