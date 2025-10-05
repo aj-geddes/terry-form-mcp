@@ -9,7 +9,6 @@ group :jekyll_plugins do
   gem "jekyll-relative-links"
   gem "jekyll-include-cache"
   gem "jekyll-github-metadata"
-  gem "jekyll-mermaid"
   gem "jekyll-toc"
   gem "jekyll-last-modified-at"
 end

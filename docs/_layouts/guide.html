@@ -41,13 +41,15 @@ layout: default
     <footer class="guide-footer">
       <div class="guide-navigation">
         {% assign guides = site.guides | sort: 'order' %}
+        {% assign prev_order = page.order | minus: 1 %}
+        {% assign next_order = page.order | plus: 1 %}
         {% for guide in guides %}
-          {% if guide.order == page.order | minus: 1 %}
+          {% if guide.order == prev_order %}
             <a href="{{ guide.url | relative_url }}" class="prev-guide">
               ← {{ guide.title }}
             </a>
           {% endif %}
-          {% if guide.order == page.order | plus: 1 %}
+          {% if guide.order == next_order %}
             <a href="{{ guide.url | relative_url }}" class="next-guide">
               {{ guide.title }} →
             </a>

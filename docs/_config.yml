@@ -33,7 +33,6 @@ plugins:
   - jekyll-relative-links
   - jekyll-include-cache
   - jekyll-github-metadata
-  - jekyll-mermaid
 
 # Collections
 collections:
