@@ -1,7 +1,12 @@
 # Terry-Form MCP with LSP Integration
 
+[![Release](https://img.shields.io/github/v/release/aj-geddes/terry-form-mcp)](https://github.com/aj-geddes/terry-form-mcp/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/aj-geddes/terry-form-mcp/blob/main/Dockerfile)
+
 ![image](https://github.com/user-attachments/assets/3acde05e-3758-4528-b811-cd9359d31149)
 
+> **Version 3.0.0** - Production-ready Terraform automation with comprehensive LSP integration and 25 MCP tools
 
 A Model Control Protocol (MCP) server that enables AI assistants to execute Terraform commands locally through a secure, containerized environment using HashiCorp's official Terraform image. Now enhanced with Language Server Protocol (LSP) integration for intelligent Terraform development capabilities.
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""Terry-Form MCP Server - Enhanced with LSP Integration"""
+__version__ = "3.0.0"
+
 import asyncio
 import importlib.util
 import json

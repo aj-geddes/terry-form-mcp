@@ -56,7 +56,7 @@ description: Secure, intelligent infrastructure management through Model Context
 
 ## What is Terry-Form MCP?
 
-Terry-Form MCP is a secure, enterprise-grade Terraform automation server that integrates with AI assistants through the Model Context Protocol (MCP). It provides a controlled environment for infrastructure-as-code operations while maintaining strict security boundaries.
+Terry-Form MCP v3.0.0 is a secure, production-ready Terraform automation server that integrates with AI assistants through the Model Context Protocol (MCP). It provides a controlled environment for infrastructure-as-code operations with comprehensive LSP integration for intelligent development.
 
 ```mermaid
 graph LR

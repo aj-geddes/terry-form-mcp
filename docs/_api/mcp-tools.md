@@ -537,6 +537,133 @@ interface WorkspaceSetupParams {
 }
 ```
 
+### terry_workspace_info
+
+Get information about a Terraform workspace.
+
+```typescript
+interface WorkspaceInfoParams {
+  path?: string;  // Defaults to "."
+}
+```
+
+**Response:**
+
+```json
+{
+  "terry-workspace": {
+    "path_info": {
+      "requested_path": "project1",
+      "full_path": "/mnt/workspace/project1",
+      "exists": true,
+      "is_directory": true
+    },
+    "terraform_files": ["main.tf", "variables.tf", "outputs.tf"],
+    "terraform_state": {
+      "initialized": true,
+      "state_file_exists": true
+    },
+    "common_files": {
+      "main.tf": true,
+      "variables.tf": true,
+      "outputs.tf": true
+    }
+  }
+}
+```
+
+### terry_file_check
+
+Validate Terraform file syntax and structure.
+
+```typescript
+interface FileCheckParams {
+  file_path: string;
+}
+```
+
+**Response:**
+
+```json
+{
+  "terry-file-check": {
+    "file_path": "main.tf",
+    "exists": true,
+    "readable": true,
+    "size_bytes": 2048,
+    "syntax_valid": true
+  }
+}
+```
+
+### terry_lsp_init
+
+Manually initialize the LSP client for a workspace.
+
+```typescript
+interface LSPInitParams {
+  workspace_path: string;
+}
+```
+
+**Response:**
+
+```json
+{
+  "terry-lsp-init": {
+    "success": true,
+    "workspace_path": "/mnt/workspace/project",
+    "message": "LSP client initialized successfully"
+  }
+}
+```
+
+### terry_lsp_debug
+
+Get detailed LSP debugging information.
+
+```typescript
+interface LSPDebugParams {
+  // No parameters required
+}
+```
+
+**Response:**
+
+```json
+{
+  "terry-lsp-debug": {
+    "lsp_status": "initialized",
+    "workspace_path": "/mnt/workspace/project",
+    "capabilities": ["completion", "hover", "validation"],
+    "diagnostics_count": 0
+  }
+}
+```
+
+### terraform_lsp_status
+
+Get the current status of the Terraform Language Server.
+
+```typescript
+interface LSPStatusParams {
+  // No parameters required
+}
+```
+
+**Response:**
+
+```json
+{
+  "terraform-lsp-status": {
+    "initialized": true,
+    "server_version": "0.33.2",
+    "active_workspace": "/mnt/workspace/project",
+    "capabilities_supported": ["completion", "hover", "validation", "formatting"]
+  }
+}
+```
+
 ## Error Handling
 
 All tools follow a consistent error response format:
