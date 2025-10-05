@@ -21,10 +21,13 @@ WORKDIR /app
 COPY terry-form-mcp.py .
 COPY terraform_lsp_client.py .
 COPY server_enhanced_with_lsp.py .
+COPY mcp_request_validator.py .
+COPY github_app_auth.py .
+COPY github_repo_handler.py .
 
 # Set up entrypoint to run the enhanced server
 ENTRYPOINT ["python3", "server_enhanced_with_lsp.py"]
 
-# Health check
+# Health check - verify server files and dependencies are present
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect(('localhost', 8000)); s.close()" || exit 1
+  CMD python3 -c "import sys; sys.path.append('/app'); import server_enhanced_with_lsp" || exit 1

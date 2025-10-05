@@ -112,11 +112,13 @@ flowchart LR
 
 ### Components
 
-- **server_enhanced_with_lsp.py**: FastMCP-based server that exposes both `terry` and LSP tools
+- **server_enhanced_with_lsp.py**: Primary FastMCP-based server with complete LSP integration (25 MCP tools)
 - **terry-form-mcp.py**: Core Terraform execution logic and subprocess handling
 - **terraform_lsp_client.py**: LSP client implementation for terraform-ls integration
-- **Dockerfile_enhanced_lsp**: HashiCorp Terraform image with Python, FastMCP, and terraform-ls integration
-- **Docker Container**: Isolated execution environment with Terraform and terraform-ls pre-installed
+- **mcp_request_validator.py**: Security validation and input sanitization
+- **github_app_auth.py** & **github_repo_handler.py**: GitHub App integration for repository operations
+- **Dockerfile**: Production-ready container with Terraform v1.12+ and terraform-ls v0.33.2
+- **Docker Container**: Isolated execution environment with all dependencies pre-installed
 
 ## Features
 
@@ -998,19 +1000,27 @@ docker run -i --rm \
 
 ```
 terry-form-mcp/
-├── server_enhanced_with_lsp.py   # Enhanced FastMCP server with comprehensive LSP integration
+├── server_enhanced_with_lsp.py   # Primary MCP server with LSP integration (25 tools)
 ├── terry-form-mcp.py             # Core Terraform execution logic
 ├── terraform_lsp_client.py       # LSP client implementation
-├── Dockerfile                    # Container build configuration with LSP support
+├── mcp_request_validator.py      # Security validation and sanitization
+├── github_app_auth.py            # GitHub App OAuth authentication
+├── github_repo_handler.py        # GitHub repository operations
+├── Dockerfile                    # Production container build configuration
 ├── build.sh                      # Build script (Linux/macOS)
 ├── build.bat                     # Build script (Windows)
+├── requirements.txt              # Python dependencies
 ├── examples/                     # Usage examples and documentation
-│   ├── LSP_INTEGRATION.md        # Detailed LSP integration documentation
-│   ├── claude-desktop-config.json # Example Claude Desktop configuration
-│   └── claude-desktop-lsp-config.json # Example Claude Desktop LSP configuration
+│   └── README.md                 # Examples documentation
+├── docs/                         # Jekyll documentation site
+│   ├── index.md                  # Documentation homepage
+│   ├── getting-started.md        # Quick start guide
+│   └── api.md                    # API reference
+├── tests/                        # Test suite
+│   └── unit/                     # Unit tests
 ├── test-terraform-project/       # Sample Terraform project for testing
 │   └── main.tf                   # Example Terraform configuration
-├── README.md                     # Documentation
+├── README.md                     # This file - project documentation
 ├── CHANGELOG.md                  # Version history
 ├── CONTRIBUTING.md               # Contribution guidelines
 └── LICENSE                       # MIT License
