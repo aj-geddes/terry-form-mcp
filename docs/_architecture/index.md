@@ -8,9 +8,6 @@ description: Technical architecture documentation for Terry-Form MCP
 
 Explore the technical architecture of Terry-Form MCP.
 
-<div class="architecture-overview">
-  <div class="arch-diagram">
-
 ```mermaid
 graph TB
     subgraph External
@@ -42,9 +39,6 @@ graph TB
     F --> I
     G --> J
 ```
-
-  </div>
-</div>
 
 ## Architecture Documents
 
