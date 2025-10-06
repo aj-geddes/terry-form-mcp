@@ -1,1 +1,1 @@
-Sitemap: https://aj-geddes.github.io/terry-form-mcp/sitemap.xml
+Sitemap: http://localhost:4000/terry-form-mcp/sitemap.xml

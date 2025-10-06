@@ -588,5 +588,4 @@ In this tutorial, you learned how to:
 
 <div class="tutorial-nav">
   <a href="{{ site.baseurl }}/tutorials/" class="btn">← Back to Tutorials</a>
-  <a href="{{ site.baseurl }}/tutorials/multi-cloud" class="btn btn-primary">Next: Multi-Cloud Setup →</a>
 </div>

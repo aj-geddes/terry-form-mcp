@@ -274,9 +274,8 @@ docker run -d \
 Now that you have Terry-Form MCP running:
 
 - 📖 Read the [Architecture Overview]({{ site.baseurl }}/architecture/)
-- 🔧 Explore [Advanced Configuration]({{ site.baseurl }}/guides/configuration)
-- 🚀 Learn about [Production Deployment]({{ site.baseurl }}/guides/production)
-- 🔌 Set up [Integrations]({{ site.baseurl }}/guides/integrations)
+- 🔒 Review the [Security Guide]({{ site.baseurl }}/guides/security)
+- 📚 Explore [Available Tutorials]({{ site.baseurl }}/tutorials/)
 
 ## Getting Help
 

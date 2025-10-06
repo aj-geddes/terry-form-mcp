@@ -456,12 +456,10 @@ Terry-Form MCP supports SOC 2 compliance:
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-- [Security Updates]({{ site.baseurl }}/security-updates)
 
 ---
 
 <div class="alert alert-info">
 <strong>Security Contact</strong><br>
-For security issues, please email: security@terry-form.io<br>
-PGP Key: <a href="{{ site.baseurl }}/security.asc">Download</a>
+For security issues, please open an issue on <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new">GitHub</a>
 </div>

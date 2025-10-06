@@ -4,18 +4,21 @@ title: Tutorials
 description: Step-by-step tutorials for Terry-Form MCP
 ---
 
-# Tutorials
-
 Learn Terry-Form MCP through hands-on tutorials.
 
 <div class="tutorial-grid">
 {% for tutorial in site.tutorials %}
+  {% unless tutorial.url contains '/index' %}
   <div class="tutorial-card">
     <div class="tutorial-header">
       <h3><a href="{{ tutorial.url | relative_url }}">{{ tutorial.title }}</a></h3>
       <div class="tutorial-meta">
+        {% if tutorial.difficulty %}
         <span class="difficulty difficulty-{{ tutorial.difficulty }}">{{ tutorial.difficulty | capitalize }}</span>
+        {% endif %}
+        {% if tutorial.duration %}
         <span class="duration">⏱️ {{ tutorial.duration }}</span>
+        {% endif %}
       </div>
     </div>
     <p>{{ tutorial.description }}</p>
@@ -27,22 +30,11 @@ Learn Terry-Form MCP through hands-on tutorials.
     </div>
     {% endif %}
   </div>
+  {% endunless %}
 {% endfor %}
 </div>
 
-## Featured Tutorials
-
-### 🚀 Getting Started
-
-<div class="featured-tutorial">
-  <h4><a href="{{ site.baseurl }}/tutorials/first-steps">Your First Terry-Form Project</a></h4>
-  <p>Learn the basics of Terry-Form MCP by creating your first infrastructure project.</p>
-  <ul>
-    <li>Setting up your workspace</li>
-    <li>Basic Terraform operations</li>
-    <li>Understanding MCP tools</li>
-  </ul>
-</div>
+## Available Tutorials
 
 ### ☁️ Cloud Providers
 
@@ -56,57 +48,11 @@ Learn Terry-Form MCP through hands-on tutorials.
   </ul>
 </div>
 
-<div class="featured-tutorial">
-  <h4><a href="{{ site.baseurl }}/tutorials/multi-cloud">Multi-Cloud Deployment</a></h4>
-  <p>Deploy infrastructure across AWS, Azure, and GCP simultaneously.</p>
-  <ul>
-    <li>Provider configuration</li>
-    <li>Cross-cloud networking</li>
-    <li>Unified state management</li>
-  </ul>
-</div>
+---
 
-### 🔧 Advanced Topics
+## Coming Soon
 
-<div class="featured-tutorial">
-  <h4><a href="{{ site.baseurl }}/tutorials/gitops-workflow">GitOps with Terry-Form</a></h4>
-  <p>Implement GitOps workflows using GitHub integration.</p>
-  <ul>
-    <li>Repository structure</li>
-    <li>Pull request automation</li>
-    <li>CI/CD integration</li>
-  </ul>
-</div>
-
-<div class="featured-tutorial">
-  <h4><a href="{{ site.baseurl }}/tutorials/module-development">Creating Terraform Modules</a></h4>
-  <p>Build reusable Terraform modules with best practices.</p>
-  <ul>
-    <li>Module structure</li>
-    <li>Input validation</li>
-    <li>Testing and documentation</li>
-  </ul>
-</div>
-
-## Tutorial Series
-
-### Infrastructure as Code Fundamentals
-1. [Introduction to IaC]({{ site.baseurl }}/tutorials/iac-intro)
-2. [Terraform Basics]({{ site.baseurl }}/tutorials/terraform-basics)
-3. [State Management]({{ site.baseurl }}/tutorials/state-management)
-4. [Module Composition]({{ site.baseurl }}/tutorials/module-composition)
-
-### Security and Compliance
-1. [Security Scanning]({{ site.baseurl }}/tutorials/security-scanning)
-2. [Policy as Code]({{ site.baseurl }}/tutorials/policy-as-code)
-3. [Compliance Automation]({{ site.baseurl }}/tutorials/compliance)
-4. [Secret Management]({{ site.baseurl }}/tutorials/secrets)
-
-### Production Workflows
-1. [Environment Management]({{ site.baseurl }}/tutorials/environments)
-2. [Blue-Green Deployments]({{ site.baseurl }}/tutorials/blue-green)
-3. [Disaster Recovery]({{ site.baseurl }}/tutorials/disaster-recovery)
-4. [Cost Optimization]({{ site.baseurl }}/tutorials/cost-optimization)
+Additional tutorials are planned for future releases. Check back soon or [contribute your own tutorial](https://github.com/aj-geddes/terry-form-mcp/issues/new)!
 
 ## Interactive Examples
 
@@ -119,35 +65,10 @@ Learn Terry-Form MCP through hands-on tutorials.
   <p>The assistant will use Terry-Form MCP to check your configuration and provide feedback.</p>
 </div>
 
-## Video Tutorials
-
-<div class="video-section">
-  <div class="video-card">
-    <h4>🎥 Getting Started with Terry-Form MCP</h4>
-    <p>15-minute introduction covering installation and basic usage.</p>
-    <a href="#" class="video-link">Watch on YouTube →</a>
-  </div>
-  
-  <div class="video-card">
-    <h4>🎥 Advanced Terraform Patterns</h4>
-    <p>Deep dive into advanced patterns and best practices.</p>
-    <a href="#" class="video-link">Watch on YouTube →</a>
-  </div>
-</div>
-
-## Contributing Tutorials
-
-We welcome tutorial contributions! If you have a tutorial idea:
-
-1. Check our [tutorial guidelines]({{ site.baseurl }}/contributing#tutorials)
-2. Create a pull request with your tutorial
-3. Use our [tutorial template]({{ site.baseurl }}/templates/tutorial)
-
 ## Need Help?
 
-- 💬 Join our [Community Discord](https://discord.gg/terry-form)
-- 📧 Email us at [tutorials@terry-form.io](mailto:tutorials@terry-form.io)
 - 🐛 Report issues on [GitHub](https://github.com/aj-geddes/terry-form-mcp/issues)
+- 💬 Join [GitHub Discussions](https://github.com/aj-geddes/terry-form-mcp/discussions)
 
 <style>
 .tutorial-grid {

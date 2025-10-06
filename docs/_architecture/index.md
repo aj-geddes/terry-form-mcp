@@ -255,10 +255,8 @@ sequenceDiagram
 
 ## Next Steps
 
-- Review the [Security Architecture]({{ site.baseurl }}/architecture/security) for detailed security implementation
-- Explore [Deployment Options]({{ site.baseurl }}/architecture/deployment) for production setups
-- Learn about [Integration Patterns]({{ site.baseurl }}/architecture/integrations)
-- Understand [Data Management]({{ site.baseurl }}/architecture/data-management)
+- Review the [Architecture Overview]({{ site.baseurl }}/architecture/overview) for detailed component descriptions
+- Additional architecture documents coming soon
 
 <style>
 .architecture-overview {

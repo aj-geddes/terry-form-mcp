@@ -488,6 +488,5 @@ graph TD
 
 ## Next Steps
 
-- Review [Security Architecture]({{ site.baseurl }}/architecture/security) for detailed security implementation
-- Explore [API Architecture]({{ site.baseurl }}/architecture/api) for API design patterns
-- Learn about [Deployment Options]({{ site.baseurl }}/architecture/deployment) for production setups
+- Return to [Architecture Index]({{ site.baseurl }}/architecture/) for overview
+- Explore [Security Guide]({{ site.baseurl }}/guides/security) for security best practices
