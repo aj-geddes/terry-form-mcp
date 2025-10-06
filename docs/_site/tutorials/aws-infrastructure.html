@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Building AWS Infrastructure with Terry-Form MCP | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Building AWS Infrastructure with Terry-Form MCP" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Step-by-step tutorial for managing AWS infrastructure" />
+<meta property="og:description" content="Step-by-step tutorial for managing AWS infrastructure" />
+<link rel="canonical" href="https://aj-geddes.github.io/terry-form-mcp/tutorials/aws-infrastructure" />
+<meta property="og:url" content="https://aj-geddes.github.io/terry-form-mcp/tutorials/aws-infrastructure" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-10-05T19:54:45-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Building AWS Infrastructure with Terry-Form MCP" />
+<meta name="twitter:site" content="@terryform" />
+<meta name="twitter:creator" content="@AJ Geddes" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-07-25T14:38:37-05:00","datePublished":"2025-10-05T19:54:45-05:00","description":"Step-by-step tutorial for managing AWS infrastructure","headline":"Building AWS Infrastructure with Terry-Form MCP","mainEntityOfPage":{"@type":"WebPage","@id":"https://aj-geddes.github.io/terry-form-mcp/tutorials/aws-infrastructure"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://aj-geddes.github.io/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"https://aj-geddes.github.io/terry-form-mcp/tutorials/aws-infrastructure"}</script>
+<!-- End Jekyll SEO tag -->
+
+  
+  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <link type="application/atom+xml" rel="alternate" href="https://aj-geddes.github.io/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Convert code.language-mermaid blocks to div.mermaid for rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    });
+  </script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="/terry-form-mcp/" class="nav-logo">
+        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        
+        <a href="/terry-form-mcp/" 
+           class="nav-link "
+           >
+          Home
+          
+        </a>
+        
+        <a href="/terry-form-mcp/getting-started" 
+           class="nav-link "
+           >
+          Getting Started
+          
+        </a>
+        
+        <a href="/terry-form-mcp/guides/" 
+           class="nav-link "
+           >
+          Guides
+          
+        </a>
+        
+        <a href="/terry-form-mcp/api/" 
+           class="nav-link "
+           >
+          API Reference
+          
+        </a>
+        
+        <a href="/terry-form-mcp/architecture/" 
+           class="nav-link "
+           >
+          Architecture
+          
+        </a>
+        
+        <a href="/terry-form-mcp/tutorials/" 
+           class="nav-link "
+           >
+          Tutorials
+          
+        </a>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp" 
+           class="nav-link "
+           target="_blank" rel="noopener">
+          GitHub
+          <i class="fab fa-github"></i>
+        </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <article class="tutorial">
+  <header class="tutorial-header">
+    <h1>Building AWS Infrastructure with Terry-Form MCP</h1>
+    
+    <p class="tutorial-description">Step-by-step tutorial for managing AWS infrastructure</p>
+    
+    
+    <span class="difficulty-badge">intermediate</span>
+    
+  </header>
+
+  <div class="tutorial-content">
+    <h1 id="building-aws-infrastructure-with-terry-form-mcp">Building AWS Infrastructure with Terry-Form MCP</h1>
+
+<p>In this tutorial, you’ll learn how to use Terry-Form MCP to build and manage AWS infrastructure safely through an AI assistant.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<ul>
+  <li>Terry-Form MCP installed and running</li>
+  <li>AWS account with credentials configured</li>
+  <li>Basic understanding of Terraform</li>
+  <li>AI assistant configured with Terry-Form MCP</li>
+</ul>
+
+<h2 id="what-well-build">What We’ll Build</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "VPC"
+        A[Internet Gateway]
+        B[Public Subnet]
+        C[Private Subnet]
+        D[NAT Gateway]
+        
+        subgraph "Public Resources"
+            E[Load Balancer]
+            F[Bastion Host]
+        end
+        
+        subgraph "Private Resources"
+            G[Web Servers]
+            H[RDS Database]
+            I[ElastiCache]
+        end
+    end
+    
+    A --&gt; B
+    B --&gt; D
+    D --&gt; C
+    B --&gt; E
+    B --&gt; F
+    C --&gt; G
+    C --&gt; H
+    C --&gt; I
+    E --&gt; G
+</code></pre>
+
+<h2 id="step-1-project-setup">Step 1: Project Setup</h2>
+
+<p>First, let’s create a project structure:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>workspace/
+├── aws-tutorial/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars.example
+</code></pre></div></div>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Please create a new Terraform workspace at ‘aws-tutorial’ with basic AWS provider configuration”</p>
+</blockquote>
+
+<p>The assistant will use Terry-Form to create:</p>
+
+<p><strong>main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
+  <span class="nx">required_version</span> <span class="p">=</span> <span class="s2">"&gt;= 1.0"</span>
+  
+  <span class="nx">required_providers</span> <span class="p">{</span>
+    <span class="nx">aws</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">source</span>  <span class="p">=</span> <span class="s2">"hashicorp/aws"</span>
+      <span class="nx">version</span> <span class="p">=</span> <span class="s2">"~&gt; 5.0"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">aws_region</span>
+  
+  <span class="nx">default_tags</span> <span class="p">{</span>
+    <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">Project</span>     <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
+      <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+      <span class="nx">ManagedBy</span>   <span class="p">=</span> <span class="s2">"Terraform"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"aws_region"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"AWS region for resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"us-east-1"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"project_name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name of the project"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"terry-form-tutorial"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"environment"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Environment name"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"dev"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"vpc_cidr"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR block for VPC"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"10.0.0.0/16"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-2-create-vpc-infrastructure">Step 2: Create VPC Infrastructure</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Add a VPC with public and private subnets across 2 availability zones to my aws-tutorial workspace”</p>
+</blockquote>
+
+<p>The assistant will create:</p>
+
+<p><strong>vpc.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Get available AZs</span>
+<span class="nx">data</span> <span class="s2">"aws_availability_zones"</span> <span class="s2">"available"</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="p">=</span> <span class="s2">"available"</span>
+<span class="p">}</span>
+
+<span class="c1"># VPC</span>
+<span class="nx">resource</span> <span class="s2">"aws_vpc"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">cidr_block</span>           <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span>
+  <span class="nx">enable_dns_hostnames</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">enable_dns_support</span>   <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-vpc"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Internet Gateway</span>
+<span class="nx">resource</span> <span class="s2">"aws_internet_gateway"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-igw"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Public Subnets</span>
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="mi">2</span>
+
+  <span class="nx">vpc_id</span>                  <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>              <span class="p">=</span> <span class="nx">cidrsubnet</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span><span class="err">,</span> <span class="mi">8</span><span class="err">,</span> <span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="err">)</span>
+  <span class="nx">availability_zone</span>       <span class="p">=</span> <span class="nx">data</span><span class="err">.</span><span class="nx">aws_availability_zones</span><span class="err">.</span><span class="nx">available</span><span class="err">.</span><span class="nx">names</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">map_public_ip_on_launch</span> <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-public-${count.index + 1}"</span>
+    <span class="nx">Type</span> <span class="p">=</span> <span class="s2">"public"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Private Subnets</span>
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="mi">2</span>
+
+  <span class="nx">vpc_id</span>            <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>        <span class="p">=</span> <span class="nx">cidrsubnet</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span><span class="err">,</span> <span class="mi">8</span><span class="err">,</span> <span class="nx">count</span><span class="err">.</span><span class="nx">index</span> <span class="err">+</span> <span class="mi">10</span><span class="err">)</span>
+  <span class="nx">availability_zone</span> <span class="p">=</span> <span class="nx">data</span><span class="err">.</span><span class="nx">aws_availability_zones</span><span class="err">.</span><span class="nx">available</span><span class="err">.</span><span class="nx">names</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-private-${count.index + 1}"</span>
+    <span class="nx">Type</span> <span class="p">=</span> <span class="s2">"private"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Elastic IP for NAT Gateway</span>
+<span class="nx">resource</span> <span class="s2">"aws_eip"</span> <span class="s2">"nat"</span> <span class="p">{</span>
+  <span class="nx">count</span>  <span class="p">=</span> <span class="mi">1</span>
+  <span class="nx">domain</span> <span class="p">=</span> <span class="s2">"vpc"</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-nat-eip"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># NAT Gateway</span>
+<span class="nx">resource</span> <span class="s2">"aws_nat_gateway"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="mi">1</span>
+
+  <span class="nx">allocation_id</span> <span class="p">=</span> <span class="nx">aws_eip</span><span class="err">.</span><span class="nx">nat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">subnet_id</span>     <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-nat"</span>
+  <span class="p">}</span>
+
+  <span class="nx">depends_on</span> <span class="p">=</span> <span class="p">[</span><span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">main</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="c1"># Route Tables</span>
+<span class="nx">resource</span> <span class="s2">"aws_route_table"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">route</span> <span class="p">{</span>
+    <span class="nx">cidr_block</span> <span class="p">=</span> <span class="s2">"0.0.0.0/0"</span>
+    <span class="nx">gateway_id</span> <span class="p">=</span> <span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-public-rt"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">route</span> <span class="p">{</span>
+    <span class="nx">cidr_block</span>     <span class="p">=</span> <span class="s2">"0.0.0.0/0"</span>
+    <span class="nx">nat_gateway_id</span> <span class="p">=</span> <span class="nx">aws_nat_gateway</span><span class="err">.</span><span class="nx">main</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-private-rt"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Route Table Associations</span>
+<span class="nx">resource</span> <span class="s2">"aws_route_table_association"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="err">)</span>
+
+  <span class="nx">subnet_id</span>      <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">route_table_id</span> <span class="p">=</span> <span class="nx">aws_route_table</span><span class="err">.</span><span class="nx">public</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table_association"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="err">)</span>
+
+  <span class="nx">subnet_id</span>      <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">route_table_id</span> <span class="p">=</span> <span class="nx">aws_route_table</span><span class="err">.</span><span class="nx">private</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-3-initialize-and-plan">Step 3: Initialize and Plan</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Initialize and validate my aws-tutorial Terraform configuration”</p>
+</blockquote>
+
+<p>Expected response:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"terry-results"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"init"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Terraform has been successfully initialized!"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Success! The configuration is valid."</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Now create a plan:</p>
+
+<blockquote>
+  <p>“Generate a Terraform plan for aws-tutorial with environment=dev”</p>
+</blockquote>
+
+<h2 id="step-4-add-security-groups">Step 4: Add Security Groups</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Add security groups for a web application with ALB, web servers, and RDS database”</p>
+</blockquote>
+
+<p><strong>security_groups.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># ALB Security Group</span>
+<span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"alb"</span> <span class="p">{</span>
+  <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-alb-"</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for Application Load Balancer"</span>
+  <span class="nx">vpc_id</span>      <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"HTTP from anywhere"</span>
+  <span class="p">}</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">443</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">443</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"HTTPS from anywhere"</span>
+  <span class="p">}</span>
+
+  <span class="nx">egress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"-1"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Allow all outbound"</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-alb-sg"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Web Server Security Group</span>
+<span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-web-"</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for web servers"</span>
+  <span class="nx">vpc_id</span>      <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>       <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">to_port</span>         <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">protocol</span>        <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">security_groups</span> <span class="p">=</span> <span class="p">[</span><span class="nx">aws_security_group</span><span class="err">.</span><span class="nx">alb</span><span class="err">.</span><span class="nx">id</span><span class="p">]</span>
+    <span class="nx">description</span>     <span class="p">=</span> <span class="s2">"HTTP from ALB"</span>
+  <span class="p">}</span>
+
+  <span class="nx">egress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"-1"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Allow all outbound"</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-web-sg"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># RDS Security Group</span>
+<span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"rds"</span> <span class="p">{</span>
+  <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-rds-"</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for RDS database"</span>
+  <span class="nx">vpc_id</span>      <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>       <span class="p">=</span> <span class="mi">3306</span>
+    <span class="nx">to_port</span>         <span class="p">=</span> <span class="mi">3306</span>
+    <span class="nx">protocol</span>        <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">security_groups</span> <span class="p">=</span> <span class="p">[</span><span class="nx">aws_security_group</span><span class="err">.</span><span class="nx">web</span><span class="err">.</span><span class="nx">id</span><span class="p">]</span>
+    <span class="nx">description</span>     <span class="p">=</span> <span class="s2">"MySQL from web servers"</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-rds-sg"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-5-add-application-resources">Step 5: Add Application Resources</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Add an Application Load Balancer and Auto Scaling Group for web servers”</p>
+</blockquote>
+
+<p><strong>alb.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Application Load Balancer</span>
+<span class="nx">resource</span> <span class="s2">"aws_lb"</span> <span class="s2">"main"</span> <span class="p">{</span>
+  <span class="nx">name</span>               <span class="p">=</span> <span class="s2">"${var.project_name}-alb"</span>
+  <span class="nx">internal</span>           <span class="p">=</span> <span class="kc">false</span>
+  <span class="nx">load_balancer_type</span> <span class="p">=</span> <span class="s2">"application"</span>
+  <span class="nx">security_groups</span>    <span class="p">=</span> <span class="p">[</span><span class="nx">aws_security_group</span><span class="err">.</span><span class="nx">alb</span><span class="err">.</span><span class="nx">id</span><span class="p">]</span>
+  <span class="nx">subnets</span>            <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">enable_deletion_protection</span> <span class="p">=</span> <span class="kc">false</span>
+  <span class="nx">enable_http2</span>              <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-alb"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Target Group</span>
+<span class="nx">resource</span> <span class="s2">"aws_lb_target_group"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">name</span>     <span class="p">=</span> <span class="s2">"${var.project_name}-web-tg"</span>
+  <span class="nx">port</span>     <span class="p">=</span> <span class="mi">80</span>
+  <span class="nx">protocol</span> <span class="p">=</span> <span class="s2">"HTTP"</span>
+  <span class="nx">vpc_id</span>   <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">health_check</span> <span class="p">{</span>
+    <span class="nx">enabled</span>             <span class="p">=</span> <span class="kc">true</span>
+    <span class="nx">healthy_threshold</span>   <span class="p">=</span> <span class="mi">2</span>
+    <span class="nx">unhealthy_threshold</span> <span class="p">=</span> <span class="mi">2</span>
+    <span class="nx">timeout</span>             <span class="p">=</span> <span class="mi">5</span>
+    <span class="nx">interval</span>            <span class="p">=</span> <span class="mi">30</span>
+    <span class="nx">path</span>                <span class="p">=</span> <span class="s2">"/health"</span>
+    <span class="nx">matcher</span>             <span class="p">=</span> <span class="s2">"200"</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-web-tg"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># ALB Listener</span>
+<span class="nx">resource</span> <span class="s2">"aws_lb_listener"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">load_balancer_arn</span> <span class="p">=</span> <span class="nx">aws_lb</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">arn</span>
+  <span class="nx">port</span>              <span class="p">=</span> <span class="mi">80</span>
+  <span class="nx">protocol</span>          <span class="p">=</span> <span class="s2">"HTTP"</span>
+
+  <span class="nx">default_action</span> <span class="p">{</span>
+    <span class="nx">type</span>             <span class="p">=</span> <span class="s2">"forward"</span>
+    <span class="nx">target_group_arn</span> <span class="p">=</span> <span class="nx">aws_lb_target_group</span><span class="err">.</span><span class="nx">web</span><span class="err">.</span><span class="nx">arn</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-6-review-and-analyze">Step 6: Review and Analyze</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Analyze my aws-tutorial configuration for security best practices”</p>
+</blockquote>
+
+<p>The assistant will use Terry-Form’s analysis tools:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"score"</span><span class="p">:</span><span class="w"> </span><span class="mi">85</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"issues"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"warning"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"security"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ALB is not using HTTPS listener"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"recommendation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add HTTPS listener with SSL certificate"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cost"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NAT Gateway incurs hourly charges"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"recommendation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Consider NAT instances for dev environments"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="step-7-cost-estimation">Step 7: Cost Estimation</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Can you estimate the monthly cost for this infrastructure?”</p>
+</blockquote>
+
+<p><strong>Approximate AWS Costs:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Resource</th>
+      <th>Count</th>
+      <th>Monthly Cost</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>VPC</td>
+      <td>1</td>
+      <td>$0</td>
+    </tr>
+    <tr>
+      <td>NAT Gateway</td>
+      <td>1</td>
+      <td>~$45</td>
+    </tr>
+    <tr>
+      <td>ALB</td>
+      <td>1</td>
+      <td>~$22</td>
+    </tr>
+    <tr>
+      <td>t3.micro instances</td>
+      <td>2</td>
+      <td>~$15</td>
+    </tr>
+    <tr>
+      <td>RDS db.t3.micro</td>
+      <td>1</td>
+      <td>~$15</td>
+    </tr>
+    <tr>
+      <td><strong>Total</strong></td>
+      <td> </td>
+      <td><strong>~$97/month</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="step-8-outputs">Step 8: Outputs</h2>
+
+<p>Add outputs to see important values:</p>
+
+<p><strong>outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"alb_dns_name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"DNS name of the load balancer"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_lb</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">dns_name</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the VPC"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"public_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of public subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"private_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of private subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="best-practices-demonstrated">Best Practices Demonstrated</h2>
+
+<ol>
+  <li><strong>Multi-AZ Deployment</strong>: Resources spread across availability zones</li>
+  <li><strong>Network Isolation</strong>: Public/private subnet separation</li>
+  <li><strong>Security Groups</strong>: Least privilege access</li>
+  <li><strong>Tagging Strategy</strong>: Consistent resource tagging</li>
+  <li><strong>Modular Design</strong>: Separated into logical files</li>
+</ol>
+
+<h2 id="cleanup">Cleanup</h2>
+
+<p>When you’re done experimenting:</p>
+
+<blockquote>
+  <p>“Generate a plan to destroy all resources in aws-tutorial”</p>
+</blockquote>
+
+<div class="alert alert-warning">
+<strong>⚠️ Important</strong><br />
+Terry-Form MCP blocks <code>destroy</code> operations by default. This is intentional for safety. To destroy resources, you'll need to run Terraform directly or enable destroy in Terry-Form's configuration.
+</div>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<ol>
+  <li><strong>Add HTTPS</strong>: Configure ACM certificate and HTTPS listener</li>
+  <li><strong>Add RDS</strong>: Create a managed database instance</li>
+  <li><strong>Add Monitoring</strong>: CloudWatch alarms and dashboards</li>
+  <li><strong>Add Backup</strong>: Automated snapshots and retention</li>
+  <li><strong>Add CI/CD</strong>: Integrate with deployment pipeline</li>
+</ol>
+
+<h2 id="advanced-topics">Advanced Topics</h2>
+
+<h3 id="using-terraform-modules">Using Terraform Modules</h3>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"terraform-aws-modules/vpc/aws"</span>
+  <span class="nx">version</span> <span class="p">=</span> <span class="s2">"5.0.0"</span>
+
+  <span class="nx">name</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
+  <span class="nx">cidr</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span>
+
+  <span class="nx">azs</span>             <span class="p">=</span> <span class="nx">data</span><span class="err">.</span><span class="nx">aws_availability_zones</span><span class="err">.</span><span class="nx">available</span><span class="err">.</span><span class="nx">names</span>
+  <span class="nx">private_subnets</span> <span class="p">=</span> <span class="p">[</span><span class="nx">for</span> <span class="nx">i</span> <span class="nx">in</span> <span class="nx">range</span><span class="err">(</span><span class="mi">2</span><span class="err">)</span> <span class="err">:</span> <span class="nx">cidrsubnet</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nx">i</span> <span class="err">+</span> <span class="mi">10</span><span class="err">)</span><span class="p">]</span>
+  <span class="nx">public_subnets</span>  <span class="p">=</span> <span class="p">[</span><span class="nx">for</span> <span class="nx">i</span> <span class="nx">in</span> <span class="nx">range</span><span class="err">(</span><span class="mi">2</span><span class="err">)</span> <span class="err">:</span> <span class="nx">cidrsubnet</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="nx">i</span><span class="err">)</span><span class="p">]</span>
+
+  <span class="nx">enable_nat_gateway</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">single_nat_gateway</span> <span class="p">=</span> <span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="state-management">State Management</h3>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
+  <span class="nx">backend</span> <span class="s2">"s3"</span> <span class="p">{</span>
+    <span class="nx">bucket</span> <span class="p">=</span> <span class="s2">"my-terraform-state"</span>
+    <span class="nx">key</span>    <span class="p">=</span> <span class="s2">"aws-tutorial/terraform.tfstate"</span>
+    <span class="nx">region</span> <span class="p">=</span> <span class="s2">"us-east-1"</span>
+    
+    <span class="nx">dynamodb_table</span> <span class="p">=</span> <span class="s2">"terraform-state-lock"</span>
+    <span class="nx">encrypt</span>        <span class="p">=</span> <span class="kc">true</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this tutorial, you learned how to:</p>
+
+<p>✅ Create a VPC with public/private subnets<br />
+✅ Configure security groups<br />
+✅ Set up an Application Load Balancer<br />
+✅ Use Terry-Form MCP for safe Terraform operations<br />
+✅ Analyze configurations for best practices</p>
+
+<h2 id="resources">Resources</h2>
+
+<ul>
+  <li><a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs">AWS Terraform Provider Docs</a></li>
+  <li><a href="https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html">Terraform Best Practices</a></li>
+  <li><a href="https://aws.amazon.com/architecture/well-architected/">AWS Well-Architected Framework</a></li>
+</ul>
+
+<hr />
+
+<div class="tutorial-nav">
+  <a href="/terry-form-mcp/tutorials/" class="btn">← Back to Tutorials</a>
+  <a href="/terry-form-mcp/tutorials/multi-cloud" class="btn btn-primary">Next: Multi-Cloud Setup →</a>
+</div>
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="/terry-form-mcp/contributing">Contributing</a></li>
+          <li><a href="/terry-form-mcp/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/security">Security</a></li>
+          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+          <li><a href="/terry-form-mcp/deployment/">Deployment</a></li>
+          <li><a href="/terry-form-mcp/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+</body>
+</html>

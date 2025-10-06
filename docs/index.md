@@ -1,6 +1,6 @@
 ---
 layout: home
-title: Terry-Form MCP - Enterprise Terraform Automation
+title: Home
 description: Secure, intelligent infrastructure management through Model Context Protocol
 ---
 

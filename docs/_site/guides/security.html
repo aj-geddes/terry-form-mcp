@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Security Guide | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Security Guide" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Comprehensive security guide for Terry-Form MCP" />
+<meta property="og:description" content="Comprehensive security guide for Terry-Form MCP" />
+<link rel="canonical" href="https://aj-geddes.github.io/terry-form-mcp/guides/security" />
+<meta property="og:url" content="https://aj-geddes.github.io/terry-form-mcp/guides/security" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-10-05T19:54:45-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Security Guide" />
+<meta name="twitter:site" content="@terryform" />
+<meta name="twitter:creator" content="@AJ Geddes" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-07-25T14:38:37-05:00","datePublished":"2025-10-05T19:54:45-05:00","description":"Comprehensive security guide for Terry-Form MCP","headline":"Security Guide","mainEntityOfPage":{"@type":"WebPage","@id":"https://aj-geddes.github.io/terry-form-mcp/guides/security"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://aj-geddes.github.io/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"https://aj-geddes.github.io/terry-form-mcp/guides/security"}</script>
+<!-- End Jekyll SEO tag -->
+
+  
+  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <link type="application/atom+xml" rel="alternate" href="https://aj-geddes.github.io/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Convert code.language-mermaid blocks to div.mermaid for rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    });
+  </script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="/terry-form-mcp/" class="nav-logo">
+        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        
+        <a href="/terry-form-mcp/" 
+           class="nav-link "
+           >
+          Home
+          
+        </a>
+        
+        <a href="/terry-form-mcp/getting-started" 
+           class="nav-link "
+           >
+          Getting Started
+          
+        </a>
+        
+        <a href="/terry-form-mcp/guides/" 
+           class="nav-link "
+           >
+          Guides
+          
+        </a>
+        
+        <a href="/terry-form-mcp/api/" 
+           class="nav-link "
+           >
+          API Reference
+          
+        </a>
+        
+        <a href="/terry-form-mcp/architecture/" 
+           class="nav-link "
+           >
+          Architecture
+          
+        </a>
+        
+        <a href="/terry-form-mcp/tutorials/" 
+           class="nav-link "
+           >
+          Tutorials
+          
+        </a>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp" 
+           class="nav-link "
+           target="_blank" rel="noopener">
+          GitHub
+          <i class="fab fa-github"></i>
+        </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="guide-container">
+  <aside class="guide-sidebar">
+    <h4>Guides</h4>
+    <nav class="guide-nav">
+      
+      
+        <a href="/terry-form-mcp/guides/index" 
+           class="guide-nav-item ">
+          Guides
+        </a>
+      
+        <a href="/terry-form-mcp/guides/security" 
+           class="guide-nav-item active">
+          Security Guide
+        </a>
+      
+    </nav>
+  </aside>
+
+  <article class="guide-content">
+    <header class="guide-header">
+      <h1>Security Guide</h1>
+      
+      <p class="guide-description">Comprehensive security guide for Terry-Form MCP</p>
+      
+      <div class="guide-meta">
+        <span class="reading-time">📖 <h1 id="security-guide">Security Guide</h1>
+
+<p>Terry-Form MCP is built with security as a core principle. This guide covers security features, best practices, and configuration options.</p>
+
+<h2 id="security-architecture">Security Architecture</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Security Layers"
+        A[Input Validation Layer]
+        B[Authentication Layer]
+        C[Authorization Layer]
+        D[Execution Sandbox]
+        E[Audit Layer]
+    end
+    
+    subgraph "Protection Mechanisms"
+        F[Path Traversal Protection]
+        G[Command Injection Prevention]
+        H[Resource Isolation]
+        I[Rate Limiting]
+        J[Encryption]
+    end
+    
+    A --&gt; F
+    B --&gt; G
+    C --&gt; H
+    D --&gt; I
+    E --&gt; J
+</code></pre>
+
+<h2 id="built-in-security-features">Built-in Security Features</h2>
+
+<h3 id="1-input-validation">1. Input Validation</h3>
+
+<p>All inputs are validated using strict schemas:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Example validation schema
+</span><span class="p">{</span>
+    <span class="s">"path"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s">"type"</span><span class="p">:</span> <span class="s">"string"</span><span class="p">,</span>
+        <span class="s">"pattern"</span><span class="p">:</span> <span class="s">"^[a-zA-Z0-9/_-]+$"</span><span class="p">,</span>
+        <span class="s">"maxLength"</span><span class="p">:</span> <span class="mi">255</span>
+    <span class="p">},</span>
+    <span class="s">"actions"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s">"type"</span><span class="p">:</span> <span class="s">"array"</span><span class="p">,</span>
+        <span class="s">"items"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s">"init"</span><span class="p">,</span> <span class="s">"validate"</span><span class="p">,</span> <span class="s">"plan"</span><span class="p">,</span> <span class="s">"fmt"</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="2-path-traversal-protection">2. Path Traversal Protection</h3>
+
+<p>Terry-Form prevents access outside the designated workspace:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">validate_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="c1"># Resolve to absolute path
+</span>    <span class="n">abs_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">workspace_root</span><span class="p">)</span> <span class="o">/</span> <span class="n">path</span>
+    <span class="n">real_path</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">.</span><span class="n">resolve</span><span class="p">()</span>
+    
+    <span class="c1"># Ensure path is within workspace
+</span>    <span class="k">try</span><span class="p">:</span>
+        <span class="n">real_path</span><span class="p">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">workspace_root</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">except</span> <span class="nb">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+</code></pre></div></div>
+
+<h3 id="3-command-injection-prevention">3. Command Injection Prevention</h3>
+
+<p>All subprocess executions use secure patterns:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Secure command execution
+</span><span class="n">subprocess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="p">[</span><span class="s">"terraform"</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">],</span>
+    <span class="n">shell</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>  <span class="c1"># Never use shell=True
+</span>    <span class="n">cwd</span><span class="o">=</span><span class="n">workspace_path</span><span class="p">,</span>
+    <span class="n">capture_output</span><span class="o">=</span><span class="bp">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Variable escaping
+</span><span class="kn">import</span> <span class="nn">shlex</span>
+<span class="n">safe_value</span> <span class="o">=</span> <span class="n">shlex</span><span class="p">.</span><span class="n">quote</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h3 id="4-action-whitelisting">4. Action Whitelisting</h3>
+
+<p>Only safe Terraform actions are allowed by default:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">allowed_actions</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">init</span>
+  <span class="pi">-</span> <span class="s">validate</span>
+  <span class="pi">-</span> <span class="s">plan</span>
+  <span class="pi">-</span> <span class="s">fmt</span>
+  <span class="pi">-</span> <span class="s">show</span>
+  <span class="pi">-</span> <span class="s">graph</span>
+  <span class="pi">-</span> <span class="s">providers</span>
+  <span class="pi">-</span> <span class="s">version</span>
+
+<span class="na">blocked_actions</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">apply</span>      <span class="c1"># Requires explicit override</span>
+  <span class="pi">-</span> <span class="s">destroy</span>    <span class="c1"># Requires explicit override</span>
+  <span class="pi">-</span> <span class="s">import</span>     <span class="c1"># Can modify state</span>
+  <span class="pi">-</span> <span class="s">taint</span>      <span class="c1"># Can modify state</span>
+</code></pre></div></div>
+
+<h2 id="authentication--authorization">Authentication &amp; Authorization</h2>
+
+<h3 id="github-app-authentication">GitHub App Authentication</h3>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Client
+    participant TerryForm
+    participant GitHub
+    
+    Client-&gt;&gt;TerryForm: Request with App ID
+    TerryForm-&gt;&gt;TerryForm: Generate JWT
+    TerryForm-&gt;&gt;GitHub: Exchange JWT for Token
+    GitHub--&gt;&gt;TerryForm: Installation Token
+    TerryForm-&gt;&gt;GitHub: API Request
+    GitHub--&gt;&gt;TerryForm: Response
+    TerryForm--&gt;&gt;Client: Result
+</code></pre>
+
+<p>Configuration:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">github</span><span class="pi">:</span>
+  <span class="na">app_id</span><span class="pi">:</span> <span class="s">${GITHUB_APP_ID}</span>
+  <span class="na">private_key_path</span><span class="pi">:</span> <span class="s">/secrets/github-app.pem</span>
+  <span class="na">webhook_secret</span><span class="pi">:</span> <span class="s">${GITHUB_WEBHOOK_SECRET}</span>
+  <span class="na">permissions</span><span class="pi">:</span>
+    <span class="na">contents</span><span class="pi">:</span> <span class="s">read</span>
+    <span class="na">metadata</span><span class="pi">:</span> <span class="s">read</span>
+    <span class="na">pull_requests</span><span class="pi">:</span> <span class="s">write</span>
+</code></pre></div></div>
+
+<h3 id="api-key-authentication">API Key Authentication</h3>
+
+<p>For web endpoints:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// API key validation</span>
+<span class="kd">const</span> <span class="nx">apiKey</span> <span class="o">=</span> <span class="nx">request</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="dl">'</span><span class="s1">x-api-key</span><span class="dl">'</span><span class="p">];</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">apiKey</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isValidApiKey</span><span class="p">(</span><span class="nx">apiKey</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">response</span><span class="p">.</span><span class="nx">status</span><span class="p">(</span><span class="mi">401</span><span class="p">).</span><span class="nx">json</span><span class="p">({</span> <span class="na">error</span><span class="p">:</span> <span class="dl">'</span><span class="s1">Unauthorized</span><span class="dl">'</span> <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="secure-configuration">Secure Configuration</h2>
+
+<h3 id="environment-variables">Environment Variables</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Required security environment variables</span>
+<span class="nb">export </span><span class="nv">WORKSPACE_ROOT</span><span class="o">=</span><span class="s2">"/mnt/workspace"</span>
+<span class="nb">export </span><span class="nv">ALLOWED_WORKSPACE_PATHS</span><span class="o">=</span><span class="s2">"/mnt/workspace"</span>
+<span class="nb">export </span><span class="nv">MAX_OPERATION_TIMEOUT</span><span class="o">=</span>300
+<span class="nb">export </span><span class="nv">ENABLE_APPLY</span><span class="o">=</span><span class="nb">false
+export </span><span class="nv">ENABLE_DESTROY</span><span class="o">=</span><span class="nb">false</span>
+
+<span class="c"># Secrets (use secret management)</span>
+<span class="nb">export </span><span class="nv">TERRAFORM_CLOUD_TOKEN</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_TF_TOKEN</span><span class="k">}</span><span class="s2">"</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_PRIVATE_KEY</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_GH_KEY</span><span class="k">}</span><span class="s2">"</span>
+<span class="nb">export </span><span class="nv">API_ENCRYPTION_KEY</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_API_KEY</span><span class="k">}</span><span class="s2">"</span>
+</code></pre></div></div>
+
+<h3 id="docker-security">Docker Security</h3>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Run as non-root user</span>
+<span class="k">USER</span><span class="s"> terraform:terraform</span>
+
+<span class="c"># Drop capabilities</span>
+<span class="k">RUN </span>setcap <span class="nt">-r</span> /usr/bin/terraform
+
+<span class="c"># Read-only root filesystem</span>
+<span class="k">VOLUME</span><span class="s"> ["/mnt/workspace"]</span>
+</code></pre></div></div>
+
+<p>Docker run options:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="se">\</span>
+  <span class="nt">--security-opt</span><span class="o">=</span>no-new-privileges <span class="se">\</span>
+  <span class="nt">--cap-drop</span><span class="o">=</span>ALL <span class="se">\</span>
+  <span class="nt">--read-only</span> <span class="se">\</span>
+  <span class="nt">--tmpfs</span> /tmp <span class="se">\</span>
+  <span class="nt">-v</span> workspace:/mnt/workspace:rw <span class="se">\</span>
+  terry-form-mcp
+</code></pre></div></div>
+
+<h3 id="kubernetes-security">Kubernetes Security</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Pod</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">securityContext</span><span class="pi">:</span>
+    <span class="na">runAsNonRoot</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">runAsUser</span><span class="pi">:</span> <span class="m">1000</span>
+    <span class="na">fsGroup</span><span class="pi">:</span> <span class="m">1000</span>
+    <span class="na">seccompProfile</span><span class="pi">:</span>
+      <span class="na">type</span><span class="pi">:</span> <span class="s">RuntimeDefault</span>
+  <span class="na">containers</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form</span>
+    <span class="na">securityContext</span><span class="pi">:</span>
+      <span class="na">allowPrivilegeEscalation</span><span class="pi">:</span> <span class="no">false</span>
+      <span class="na">readOnlyRootFilesystem</span><span class="pi">:</span> <span class="no">true</span>
+      <span class="na">capabilities</span><span class="pi">:</span>
+        <span class="na">drop</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="s">ALL</span>
+    <span class="na">resources</span><span class="pi">:</span>
+      <span class="na">limits</span><span class="pi">:</span>
+        <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2"</span>
+        <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2Gi"</span>
+      <span class="na">requests</span><span class="pi">:</span>
+        <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">500m"</span>
+        <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">512Mi"</span>
+</code></pre></div></div>
+
+<h2 id="network-security">Network Security</h2>
+
+<h3 id="tls-configuration">TLS Configuration</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">tls</span><span class="pi">:</span>
+  <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">min_version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">1.2"</span>
+  <span class="na">ciphers</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384</span>
+    <span class="pi">-</span> <span class="s">TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256</span>
+  <span class="na">cert_file</span><span class="pi">:</span> <span class="s">/certs/tls.crt</span>
+  <span class="na">key_file</span><span class="pi">:</span> <span class="s">/certs/tls.key</span>
+</code></pre></div></div>
+
+<h3 id="network-policies">Network Policies</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">networking.k8s.io/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">NetworkPolicy</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-network-policy</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">podSelector</span><span class="pi">:</span>
+    <span class="na">matchLabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">terry-form</span>
+  <span class="na">policyTypes</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">Ingress</span>
+  <span class="pi">-</span> <span class="s">Egress</span>
+  <span class="na">ingress</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">from</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">podSelector</span><span class="pi">:</span>
+        <span class="na">matchLabels</span><span class="pi">:</span>
+          <span class="na">role</span><span class="pi">:</span> <span class="s">api-gateway</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">3000</span>
+  <span class="na">egress</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">to</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">namespaceSelector</span><span class="pi">:</span>
+        <span class="na">matchLabels</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">kube-system</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">53</span>  <span class="c1"># DNS</span>
+  <span class="pi">-</span> <span class="na">to</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">podSelector</span><span class="pi">:</span> <span class="pi">{}</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">443</span>  <span class="c1"># HTTPS</span>
+</code></pre></div></div>
+
+<h2 id="secret-management">Secret Management</h2>
+
+<h3 id="using-hashicorp-vault">Using HashiCorp Vault</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">hvac</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">hvac</span><span class="p">.</span><span class="n">Client</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s">'https://vault.example.com'</span><span class="p">)</span>
+<span class="n">client</span><span class="p">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="s">'VAULT_TOKEN'</span><span class="p">]</span>
+
+<span class="c1"># Read secrets
+</span><span class="n">secrets</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="s">'secret/terry-form'</span><span class="p">)</span>
+<span class="n">terraform_token</span> <span class="o">=</span> <span class="n">secrets</span><span class="p">[</span><span class="s">'data'</span><span class="p">][</span><span class="s">'terraform_cloud_token'</span><span class="p">]</span>
+<span class="n">github_key</span> <span class="o">=</span> <span class="n">secrets</span><span class="p">[</span><span class="s">'data'</span><span class="p">][</span><span class="s">'github_app_key'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h3 id="using-kubernetes-secrets">Using Kubernetes Secrets</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Secret</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-secrets</span>
+<span class="na">type</span><span class="pi">:</span> <span class="s">Opaque</span>
+<span class="na">data</span><span class="pi">:</span>
+  <span class="na">terraform-cloud-token</span><span class="pi">:</span> <span class="s">&lt;base64-encoded-token&gt;</span>
+  <span class="na">github-app-key</span><span class="pi">:</span> <span class="s">&lt;base64-encoded-key&gt;</span>
+<span class="nn">---</span>
+<span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Pod</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">containers</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form</span>
+    <span class="na">env</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">TERRAFORM_CLOUD_TOKEN</span>
+      <span class="na">valueFrom</span><span class="pi">:</span>
+        <span class="na">secretKeyRef</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-secrets</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">terraform-cloud-token</span>
+</code></pre></div></div>
+
+<h2 id="audit-logging">Audit Logging</h2>
+
+<h3 id="structured-logging">Structured Logging</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-15T10:30:45Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform_operation"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"user"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ai-assistant-1"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"workspace"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"source_ip"</span><span class="p">:</span><span class="w"> </span><span class="s2">"10.0.0.100"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">12.5</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"resources_affected"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="audit-trail-configuration">Audit Trail Configuration</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">audit</span><span class="pi">:</span>
+  <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">destinations</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">file</span>
+      <span class="na">path</span><span class="pi">:</span> <span class="s">/var/log/terry-form/audit.log</span>
+      <span class="na">rotation</span><span class="pi">:</span> <span class="s">daily</span>
+      <span class="na">retention</span><span class="pi">:</span> <span class="m">90</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">syslog</span>
+      <span class="na">host</span><span class="pi">:</span> <span class="s">syslog.example.com</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">514</span>
+      <span class="na">protocol</span><span class="pi">:</span> <span class="s">tcp</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">elasticsearch</span>
+      <span class="na">url</span><span class="pi">:</span> <span class="s">https://elastic.example.com</span>
+      <span class="na">index</span><span class="pi">:</span> <span class="s">terry-form-audit</span>
+</code></pre></div></div>
+
+<h2 id="security-scanning">Security Scanning</h2>
+
+<h3 id="container-scanning">Container Scanning</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Scan Docker image</span>
+trivy image aj-geddes/terry-form-mcp:latest
+
+<span class="c"># Scan running container</span>
+docker run <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> /var/run/docker.sock:/var/run/docker.sock <span class="se">\</span>
+  aquasec/trivy container terry-form
+</code></pre></div></div>
+
+<h3 id="code-security-analysis">Code Security Analysis</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Python security scan</span>
+bandit <span class="nt">-r</span> <span class="nb">.</span> <span class="nt">-ll</span>
+
+<span class="c"># Dependency scanning</span>
+safety check
+
+<span class="c"># SAST scanning</span>
+semgrep <span class="nt">--config</span><span class="o">=</span>auto <span class="nb">.</span>
+</code></pre></div></div>
+
+<h2 id="incident-response">Incident Response</h2>
+
+<h3 id="security-incident-procedure">Security Incident Procedure</h3>
+
+<ol>
+  <li><strong>Detection</strong>: Monitor logs and alerts</li>
+  <li><strong>Containment</strong>: Isolate affected components</li>
+  <li><strong>Investigation</strong>: Analyze audit logs</li>
+  <li><strong>Remediation</strong>: Apply fixes</li>
+  <li><strong>Recovery</strong>: Restore normal operations</li>
+  <li><strong>Post-mortem</strong>: Document and improve</li>
+</ol>
+
+<h3 id="emergency-shutdown">Emergency Shutdown</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Immediate shutdown</span>
+kubectl delete deployment terry-form-mcp <span class="nt">--grace-period</span><span class="o">=</span>0
+
+<span class="c"># Revoke all tokens</span>
+terry-form-cli security revoke-all-tokens
+
+<span class="c"># Block network access</span>
+iptables <span class="nt">-A</span> INPUT <span class="nt">-p</span> tcp <span class="nt">--dport</span> 3000 <span class="nt">-j</span> DROP
+</code></pre></div></div>
+
+<h2 id="security-checklist">Security Checklist</h2>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable TLS for all communications</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure authentication (API keys/OAuth)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set up proper RBAC policies</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable audit logging</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure secret management</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Implement rate limiting</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set resource limits</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable security scanning</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure network policies</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set up monitoring and alerting</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Document incident response procedures</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Regular security updates</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Vulnerability scanning</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Penetration testing</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Security training</li>
+</ul>
+
+<h2 id="compliance">Compliance</h2>
+
+<h3 id="soc-2-compliance">SOC 2 Compliance</h3>
+
+<p>Terry-Form MCP supports SOC 2 compliance:</p>
+
+<ul>
+  <li><strong>Security</strong>: Encryption, access controls, monitoring</li>
+  <li><strong>Availability</strong>: HA deployment, backup procedures</li>
+  <li><strong>Processing Integrity</strong>: Input validation, audit trails</li>
+  <li><strong>Confidentiality</strong>: Secret management, data isolation</li>
+  <li><strong>Privacy</strong>: Data minimization, retention policies</li>
+</ul>
+
+<h3 id="gdpr-compliance">GDPR Compliance</h3>
+
+<ul>
+  <li>No personal data collection by default</li>
+  <li>Audit logs can be configured to exclude PII</li>
+  <li>Data retention policies configurable</li>
+  <li>Right to erasure supported</li>
+</ul>
+
+<h2 id="security-resources">Security Resources</h2>
+
+<ul>
+  <li><a href="https://owasp.org/www-project-top-ten/">OWASP Top 10</a></li>
+  <li><a href="https://www.cisecurity.org/cis-benchmarks/">CIS Benchmarks</a></li>
+  <li><a href="https://www.nist.gov/cyberframework">NIST Cybersecurity Framework</a></li>
+  <li><a href="/terry-form-mcp/security-updates">Security Updates</a></li>
+</ul>
+
+<hr />
+
+<div class="alert alert-info">
+<strong>Security Contact</strong><br />
+For security issues, please email: security@terry-form.io<br />
+PGP Key: <a href="/terry-form-mcp/security.asc">Download</a>
+</div>
+</span>
+        
+        <span class="last-modified">Updated: July 25, 2025</span>
+        
+      </div>
+    </header>
+
+    
+    <div class="toc"></div>
+    
+
+    <div class="guide-body">
+      <h1 id="security-guide">Security Guide</h1>
+
+<p>Terry-Form MCP is built with security as a core principle. This guide covers security features, best practices, and configuration options.</p>
+
+<h2 id="security-architecture">Security Architecture</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Security Layers"
+        A[Input Validation Layer]
+        B[Authentication Layer]
+        C[Authorization Layer]
+        D[Execution Sandbox]
+        E[Audit Layer]
+    end
+    
+    subgraph "Protection Mechanisms"
+        F[Path Traversal Protection]
+        G[Command Injection Prevention]
+        H[Resource Isolation]
+        I[Rate Limiting]
+        J[Encryption]
+    end
+    
+    A --&gt; F
+    B --&gt; G
+    C --&gt; H
+    D --&gt; I
+    E --&gt; J
+</code></pre>
+
+<h2 id="built-in-security-features">Built-in Security Features</h2>
+
+<h3 id="1-input-validation">1. Input Validation</h3>
+
+<p>All inputs are validated using strict schemas:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Example validation schema
+</span><span class="p">{</span>
+    <span class="s">"path"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s">"type"</span><span class="p">:</span> <span class="s">"string"</span><span class="p">,</span>
+        <span class="s">"pattern"</span><span class="p">:</span> <span class="s">"^[a-zA-Z0-9/_-]+$"</span><span class="p">,</span>
+        <span class="s">"maxLength"</span><span class="p">:</span> <span class="mi">255</span>
+    <span class="p">},</span>
+    <span class="s">"actions"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s">"type"</span><span class="p">:</span> <span class="s">"array"</span><span class="p">,</span>
+        <span class="s">"items"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">"enum"</span><span class="p">:</span> <span class="p">[</span><span class="s">"init"</span><span class="p">,</span> <span class="s">"validate"</span><span class="p">,</span> <span class="s">"plan"</span><span class="p">,</span> <span class="s">"fmt"</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="2-path-traversal-protection">2. Path Traversal Protection</h3>
+
+<p>Terry-Form prevents access outside the designated workspace:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">validate_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="c1"># Resolve to absolute path
+</span>    <span class="n">abs_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">workspace_root</span><span class="p">)</span> <span class="o">/</span> <span class="n">path</span>
+    <span class="n">real_path</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">.</span><span class="n">resolve</span><span class="p">()</span>
+    
+    <span class="c1"># Ensure path is within workspace
+</span>    <span class="k">try</span><span class="p">:</span>
+        <span class="n">real_path</span><span class="p">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">workspace_root</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">except</span> <span class="nb">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+</code></pre></div></div>
+
+<h3 id="3-command-injection-prevention">3. Command Injection Prevention</h3>
+
+<p>All subprocess executions use secure patterns:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Secure command execution
+</span><span class="n">subprocess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="p">[</span><span class="s">"terraform"</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">],</span>
+    <span class="n">shell</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>  <span class="c1"># Never use shell=True
+</span>    <span class="n">cwd</span><span class="o">=</span><span class="n">workspace_path</span><span class="p">,</span>
+    <span class="n">capture_output</span><span class="o">=</span><span class="bp">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Variable escaping
+</span><span class="kn">import</span> <span class="nn">shlex</span>
+<span class="n">safe_value</span> <span class="o">=</span> <span class="n">shlex</span><span class="p">.</span><span class="n">quote</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h3 id="4-action-whitelisting">4. Action Whitelisting</h3>
+
+<p>Only safe Terraform actions are allowed by default:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">allowed_actions</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">init</span>
+  <span class="pi">-</span> <span class="s">validate</span>
+  <span class="pi">-</span> <span class="s">plan</span>
+  <span class="pi">-</span> <span class="s">fmt</span>
+  <span class="pi">-</span> <span class="s">show</span>
+  <span class="pi">-</span> <span class="s">graph</span>
+  <span class="pi">-</span> <span class="s">providers</span>
+  <span class="pi">-</span> <span class="s">version</span>
+
+<span class="na">blocked_actions</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">apply</span>      <span class="c1"># Requires explicit override</span>
+  <span class="pi">-</span> <span class="s">destroy</span>    <span class="c1"># Requires explicit override</span>
+  <span class="pi">-</span> <span class="s">import</span>     <span class="c1"># Can modify state</span>
+  <span class="pi">-</span> <span class="s">taint</span>      <span class="c1"># Can modify state</span>
+</code></pre></div></div>
+
+<h2 id="authentication--authorization">Authentication &amp; Authorization</h2>
+
+<h3 id="github-app-authentication">GitHub App Authentication</h3>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Client
+    participant TerryForm
+    participant GitHub
+    
+    Client-&gt;&gt;TerryForm: Request with App ID
+    TerryForm-&gt;&gt;TerryForm: Generate JWT
+    TerryForm-&gt;&gt;GitHub: Exchange JWT for Token
+    GitHub--&gt;&gt;TerryForm: Installation Token
+    TerryForm-&gt;&gt;GitHub: API Request
+    GitHub--&gt;&gt;TerryForm: Response
+    TerryForm--&gt;&gt;Client: Result
+</code></pre>
+
+<p>Configuration:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">github</span><span class="pi">:</span>
+  <span class="na">app_id</span><span class="pi">:</span> <span class="s">${GITHUB_APP_ID}</span>
+  <span class="na">private_key_path</span><span class="pi">:</span> <span class="s">/secrets/github-app.pem</span>
+  <span class="na">webhook_secret</span><span class="pi">:</span> <span class="s">${GITHUB_WEBHOOK_SECRET}</span>
+  <span class="na">permissions</span><span class="pi">:</span>
+    <span class="na">contents</span><span class="pi">:</span> <span class="s">read</span>
+    <span class="na">metadata</span><span class="pi">:</span> <span class="s">read</span>
+    <span class="na">pull_requests</span><span class="pi">:</span> <span class="s">write</span>
+</code></pre></div></div>
+
+<h3 id="api-key-authentication">API Key Authentication</h3>
+
+<p>For web endpoints:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// API key validation</span>
+<span class="kd">const</span> <span class="nx">apiKey</span> <span class="o">=</span> <span class="nx">request</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="dl">'</span><span class="s1">x-api-key</span><span class="dl">'</span><span class="p">];</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">apiKey</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isValidApiKey</span><span class="p">(</span><span class="nx">apiKey</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">response</span><span class="p">.</span><span class="nx">status</span><span class="p">(</span><span class="mi">401</span><span class="p">).</span><span class="nx">json</span><span class="p">({</span> <span class="na">error</span><span class="p">:</span> <span class="dl">'</span><span class="s1">Unauthorized</span><span class="dl">'</span> <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="secure-configuration">Secure Configuration</h2>
+
+<h3 id="environment-variables">Environment Variables</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Required security environment variables</span>
+<span class="nb">export </span><span class="nv">WORKSPACE_ROOT</span><span class="o">=</span><span class="s2">"/mnt/workspace"</span>
+<span class="nb">export </span><span class="nv">ALLOWED_WORKSPACE_PATHS</span><span class="o">=</span><span class="s2">"/mnt/workspace"</span>
+<span class="nb">export </span><span class="nv">MAX_OPERATION_TIMEOUT</span><span class="o">=</span>300
+<span class="nb">export </span><span class="nv">ENABLE_APPLY</span><span class="o">=</span><span class="nb">false
+export </span><span class="nv">ENABLE_DESTROY</span><span class="o">=</span><span class="nb">false</span>
+
+<span class="c"># Secrets (use secret management)</span>
+<span class="nb">export </span><span class="nv">TERRAFORM_CLOUD_TOKEN</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_TF_TOKEN</span><span class="k">}</span><span class="s2">"</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_PRIVATE_KEY</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_GH_KEY</span><span class="k">}</span><span class="s2">"</span>
+<span class="nb">export </span><span class="nv">API_ENCRYPTION_KEY</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">SECRET_API_KEY</span><span class="k">}</span><span class="s2">"</span>
+</code></pre></div></div>
+
+<h3 id="docker-security">Docker Security</h3>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Run as non-root user</span>
+<span class="k">USER</span><span class="s"> terraform:terraform</span>
+
+<span class="c"># Drop capabilities</span>
+<span class="k">RUN </span>setcap <span class="nt">-r</span> /usr/bin/terraform
+
+<span class="c"># Read-only root filesystem</span>
+<span class="k">VOLUME</span><span class="s"> ["/mnt/workspace"]</span>
+</code></pre></div></div>
+
+<p>Docker run options:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="se">\</span>
+  <span class="nt">--security-opt</span><span class="o">=</span>no-new-privileges <span class="se">\</span>
+  <span class="nt">--cap-drop</span><span class="o">=</span>ALL <span class="se">\</span>
+  <span class="nt">--read-only</span> <span class="se">\</span>
+  <span class="nt">--tmpfs</span> /tmp <span class="se">\</span>
+  <span class="nt">-v</span> workspace:/mnt/workspace:rw <span class="se">\</span>
+  terry-form-mcp
+</code></pre></div></div>
+
+<h3 id="kubernetes-security">Kubernetes Security</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Pod</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">securityContext</span><span class="pi">:</span>
+    <span class="na">runAsNonRoot</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">runAsUser</span><span class="pi">:</span> <span class="m">1000</span>
+    <span class="na">fsGroup</span><span class="pi">:</span> <span class="m">1000</span>
+    <span class="na">seccompProfile</span><span class="pi">:</span>
+      <span class="na">type</span><span class="pi">:</span> <span class="s">RuntimeDefault</span>
+  <span class="na">containers</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form</span>
+    <span class="na">securityContext</span><span class="pi">:</span>
+      <span class="na">allowPrivilegeEscalation</span><span class="pi">:</span> <span class="no">false</span>
+      <span class="na">readOnlyRootFilesystem</span><span class="pi">:</span> <span class="no">true</span>
+      <span class="na">capabilities</span><span class="pi">:</span>
+        <span class="na">drop</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="s">ALL</span>
+    <span class="na">resources</span><span class="pi">:</span>
+      <span class="na">limits</span><span class="pi">:</span>
+        <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2"</span>
+        <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2Gi"</span>
+      <span class="na">requests</span><span class="pi">:</span>
+        <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">500m"</span>
+        <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">512Mi"</span>
+</code></pre></div></div>
+
+<h2 id="network-security">Network Security</h2>
+
+<h3 id="tls-configuration">TLS Configuration</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">tls</span><span class="pi">:</span>
+  <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">min_version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">1.2"</span>
+  <span class="na">ciphers</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384</span>
+    <span class="pi">-</span> <span class="s">TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256</span>
+  <span class="na">cert_file</span><span class="pi">:</span> <span class="s">/certs/tls.crt</span>
+  <span class="na">key_file</span><span class="pi">:</span> <span class="s">/certs/tls.key</span>
+</code></pre></div></div>
+
+<h3 id="network-policies">Network Policies</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">networking.k8s.io/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">NetworkPolicy</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-network-policy</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">podSelector</span><span class="pi">:</span>
+    <span class="na">matchLabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">terry-form</span>
+  <span class="na">policyTypes</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">Ingress</span>
+  <span class="pi">-</span> <span class="s">Egress</span>
+  <span class="na">ingress</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">from</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">podSelector</span><span class="pi">:</span>
+        <span class="na">matchLabels</span><span class="pi">:</span>
+          <span class="na">role</span><span class="pi">:</span> <span class="s">api-gateway</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">3000</span>
+  <span class="na">egress</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">to</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">namespaceSelector</span><span class="pi">:</span>
+        <span class="na">matchLabels</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">kube-system</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">53</span>  <span class="c1"># DNS</span>
+  <span class="pi">-</span> <span class="na">to</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">podSelector</span><span class="pi">:</span> <span class="pi">{}</span>
+    <span class="na">ports</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">protocol</span><span class="pi">:</span> <span class="s">TCP</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">443</span>  <span class="c1"># HTTPS</span>
+</code></pre></div></div>
+
+<h2 id="secret-management">Secret Management</h2>
+
+<h3 id="using-hashicorp-vault">Using HashiCorp Vault</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">hvac</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">hvac</span><span class="p">.</span><span class="n">Client</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s">'https://vault.example.com'</span><span class="p">)</span>
+<span class="n">client</span><span class="p">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="s">'VAULT_TOKEN'</span><span class="p">]</span>
+
+<span class="c1"># Read secrets
+</span><span class="n">secrets</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="s">'secret/terry-form'</span><span class="p">)</span>
+<span class="n">terraform_token</span> <span class="o">=</span> <span class="n">secrets</span><span class="p">[</span><span class="s">'data'</span><span class="p">][</span><span class="s">'terraform_cloud_token'</span><span class="p">]</span>
+<span class="n">github_key</span> <span class="o">=</span> <span class="n">secrets</span><span class="p">[</span><span class="s">'data'</span><span class="p">][</span><span class="s">'github_app_key'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h3 id="using-kubernetes-secrets">Using Kubernetes Secrets</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Secret</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-secrets</span>
+<span class="na">type</span><span class="pi">:</span> <span class="s">Opaque</span>
+<span class="na">data</span><span class="pi">:</span>
+  <span class="na">terraform-cloud-token</span><span class="pi">:</span> <span class="s">&lt;base64-encoded-token&gt;</span>
+  <span class="na">github-app-key</span><span class="pi">:</span> <span class="s">&lt;base64-encoded-key&gt;</span>
+<span class="nn">---</span>
+<span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Pod</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">containers</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form</span>
+    <span class="na">env</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">TERRAFORM_CLOUD_TOKEN</span>
+      <span class="na">valueFrom</span><span class="pi">:</span>
+        <span class="na">secretKeyRef</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-secrets</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">terraform-cloud-token</span>
+</code></pre></div></div>
+
+<h2 id="audit-logging">Audit Logging</h2>
+
+<h3 id="structured-logging">Structured Logging</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-15T10:30:45Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform_operation"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"user"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ai-assistant-1"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"workspace"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"source_ip"</span><span class="p">:</span><span class="w"> </span><span class="s2">"10.0.0.100"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">12.5</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"resources_affected"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="audit-trail-configuration">Audit Trail Configuration</h3>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">audit</span><span class="pi">:</span>
+  <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+  <span class="na">destinations</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">file</span>
+      <span class="na">path</span><span class="pi">:</span> <span class="s">/var/log/terry-form/audit.log</span>
+      <span class="na">rotation</span><span class="pi">:</span> <span class="s">daily</span>
+      <span class="na">retention</span><span class="pi">:</span> <span class="m">90</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">syslog</span>
+      <span class="na">host</span><span class="pi">:</span> <span class="s">syslog.example.com</span>
+      <span class="na">port</span><span class="pi">:</span> <span class="m">514</span>
+      <span class="na">protocol</span><span class="pi">:</span> <span class="s">tcp</span>
+    <span class="pi">-</span> <span class="na">type</span><span class="pi">:</span> <span class="s">elasticsearch</span>
+      <span class="na">url</span><span class="pi">:</span> <span class="s">https://elastic.example.com</span>
+      <span class="na">index</span><span class="pi">:</span> <span class="s">terry-form-audit</span>
+</code></pre></div></div>
+
+<h2 id="security-scanning">Security Scanning</h2>
+
+<h3 id="container-scanning">Container Scanning</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Scan Docker image</span>
+trivy image aj-geddes/terry-form-mcp:latest
+
+<span class="c"># Scan running container</span>
+docker run <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> /var/run/docker.sock:/var/run/docker.sock <span class="se">\</span>
+  aquasec/trivy container terry-form
+</code></pre></div></div>
+
+<h3 id="code-security-analysis">Code Security Analysis</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Python security scan</span>
+bandit <span class="nt">-r</span> <span class="nb">.</span> <span class="nt">-ll</span>
+
+<span class="c"># Dependency scanning</span>
+safety check
+
+<span class="c"># SAST scanning</span>
+semgrep <span class="nt">--config</span><span class="o">=</span>auto <span class="nb">.</span>
+</code></pre></div></div>
+
+<h2 id="incident-response">Incident Response</h2>
+
+<h3 id="security-incident-procedure">Security Incident Procedure</h3>
+
+<ol>
+  <li><strong>Detection</strong>: Monitor logs and alerts</li>
+  <li><strong>Containment</strong>: Isolate affected components</li>
+  <li><strong>Investigation</strong>: Analyze audit logs</li>
+  <li><strong>Remediation</strong>: Apply fixes</li>
+  <li><strong>Recovery</strong>: Restore normal operations</li>
+  <li><strong>Post-mortem</strong>: Document and improve</li>
+</ol>
+
+<h3 id="emergency-shutdown">Emergency Shutdown</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Immediate shutdown</span>
+kubectl delete deployment terry-form-mcp <span class="nt">--grace-period</span><span class="o">=</span>0
+
+<span class="c"># Revoke all tokens</span>
+terry-form-cli security revoke-all-tokens
+
+<span class="c"># Block network access</span>
+iptables <span class="nt">-A</span> INPUT <span class="nt">-p</span> tcp <span class="nt">--dport</span> 3000 <span class="nt">-j</span> DROP
+</code></pre></div></div>
+
+<h2 id="security-checklist">Security Checklist</h2>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable TLS for all communications</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure authentication (API keys/OAuth)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set up proper RBAC policies</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable audit logging</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure secret management</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Implement rate limiting</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set resource limits</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Enable security scanning</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Configure network policies</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Set up monitoring and alerting</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Document incident response procedures</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Regular security updates</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Vulnerability scanning</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Penetration testing</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Security training</li>
+</ul>
+
+<h2 id="compliance">Compliance</h2>
+
+<h3 id="soc-2-compliance">SOC 2 Compliance</h3>
+
+<p>Terry-Form MCP supports SOC 2 compliance:</p>
+
+<ul>
+  <li><strong>Security</strong>: Encryption, access controls, monitoring</li>
+  <li><strong>Availability</strong>: HA deployment, backup procedures</li>
+  <li><strong>Processing Integrity</strong>: Input validation, audit trails</li>
+  <li><strong>Confidentiality</strong>: Secret management, data isolation</li>
+  <li><strong>Privacy</strong>: Data minimization, retention policies</li>
+</ul>
+
+<h3 id="gdpr-compliance">GDPR Compliance</h3>
+
+<ul>
+  <li>No personal data collection by default</li>
+  <li>Audit logs can be configured to exclude PII</li>
+  <li>Data retention policies configurable</li>
+  <li>Right to erasure supported</li>
+</ul>
+
+<h2 id="security-resources">Security Resources</h2>
+
+<ul>
+  <li><a href="https://owasp.org/www-project-top-ten/">OWASP Top 10</a></li>
+  <li><a href="https://www.cisecurity.org/cis-benchmarks/">CIS Benchmarks</a></li>
+  <li><a href="https://www.nist.gov/cyberframework">NIST Cybersecurity Framework</a></li>
+  <li><a href="/terry-form-mcp/security-updates">Security Updates</a></li>
+</ul>
+
+<hr />
+
+<div class="alert alert-info">
+<strong>Security Contact</strong><br />
+For security issues, please email: security@terry-form.io<br />
+PGP Key: <a href="/terry-form-mcp/security.asc">Download</a>
+</div>
+
+    </div>
+
+    <footer class="guide-footer">
+      <div class="guide-navigation">
+        
+        
+        
+        
+          
+          
+        
+          
+          
+        
+      </div>
+
+      <div class="guide-feedback">
+        <h4>Was this guide helpful?</h4>
+        <p>
+          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20Security+Guide" 
+             class="feedback-link">
+            Provide feedback
+          </a>
+        </p>
+      </div>
+    </footer>
+  </article>
+</div>
+
+<style>
+.guide-container {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+}
+
+.guide-sidebar {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.guide-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-nav-item {
+  padding: 0.5rem 1rem;
+  color: #666;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.guide-nav-item:hover {
+  color: #2196F3;
+  background: #f8f9fa;
+}
+
+.guide-nav-item.active {
+  color: #2196F3;
+  background: #e3f2fd;
+  border-left-color: #2196F3;
+  font-weight: 500;
+}
+
+.guide-content {
+  max-width: 800px;
+}
+
+.guide-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.guide-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.guide-description {
+  font-size: 1.25rem;
+  color: #666;
+  margin: 0.5rem 0;
+}
+
+.guide-meta {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.guide-body {
+  line-height: 1.8;
+}
+
+.guide-body h2 {
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.guide-body h3 {
+  margin-top: 2rem;
+}
+
+.guide-footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.guide-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+}
+
+.prev-guide, .next-guide {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.prev-guide:hover, .next-guide:hover {
+  background: #e3f2fd;
+  color: #2196F3;
+}
+
+.guide-feedback {
+  text-align: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+}
+
+.feedback-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #2196F3;
+  color: white;
+  border-radius: 0.25rem;
+  text-decoration: none;
+}
+
+.feedback-link:hover {
+  background: #1976D2;
+}
+
+@media (max-width: 768px) {
+  .guide-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .guide-sidebar {
+    position: static;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 1rem;
+  }
+  
+  .guide-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .guide-nav-item {
+    color: #ccc;
+  }
+  
+  .guide-nav-item:hover {
+    background: #333;
+  }
+  
+  .guide-nav-item.active {
+    background: #1e3a5f;
+  }
+  
+  .guide-header {
+    border-bottom-color: #444;
+  }
+  
+  .guide-description {
+    color: #999;
+  }
+  
+  .guide-body h2 {
+    border-bottom-color: #444;
+  }
+  
+  .guide-footer {
+    border-top-color: #444;
+  }
+  
+  .prev-guide, .next-guide {
+    background: #2a2a2a;
+    color: #e0e0e0;
+  }
+  
+  .prev-guide:hover, .next-guide:hover {
+    background: #1e3a5f;
+  }
+  
+  .guide-feedback {
+    background: #2a2a2a;
+  }
+}
+</style>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="/terry-form-mcp/contributing">Contributing</a></li>
+          <li><a href="/terry-form-mcp/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/security">Security</a></li>
+          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+          <li><a href="/terry-form-mcp/deployment/">Deployment</a></li>
+          <li><a href="/terry-form-mcp/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+</body>
+</html>

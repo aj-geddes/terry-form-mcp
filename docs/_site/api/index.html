@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>API Reference | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="API Reference" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Complete API reference for Terry-Form MCP" />
+<meta property="og:description" content="Complete API reference for Terry-Form MCP" />
+<link rel="canonical" href="https://aj-geddes.github.io/terry-form-mcp/api/index" />
+<meta property="og:url" content="https://aj-geddes.github.io/terry-form-mcp/api/index" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-10-05T19:54:45-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="API Reference" />
+<meta name="twitter:site" content="@terryform" />
+<meta name="twitter:creator" content="@AJ Geddes" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-08-12T12:39:56-05:00","datePublished":"2025-10-05T19:54:45-05:00","description":"Complete API reference for Terry-Form MCP","headline":"API Reference","mainEntityOfPage":{"@type":"WebPage","@id":"https://aj-geddes.github.io/terry-form-mcp/api/index"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://aj-geddes.github.io/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"https://aj-geddes.github.io/terry-form-mcp/api/index"}</script>
+<!-- End Jekyll SEO tag -->
+
+  
+  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <link type="application/atom+xml" rel="alternate" href="https://aj-geddes.github.io/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Convert code.language-mermaid blocks to div.mermaid for rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    });
+  </script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="/terry-form-mcp/" class="nav-logo">
+        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        
+        <a href="/terry-form-mcp/" 
+           class="nav-link "
+           >
+          Home
+          
+        </a>
+        
+        <a href="/terry-form-mcp/getting-started" 
+           class="nav-link "
+           >
+          Getting Started
+          
+        </a>
+        
+        <a href="/terry-form-mcp/guides/" 
+           class="nav-link "
+           >
+          Guides
+          
+        </a>
+        
+        <a href="/terry-form-mcp/api/" 
+           class="nav-link "
+           >
+          API Reference
+          
+        </a>
+        
+        <a href="/terry-form-mcp/architecture/" 
+           class="nav-link "
+           >
+          Architecture
+          
+        </a>
+        
+        <a href="/terry-form-mcp/tutorials/" 
+           class="nav-link "
+           >
+          Tutorials
+          
+        </a>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp" 
+           class="nav-link "
+           target="_blank" rel="noopener">
+          GitHub
+          <i class="fab fa-github"></i>
+        </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <article class="page">
+  <header class="page-header">
+    <h1>API Reference</h1>
+  </header>
+
+  <div class="page-content">
+    <h1 id="api-reference">API Reference</h1>
+
+<p>Complete reference documentation for Terry-Form MCP APIs and tools.</p>
+
+<h2 id="mcp-protocol-tools">MCP Protocol Tools</h2>
+
+<div class="api-section">
+
+  
+  <div class="api-card">
+    <h3><a href="/terry-form-mcp/api/index">API Reference</a></h3>
+    <p>Complete API reference for Terry-Form MCP</p>
+    
+  </div>
+  
+
+  
+  <div class="api-card">
+    <h3><a href="/terry-form-mcp/api/mcp-tools">MCP Tools Reference</a></h3>
+    <p>Complete reference for all Terry-Form MCP tools</p>
+    
+  </div>
+  
+
+</div>
+
+<h2 id="quick-reference">Quick Reference</h2>
+
+<h3 id="core-terraform-tools">Core Terraform Tools</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Description</th>
+      <th>Primary Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry</code></td>
+      <td>Execute Terraform operations</td>
+      <td>Plan, validate, format</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry_workspace_list</code></td>
+      <td>List available workspaces</td>
+      <td>Discovery</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry_version</code></td>
+      <td>Get Terraform version info</td>
+      <td>Compatibility check</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="github-integration">GitHub Integration</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Description</th>
+      <th>Primary Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">github_clone_repo</code></td>
+      <td>Clone/update repositories</td>
+      <td>Repository management</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">github_list_terraform_files</code></td>
+      <td>List .tf files in repo</td>
+      <td>Code discovery</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">github_get_terraform_config</code></td>
+      <td>Analyze Terraform configs</td>
+      <td>Code analysis</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="intelligence-tools">Intelligence Tools</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Description</th>
+      <th>Primary Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry_analyze</code></td>
+      <td>Best practice analysis</td>
+      <td>Code quality</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry_security_scan</code></td>
+      <td>Security vulnerability scan</td>
+      <td>Security audit</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terry_recommendations</code></td>
+      <td>Get improvement suggestions</td>
+      <td>Optimization</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="response-formats">Response Formats</h2>
+
+<p>All Terry-Form MCP tools follow consistent response patterns:</p>
+
+<h3 id="success-response">Success Response</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool-name-results"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="err">//</span><span class="w"> </span><span class="err">Tool-specific</span><span class="w"> </span><span class="err">data</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.234</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-15T10:30:00Z"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="error-response">Error Response</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"error"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Descriptive error message"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ERROR_CODE"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"details"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="err">//</span><span class="w"> </span><span class="err">Additional</span><span class="w"> </span><span class="err">error</span><span class="w"> </span><span class="err">context</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="authentication">Authentication</h2>
+
+<h3 id="mcp-protocol">MCP Protocol</h3>
+
+<p>MCP protocol handles authentication at the transport level. No additional authentication required for tool calls.</p>
+
+<h3 id="web-api">Web API</h3>
+
+<p>For direct HTTP API access:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-H</span> <span class="s2">"X-API-Key: your-api-key"</span> <span class="se">\</span>
+     https://terry-form.example.com/api/v1/workspaces
+</code></pre></div></div>
+
+<h3 id="github-app">GitHub App</h3>
+
+<p>Configure GitHub App credentials:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">GITHUB_APP_ID</span><span class="pi">:</span> <span class="s2">"</span><span class="s">123456"</span>
+<span class="na">GITHUB_APP_PRIVATE_KEY</span><span class="pi">:</span> <span class="s2">"</span><span class="s">-----BEGIN</span><span class="nv"> </span><span class="s">RSA</span><span class="nv"> </span><span class="s">PRIVATE</span><span class="nv"> </span><span class="s">KEY-----..."</span>
+</code></pre></div></div>
+
+<h2 id="rate-limits">Rate Limits</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Endpoint Type</th>
+      <th>Limit</th>
+      <th>Window</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>General</td>
+      <td>100 requests</td>
+      <td>1 minute</td>
+    </tr>
+    <tr>
+      <td>Terraform Operations</td>
+      <td>20 requests</td>
+      <td>1 minute</td>
+    </tr>
+    <tr>
+      <td>GitHub Operations</td>
+      <td>30 requests</td>
+      <td>1 minute</td>
+    </tr>
+    <tr>
+      <td>Analysis Tools</td>
+      <td>10 requests</td>
+      <td>1 minute</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="tool-categories">Tool Categories</h2>
+
+<div class="tool-categories">
+  <div class="category">
+    <h3>🔧 Infrastructure Management</h3>
+    <ul>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry">terry</a> - Core Terraform operations</li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry_workspace_list">Workspace management</a></li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry_version">Version information</a></li>
+    </ul>
+  </div>
+  
+  <div class="category">
+    <h3>🔗 Integrations</h3>
+    <ul>
+      <li><a href="/terry-form-mcp/api/mcp-tools#github-integration-tools">GitHub Tools</a></li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terraform-cloud-tools">Terraform Cloud</a></li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#lsp-tools">LSP Integration</a></li>
+    </ul>
+  </div>
+  
+  <div class="category">
+    <h3>📊 Intelligence</h3>
+    <ul>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry_analyze">Configuration analysis</a></li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry_security_scan">Security scanning</a></li>
+      <li><a href="/terry-form-mcp/api/mcp-tools#terry_recommendations">Recommendations</a></li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="common-patterns">Common Patterns</h2>
+
+<h3 id="sequential-operations">Sequential Operations</h3>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Initialize, validate, and plan</span>
+<span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">mcp</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="dl">"</span><span class="s2">terry</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">path</span><span class="p">:</span> <span class="dl">"</span><span class="s2">production</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">actions</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">init</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">validate</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">plan</span><span class="dl">"</span><span class="p">],</span>
+  <span class="na">vars</span><span class="p">:</span> <span class="p">{</span> <span class="na">environment</span><span class="p">:</span> <span class="dl">"</span><span class="s2">prod</span><span class="dl">"</span> <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<h3 id="error-handling">Error Handling</h3>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">mcp</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="dl">"</span><span class="s2">terry</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span> <span class="na">path</span><span class="p">:</span> <span class="dl">"</span><span class="s2">invalid/path</span><span class="dl">"</span> <span class="p">});</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">.</span><span class="nx">code</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">PATH_TRAVERSAL</span><span class="dl">"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="dl">"</span><span class="s2">Invalid path specified</span><span class="dl">"</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="workspace-discovery">Workspace Discovery</h3>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// List all workspaces</span>
+<span class="kd">const</span> <span class="nx">workspaces</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">mcp</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="dl">"</span><span class="s2">terry_workspace_list</span><span class="dl">"</span><span class="p">);</span>
+
+<span class="c1">// Filter initialized workspaces</span>
+<span class="kd">const</span> <span class="nx">initialized</span> <span class="o">=</span> <span class="nx">workspaces</span><span class="p">.</span><span class="nx">workspaces</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">w</span> <span class="o">=&gt;</span> <span class="nx">w</span><span class="p">.</span><span class="nx">initialized</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h2 id="api-versioning">API Versioning</h2>
+
+<p>Terry-Form MCP follows semantic versioning for its API:</p>
+
+<ul>
+  <li><strong>v1</strong> - Current stable version</li>
+  <li><strong>v2</strong> - Future version (planned)</li>
+</ul>
+
+<p>Version is included in HTTP API paths:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/api/v1/workspaces
+/api/v1/operations
+</code></pre></div></div>
+
+<h2 id="sdk-support">SDK Support</h2>
+
+<h3 id="python-sdk">Python SDK</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">terry_form_mcp</span> <span class="kn">import</span> <span class="n">Client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s">"your-key"</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="n">terry</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s">"production"</span><span class="p">,</span>
+    <span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="s">"plan"</span><span class="p">],</span>
+    <span class="nb">vars</span><span class="o">=</span><span class="p">{</span><span class="s">"environment"</span><span class="p">:</span> <span class="s">"prod"</span><span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="javascript-sdk">JavaScript SDK</h3>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">TerryFormClient</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@terry-form/mcp-client</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TerryFormClient</span><span class="p">({</span> <span class="na">apiKey</span><span class="p">:</span> <span class="dl">'</span><span class="s1">your-key</span><span class="dl">'</span> <span class="p">});</span>
+<span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">terry</span><span class="p">({</span>
+  <span class="na">path</span><span class="p">:</span> <span class="dl">'</span><span class="s1">production</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">actions</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">plan</span><span class="dl">'</span><span class="p">],</span>
+  <span class="na">vars</span><span class="p">:</span> <span class="p">{</span> <span class="na">environment</span><span class="p">:</span> <span class="dl">'</span><span class="s1">prod</span><span class="dl">'</span> <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<h2 id="need-help">Need Help?</h2>
+
+<ul>
+  <li>📖 <a href="/terry-form-mcp/getting-started">Getting Started Guide</a></li>
+  <li>💬 <a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Community Forum</a></li>
+  <li>🐛 <a href="https://github.com/aj-geddes/terry-form-mcp/issues">Report an Issue</a></li>
+</ul>
+
+<style>
+.api-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.api-card {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.api-tools {
+  margin-top: 1rem;
+}
+
+.tool-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tool-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.category {
+  background: #f0f7ff;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.category h3 {
+  margin-top: 0;
+}
+
+.category ul {
+  list-style: none;
+  padding: 0;
+}
+
+.category li {
+  margin: 0.5rem 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .api-card {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+  
+  .tool-badge {
+    background: #1e3a5f;
+    color: #90caf9;
+  }
+  
+  .category {
+    background: #1a1a2e;
+  }
+}
+</style>
+
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="/terry-form-mcp/contributing">Contributing</a></li>
+          <li><a href="/terry-form-mcp/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/security">Security</a></li>
+          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+          <li><a href="/terry-form-mcp/deployment/">Deployment</a></li>
+          <li><a href="/terry-form-mcp/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+</body>
+</html>

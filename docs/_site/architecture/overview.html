@@ -1,0 +1,479 @@
+<h1 id="architecture-overview">Architecture Overview</h1>
+
+<p>Terry-Form MCP is designed with security, scalability, and extensibility at its core. This document provides a comprehensive overview of the system architecture.</p>
+
+<h2 id="system-architecture">System Architecture</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Client Layer"
+        A[AI Assistant&lt;br/&gt;Claude/ChatGPT]
+        B[Web Browser&lt;br/&gt;Dashboard]
+        C[CLI Tools]
+        D[CI/CD Systems]
+    end
+    
+    subgraph "Terry-Form MCP Core"
+        E[MCP Protocol Handler]
+        F[Web API Server]
+        G[Security Layer]
+        H[Request Router]
+        
+        subgraph "Execution Engine"
+            I[Terraform Executor]
+            J[Command Validator]
+            K[State Manager]
+        end
+        
+        subgraph "Integration Layer"
+            L[GitHub App Handler]
+            M[Cloud Provider APIs]
+            N[Terraform Cloud Client]
+        end
+        
+        subgraph "Intelligence Layer"
+            O[Module Analyzer]
+            P[Security Scanner]
+            Q[Best Practice Engine]
+        end
+    end
+    
+    subgraph "External Services"
+        R[GitHub Repositories]
+        S[Terraform Cloud]
+        T[AWS/Azure/GCP]
+        U[Container Registry]
+    end
+    
+    A --&gt;|MCP Protocol| E
+    B --&gt;|HTTP/WebSocket| F
+    C --&gt;|MCP Protocol| E
+    D --&gt;|API/MCP| E
+    
+    E --&gt; G
+    F --&gt; G
+    G --&gt; H
+    
+    H --&gt; I
+    H --&gt; L
+    H --&gt; O
+    
+    I --&gt; J
+    I --&gt; K
+    J --&gt; I
+    
+    L --&gt; R
+    M --&gt; T
+    N --&gt; S
+    
+    O --&gt; P
+    O --&gt; Q
+    
+    style G fill:#ff9999
+    style J fill:#ff9999
+</code></pre>
+
+<h2 id="core-components">Core Components</h2>
+
+<h3 id="1-protocol-layer">1. Protocol Layer</h3>
+
+<p>The protocol layer handles communication between clients and the Terry-Form server.</p>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Client as AI Assistant
+    participant MCP as MCP Handler
+    participant Security as Security Layer
+    participant Executor as Terraform Executor
+    
+    Client-&gt;&gt;MCP: Tool Request
+    MCP-&gt;&gt;Security: Validate Request
+    Security-&gt;&gt;Security: Check Permissions
+    Security-&gt;&gt;Security: Sanitize Input
+    Security--&gt;&gt;MCP: Validated Request
+    MCP-&gt;&gt;Executor: Execute Command
+    Executor-&gt;&gt;Executor: Run Terraform
+    Executor--&gt;&gt;MCP: Result
+    MCP--&gt;&gt;Client: Response
+</code></pre>
+
+<h3 id="2-security-architecture">2. Security Architecture</h3>
+
+<p>Security is implemented in multiple layers:</p>
+
+<pre><code class="language-mermaid">graph LR
+    subgraph "Security Layers"
+        A[Input Validation]
+        B[Path Traversal Protection]
+        C[Command Injection Prevention]
+        D[Action Whitelisting]
+        E[Resource Isolation]
+        F[Audit Logging]
+    end
+    
+    A --&gt; B
+    B --&gt; C
+    C --&gt; D
+    D --&gt; E
+    E --&gt; F
+</code></pre>
+
+<p><strong>Key Security Features:</strong></p>
+
+<ul>
+  <li><strong>Input Validation</strong>: All inputs are validated against strict schemas</li>
+  <li><strong>Path Protection</strong>: Prevents access outside designated workspace</li>
+  <li><strong>Command Safety</strong>: Uses <code class="language-plaintext highlighter-rouge">shell=False</code> and <code class="language-plaintext highlighter-rouge">shlex.quote()</code> for subprocess execution</li>
+  <li><strong>Action Control</strong>: Whitelist of allowed Terraform actions</li>
+  <li><strong>Isolation</strong>: Docker containers with limited capabilities</li>
+</ul>
+
+<h3 id="3-execution-engine">3. Execution Engine</h3>
+
+<p>The execution engine manages Terraform operations safely:</p>
+
+<pre><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; Idle
+    Idle --&gt; Validating: Receive Request
+    Validating --&gt; Preparing: Valid Request
+    Validating --&gt; Error: Invalid Request
+    Preparing --&gt; Executing: Setup Complete
+    Executing --&gt; Processing: Command Running
+    Processing --&gt; Success: Command Success
+    Processing --&gt; Failed: Command Failed
+    Success --&gt; Idle: Return Result
+    Failed --&gt; Idle: Return Error
+    Error --&gt; Idle: Return Error
+</code></pre>
+
+<h3 id="4-data-flow">4. Data Flow</h3>
+
+<pre><code class="language-mermaid">graph TD
+    subgraph "Request Flow"
+        A[Client Request] --&gt; B{Request Type}
+        B --&gt;|Terraform Op| C[Terraform Handler]
+        B --&gt;|GitHub Op| D[GitHub Handler]
+        B --&gt;|Cloud Op| E[Cloud Handler]
+        
+        C --&gt; F[Validation]
+        D --&gt; F
+        E --&gt; F
+        
+        F --&gt; G{Valid?}
+        G --&gt;|Yes| H[Execute]
+        G --&gt;|No| I[Reject]
+        
+        H --&gt; J[Process Result]
+        J --&gt; K[Format Response]
+        K --&gt; L[Return to Client]
+        I --&gt; L
+    end
+</code></pre>
+
+<h2 id="deployment-architecture">Deployment Architecture</h2>
+
+<h3 id="docker-deployment">Docker Deployment</h3>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Docker Container"
+        A[Terry-Form MCP]
+        B[Python Runtime]
+        C[Terraform Binary]
+        D[Security Tools]
+        E[Git Client]
+    end
+    
+    subgraph "Volume Mounts"
+        F[/mnt/workspace]
+        G[/app/config]
+        H[/var/log]
+    end
+    
+    subgraph "Network"
+        I[Port 3000: MCP]
+        J[Port 8001: Web]
+    end
+    
+    A --&gt; F
+    A --&gt; G
+    A --&gt; H
+    A --&gt; I
+    A --&gt; J
+</code></pre>
+
+<h3 id="kubernetes-architecture">Kubernetes Architecture</h3>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Kubernetes Cluster"
+        subgraph "Terry-Form Namespace"
+            A[Deployment]
+            B[Service]
+            C[ConfigMap]
+            D[Secret]
+            E[PVC]
+            F[HPA]
+            G[NetworkPolicy]
+        end
+        
+        subgraph "Ingress"
+            H[Ingress Controller]
+            I[TLS Termination]
+        end
+        
+        subgraph "Monitoring"
+            J[Prometheus]
+            K[Grafana]
+            L[Loki]
+        end
+    end
+    
+    H --&gt; B
+    A --&gt; E
+    A --&gt; C
+    A --&gt; D
+    F --&gt; A
+    G --&gt; A
+    
+    A --&gt; J
+    A --&gt; L
+</code></pre>
+
+<h2 id="integration-architecture">Integration Architecture</h2>
+
+<h3 id="github-app-integration">GitHub App Integration</h3>
+
+<pre><code class="language-mermaid">sequenceDiagram
+    participant User
+    participant TerryForm as Terry-Form
+    participant GitHub
+    participant Workspace
+    
+    User-&gt;&gt;TerryForm: Clone Repository
+    TerryForm-&gt;&gt;GitHub: Authenticate (JWT)
+    GitHub--&gt;&gt;TerryForm: Installation Token
+    TerryForm-&gt;&gt;GitHub: Clone Repo
+    GitHub--&gt;&gt;TerryForm: Repository Data
+    TerryForm-&gt;&gt;Workspace: Store Files
+    TerryForm--&gt;&gt;User: Success
+</code></pre>
+
+<h3 id="multi-cloud-support">Multi-Cloud Support</h3>
+
+<pre><code class="language-mermaid">graph LR
+    subgraph "Terry-Form MCP"
+        A[Cloud Abstraction Layer]
+    end
+    
+    subgraph "Cloud Providers"
+        B[AWS Provider]
+        C[Azure Provider]
+        D[GCP Provider]
+        E[Terraform Cloud]
+    end
+    
+    A --&gt; B
+    A --&gt; C
+    A --&gt; D
+    A --&gt; E
+    
+    B --&gt; F[AWS APIs]
+    C --&gt; G[Azure APIs]
+    D --&gt; H[GCP APIs]
+    E --&gt; I[TFC APIs]
+</code></pre>
+
+<h2 id="scalability-considerations">Scalability Considerations</h2>
+
+<h3 id="horizontal-scaling">Horizontal Scaling</h3>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Load Balancer"
+        A[HAProxy/Nginx]
+    end
+    
+    subgraph "Terry-Form Instances"
+        B[Instance 1]
+        C[Instance 2]
+        D[Instance 3]
+    end
+    
+    subgraph "Shared Storage"
+        E[State Storage]
+        F[Workspace Storage]
+    end
+    
+    subgraph "Cache Layer"
+        G[Redis Cache]
+    end
+    
+    A --&gt; B
+    A --&gt; C
+    A --&gt; D
+    
+    B --&gt; E
+    B --&gt; F
+    B --&gt; G
+    
+    C --&gt; E
+    C --&gt; F
+    C --&gt; G
+    
+    D --&gt; E
+    D --&gt; F
+    D --&gt; G
+</code></pre>
+
+<h3 id="performance-optimization">Performance Optimization</h3>
+
+<ul>
+  <li><strong>Caching</strong>: Module analysis results cached</li>
+  <li><strong>Connection Pooling</strong>: Reuse cloud provider connections</li>
+  <li><strong>Async Operations</strong>: Non-blocking I/O for better concurrency</li>
+  <li><strong>Resource Limits</strong>: CPU/Memory limits per operation</li>
+</ul>
+
+<h2 id="security-architecture-details">Security Architecture Details</h2>
+
+<h3 id="defense-in-depth">Defense in Depth</h3>
+
+<pre><code class="language-mermaid">graph TD
+    subgraph "Layer 1: Network"
+        A[TLS Encryption]
+        B[Firewall Rules]
+        C[DDoS Protection]
+    end
+    
+    subgraph "Layer 2: Application"
+        D[Authentication]
+        E[Authorization]
+        F[Input Validation]
+    end
+    
+    subgraph "Layer 3: Execution"
+        G[Sandboxing]
+        H[Resource Limits]
+        I[Audit Logging]
+    end
+    
+    subgraph "Layer 4: Data"
+        J[Encryption at Rest]
+        K[Secret Management]
+        L[Access Control]
+    end
+    
+    A --&gt; D
+    B --&gt; D
+    C --&gt; D
+    D --&gt; G
+    E --&gt; G
+    F --&gt; G
+    G --&gt; J
+    H --&gt; J
+    I --&gt; J
+</code></pre>
+
+<h2 id="monitoring-and-observability">Monitoring and Observability</h2>
+
+<h3 id="metrics-collection">Metrics Collection</h3>
+
+<pre><code class="language-mermaid">graph LR
+    subgraph "Terry-Form MCP"
+        A[Application Metrics]
+        B[System Metrics]
+        C[Custom Metrics]
+    end
+    
+    subgraph "Collection"
+        D[Prometheus Exporter]
+        E[StatsD Client]
+    end
+    
+    subgraph "Storage"
+        F[Prometheus]
+        G[InfluxDB]
+    end
+    
+    subgraph "Visualization"
+        H[Grafana]
+        I[Custom Dashboards]
+    end
+    
+    A --&gt; D
+    B --&gt; D
+    C --&gt; E
+    
+    D --&gt; F
+    E --&gt; G
+    
+    F --&gt; H
+    G --&gt; H
+    H --&gt; I
+</code></pre>
+
+<h2 id="high-availability-setup">High Availability Setup</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Region 1"
+        A1[Terry-Form Primary]
+        B1[Database Primary]
+        C1[Cache Primary]
+    end
+    
+    subgraph "Region 2"
+        A2[Terry-Form Secondary]
+        B2[Database Replica]
+        C2[Cache Replica]
+    end
+    
+    subgraph "Global"
+        D[Global Load Balancer]
+        E[Shared Object Storage]
+    end
+    
+    D --&gt; A1
+    D --&gt; A2
+    
+    A1 --&gt; B1
+    A1 --&gt; C1
+    A1 --&gt; E
+    
+    A2 --&gt; B2
+    A2 --&gt; C2
+    A2 --&gt; E
+    
+    B1 -.-&gt;|Replication| B2
+    C1 -.-&gt;|Replication| C2
+</code></pre>
+
+<h2 id="development-architecture">Development Architecture</h2>
+
+<h3 id="local-development-setup">Local Development Setup</h3>
+
+<pre><code class="language-mermaid">graph TD
+    subgraph "Developer Machine"
+        A[IDE/Editor]
+        B[Terry-Form Dev Server]
+        C[Local Terraform]
+        D[Docker Desktop]
+    end
+    
+    subgraph "Test Environment"
+        E[Test Workspace]
+        F[Mock Cloud APIs]
+        G[Test State Storage]
+    end
+    
+    A --&gt; B
+    B --&gt; C
+    B --&gt; E
+    E --&gt; F
+    E --&gt; G
+    
+    D --&gt; B
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<ul>
+  <li>Review <a href="/terry-form-mcp/architecture/security">Security Architecture</a> for detailed security implementation</li>
+  <li>Explore <a href="/terry-form-mcp/architecture/api">API Architecture</a> for API design patterns</li>
+  <li>Learn about <a href="/terry-form-mcp/architecture/deployment">Deployment Options</a> for production setups</li>
+</ul>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Getting Started | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Getting Started" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick start guide for Terry-Form MCP" />
+<meta property="og:description" content="Quick start guide for Terry-Form MCP" />
+<link rel="canonical" href="https://aj-geddes.github.io/terry-form-mcp/getting-started.html" />
+<meta property="og:url" content="https://aj-geddes.github.io/terry-form-mcp/getting-started.html" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Getting Started" />
+<meta name="twitter:site" content="@terryform" />
+<meta name="twitter:creator" content="@AJ Geddes" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-10-05T15:40:06-05:00","description":"Quick start guide for Terry-Form MCP","headline":"Getting Started","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://aj-geddes.github.io/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"https://aj-geddes.github.io/terry-form-mcp/getting-started.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  
+  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <link type="application/atom+xml" rel="alternate" href="https://aj-geddes.github.io/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Convert code.language-mermaid blocks to div.mermaid for rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    });
+  </script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="/terry-form-mcp/" class="nav-logo">
+        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        
+        <a href="/terry-form-mcp/" 
+           class="nav-link "
+           >
+          Home
+          
+        </a>
+        
+        <a href="/terry-form-mcp/getting-started" 
+           class="nav-link "
+           >
+          Getting Started
+          
+        </a>
+        
+        <a href="/terry-form-mcp/guides/" 
+           class="nav-link "
+           >
+          Guides
+          
+        </a>
+        
+        <a href="/terry-form-mcp/api/" 
+           class="nav-link "
+           >
+          API Reference
+          
+        </a>
+        
+        <a href="/terry-form-mcp/architecture/" 
+           class="nav-link "
+           >
+          Architecture
+          
+        </a>
+        
+        <a href="/terry-form-mcp/tutorials/" 
+           class="nav-link "
+           >
+          Tutorials
+          
+        </a>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp" 
+           class="nav-link "
+           target="_blank" rel="noopener">
+          GitHub
+          <i class="fab fa-github"></i>
+        </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <article class="page">
+  <header class="page-header">
+    <h1>Getting Started</h1>
+  </header>
+
+  <div class="page-content">
+    <h1 id="getting-started-with-terry-form-mcp">Getting Started with Terry-Form MCP</h1>
+
+<p>Welcome to Terry-Form MCP! This guide will help you get up and running quickly.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<p>Before you begin, ensure you have the following installed:</p>
+
+<ul>
+  <li><strong>Docker</strong> (recommended) or Python 3.9+</li>
+  <li><strong>Terraform</strong> (if running locally)</li>
+  <li>An AI assistant that supports MCP (Claude, etc.)</li>
+  <li>A workspace directory for your Terraform configurations</li>
+</ul>
+
+<h2 id="installation-options">Installation Options</h2>
+
+<h3 id="option-1-docker-recommended">Option 1: Docker (Recommended)</h3>
+
+<p>Docker provides the easiest and most secure way to run Terry-Form MCP.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Clone the repository</span>
+git clone https://github.com/aj-geddes/terry-form-mcp.git
+<span class="nb">cd </span>terry-form-mcp
+
+<span class="c"># Build the image</span>
+./build.sh
+
+<span class="c"># Run the server (MCP uses stdio, not HTTP)</span>
+docker run <span class="nt">-it</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span><span class="s2">"</span>:/mnt/workspace <span class="se">\</span>
+  terry-form-mcp:latest
+</code></pre></div></div>
+
+<p><strong>Note</strong>: This server uses stdio transport for MCP protocol, not HTTP. It should be invoked by your MCP client (e.g., Claude Desktop), not run as a daemon.</p>
+
+<h3 id="option-2-local-development">Option 2: Local Development</h3>
+
+<p>For development or testing:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Clone the repository</span>
+git clone https://github.com/aj-geddes/terry-form-mcp.git
+<span class="nb">cd </span>terry-form-mcp
+
+<span class="c"># Install dependencies</span>
+pip <span class="nb">install</span> <span class="nt">-r</span> requirements.txt
+
+<span class="c"># Run the server directly</span>
+python3 server_enhanced_with_lsp.py
+</code></pre></div></div>
+
+<h2 id="configuration">Configuration</h2>
+
+<h3 id="1-ai-assistant-configuration">1. AI Assistant Configuration</h3>
+
+<p>Configure your AI assistant to use Terry-Form MCP. For Claude Desktop, edit your <code class="language-plaintext highlighter-rouge">claude_desktop_config.json</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"terry-form"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"docker"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">"run"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"-i"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"--rm"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"-v"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"/path/to/workspace:/mnt/workspace"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"terry-form-mcp:latest"</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="2-environment-variables">2. Environment Variables</h3>
+
+<p>Key environment variables:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Description</th>
+      <th>Required</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">WORKSPACE_ROOT</code></td>
+      <td>Root directory for Terraform files</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">TERRAFORM_CLOUD_TOKEN</code></td>
+      <td>Terraform Cloud API token</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GITHUB_APP_ID</code></td>
+      <td>GitHub App ID for repo integration</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GITHUB_APP_PRIVATE_KEY</code></td>
+      <td>GitHub App private key</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">LOG_LEVEL</code></td>
+      <td>Logging level (INFO, DEBUG)</td>
+      <td>No</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="3-security-configuration">3. Security Configuration</h3>
+
+<p>Terry-Form MCP includes several security features by default:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Security settings (built-in)</span>
+<span class="na">security</span><span class="pi">:</span>
+  <span class="na">allowed_actions</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">init</span>
+    <span class="pi">-</span> <span class="s">validate</span>
+    <span class="pi">-</span> <span class="s">plan</span>
+    <span class="pi">-</span> <span class="s">fmt</span>
+  <span class="na">blocked_actions</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">apply</span>
+    <span class="pi">-</span> <span class="s">destroy</span>
+  <span class="na">path_validation</span><span class="pi">:</span> <span class="s">strict</span>
+  <span class="na">input_sanitization</span><span class="pi">:</span> <span class="s">enabled</span>
+</code></pre></div></div>
+
+<h2 id="your-first-terraform-operation">Your First Terraform Operation</h2>
+
+<h3 id="1-create-a-simple-configuration">1. Create a Simple Configuration</h3>
+
+<p>Create a file <code class="language-plaintext highlighter-rouge">workspace/main.tf</code>:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
+  <span class="nx">required_version</span> <span class="p">=</span> <span class="s2">"&gt;= 1.0"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"project_name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name of the project"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"my-first-project"</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"project_info"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="p">=</span> <span class="s2">"Project: ${var.project_name}"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="2-use-terry-form-with-your-ai-assistant">2. Use Terry-Form with Your AI Assistant</h3>
+
+<p>Ask your AI assistant:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Can you help me validate and plan my Terraform configuration in the workspace directory?
+</code></pre></div></div>
+
+<p>The assistant will use Terry-Form MCP to:</p>
+<ol>
+  <li>Initialize the Terraform workspace</li>
+  <li>Validate the configuration</li>
+  <li>Generate an execution plan</li>
+  <li>Provide feedback and recommendations</li>
+</ol>
+
+<h3 id="3-example-response">3. Example Response</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"terry-results"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"init"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Terraform has been successfully initialized!"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Success! The configuration is valid."</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"plan_summary"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"add"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"change"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"destroy"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="common-use-cases">Common Use Cases</h2>
+
+<h3 id="managing-multiple-environments">Managing Multiple Environments</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Development environment</span>
+terry path: <span class="s2">"environments/dev"</span> actions: <span class="o">[</span><span class="s2">"plan"</span><span class="o">]</span> vars: <span class="o">{</span><span class="s2">"env"</span>: <span class="s2">"development"</span><span class="o">}</span>
+
+<span class="c"># Production environment  </span>
+terry path: <span class="s2">"environments/prod"</span> actions: <span class="o">[</span><span class="s2">"plan"</span><span class="o">]</span> vars: <span class="o">{</span><span class="s2">"env"</span>: <span class="s2">"production"</span><span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="working-with-modules">Working with Modules</h3>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># workspace/modules/vpc/main.tf</span>
+<span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"./modules/vpc"</span>
+  
+  <span class="nx">cidr_block</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span>
+  <span class="nx">environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="github-integration">GitHub Integration</h3>
+
+<p>If you’ve configured GitHub App integration:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Clone and analyze a repository</span>
+github_clone_repo owner: <span class="s2">"myorg"</span> repo: <span class="s2">"infrastructure"</span>
+
+<span class="c"># List Terraform files</span>
+github_list_terraform_files owner: <span class="s2">"myorg"</span> repo: <span class="s2">"infrastructure"</span>
+</code></pre></div></div>
+
+<h2 id="web-dashboard">Web Dashboard</h2>
+
+<p>Access the web dashboard at <code class="language-plaintext highlighter-rouge">http://localhost:3000</code> to:</p>
+
+<ul>
+  <li>Monitor Terraform operations in real-time</li>
+  <li>View workspace status</li>
+  <li>Check system health</li>
+  <li>Review operation history</li>
+</ul>
+
+<pre><code class="language-mermaid">graph LR
+    A[Browser] --&gt;|HTTP| B[Web Dashboard]
+    B --&gt; C[Terry-Form Server]
+    C --&gt; D[Terraform Operations]
+    C --&gt; E[Workspace Files]
+</code></pre>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="common-issues">Common Issues</h3>
+
+<div class="alert alert-info">
+<strong>Permission Denied</strong><br />
+Ensure the workspace directory has proper permissions:
+<code>chmod -R 755 /path/to/workspace</code>
+</div>
+
+<div class="alert alert-warning">
+<strong>Terraform Not Found</strong><br />
+If using Docker, Terraform is included. For local setup:
+<code>brew install terraform</code> or <code>apt-get install terraform</code>
+</div>
+
+<div class="alert alert-danger">
+<strong>MCP Connection Failed</strong><br />
+Check that Docker is running and the container started successfully:
+<code>docker logs terry-form</code>
+</div>
+
+<h3 id="debug-mode">Debug Mode</h3>
+
+<p>Enable debug logging for troubleshooting:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-d</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG <span class="se">\</span>
+  <span class="nt">-v</span> /path/to/workspace:/mnt/workspace <span class="se">\</span>
+  aj-geddes/terry-form-mcp:latest
+</code></pre></div></div>
+
+<h2 id="best-practices">Best Practices</h2>
+
+<ol>
+  <li><strong>Use Version Control</strong>: Always version control your Terraform configurations</li>
+  <li><strong>Plan Before Apply</strong>: Review plans carefully before applying changes</li>
+  <li><strong>Use Workspaces</strong>: Separate environments using Terraform workspaces</li>
+  <li><strong>Secure Secrets</strong>: Use environment variables or secret management tools</li>
+  <li><strong>Regular Backups</strong>: Backup your state files regularly</li>
+</ol>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>Now that you have Terry-Form MCP running:</p>
+
+<ul>
+  <li>📖 Read the <a href="/terry-form-mcp/architecture/">Architecture Overview</a></li>
+  <li>🔧 Explore <a href="/terry-form-mcp/guides/configuration">Advanced Configuration</a></li>
+  <li>🚀 Learn about <a href="/terry-form-mcp/guides/production">Production Deployment</a></li>
+  <li>🔌 Set up <a href="/terry-form-mcp/guides/integrations">Integrations</a></li>
+</ul>
+
+<h2 id="getting-help">Getting Help</h2>
+
+<ul>
+  <li>💬 <a href="https://github.com/aj-geddes/terry-form-mcp/discussions">GitHub Discussions</a></li>
+  <li>🐛 <a href="https://github.com/aj-geddes/terry-form-mcp/issues">Report Issues</a></li>
+  <li>📧 <a href="mailto:support@terry-form.io">Email Support</a></li>
+</ul>
+
+<hr />
+
+<div class="alert alert-success">
+<strong>🎉 Congratulations!</strong><br />
+You've successfully set up Terry-Form MCP. Start exploring its features and automate your infrastructure with confidence!
+</div>
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="/terry-form-mcp/contributing">Contributing</a></li>
+          <li><a href="/terry-form-mcp/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/security">Security</a></li>
+          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+          <li><a href="/terry-form-mcp/deployment/">Deployment</a></li>
+          <li><a href="/terry-form-mcp/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>GitHub App Setup Guide | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="GitHub App Setup Guide" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Enterprise-grade Terraform automation through Model Context Protocol - Secure, intelligent infrastructure management" />
+<meta property="og:description" content="Enterprise-grade Terraform automation through Model Context Protocol - Secure, intelligent infrastructure management" />
+<link rel="canonical" href="https://aj-geddes.github.io/terry-form-mcp/GITHUB_APP_SETUP.html" />
+<meta property="og:url" content="https://aj-geddes.github.io/terry-form-mcp/GITHUB_APP_SETUP.html" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="GitHub App Setup Guide" />
+<meta name="twitter:site" content="@terryform" />
+<meta name="twitter:creator" content="@AJ Geddes" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-07-25T12:35:23-05:00","description":"Enterprise-grade Terraform automation through Model Context Protocol - Secure, intelligent infrastructure management","headline":"GitHub App Setup Guide","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://aj-geddes.github.io/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"https://aj-geddes.github.io/terry-form-mcp/GITHUB_APP_SETUP.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  
+  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  
+  <link type="application/atom+xml" rel="alternate" href="https://aj-geddes.github.io/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+  
+  <!-- Mermaid for diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    // Convert code.language-mermaid blocks to div.mermaid for rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    });
+  </script>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <a href="/terry-form-mcp/" class="nav-logo">
+        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
+        <span>Terry-Form MCP</span>
+      </a>
+      
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <div class="nav-menu">
+        
+        <a href="/terry-form-mcp/" 
+           class="nav-link "
+           >
+          Home
+          
+        </a>
+        
+        <a href="/terry-form-mcp/getting-started" 
+           class="nav-link "
+           >
+          Getting Started
+          
+        </a>
+        
+        <a href="/terry-form-mcp/guides/" 
+           class="nav-link "
+           >
+          Guides
+          
+        </a>
+        
+        <a href="/terry-form-mcp/api/" 
+           class="nav-link "
+           >
+          API Reference
+          
+        </a>
+        
+        <a href="/terry-form-mcp/architecture/" 
+           class="nav-link "
+           >
+          Architecture
+          
+        </a>
+        
+        <a href="/terry-form-mcp/tutorials/" 
+           class="nav-link "
+           >
+          Tutorials
+          
+        </a>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp" 
+           class="nav-link "
+           target="_blank" rel="noopener">
+          GitHub
+          <i class="fab fa-github"></i>
+        </a>
+        
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <h1 id="github-app-setup-guide">GitHub App Setup Guide</h1>
+
+<p>This guide will help you set up a GitHub App for the Terry-Form MCP server to access and work with Terraform repositories.</p>
+
+<h2 id="overview">Overview</h2>
+
+<p>The Terry-Form MCP server can integrate with GitHub to:</p>
+<ul>
+  <li>Clone and access private repositories</li>
+  <li>List and analyze Terraform configurations</li>
+  <li>Prepare isolated workspaces from GitHub repos</li>
+  <li>Manage repository access securely</li>
+</ul>
+
+<h2 id="creating-a-github-app">Creating a GitHub App</h2>
+
+<h3 id="1-navigate-to-github-app-settings">1. Navigate to GitHub App Settings</h3>
+
+<ul>
+  <li>Go to your GitHub account settings</li>
+  <li>For personal apps: Settings → Developer settings → GitHub Apps → New GitHub App</li>
+  <li>For organization apps: Organization Settings → Developer settings → GitHub Apps → New GitHub App</li>
+</ul>
+
+<h3 id="2-configure-basic-information">2. Configure Basic Information</h3>
+
+<p><strong>GitHub App name</strong>: <code class="language-plaintext highlighter-rouge">Terry-Form MCP</code> (or your preferred name)</p>
+
+<p><strong>Description</strong>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Terry-Form MCP integration for managing Terraform configurations from GitHub repositories.
+</code></pre></div></div>
+
+<p><strong>Homepage URL</strong>: <code class="language-plaintext highlighter-rouge">https://github.com/aj-geddes/terry-form-mcp</code></p>
+
+<h3 id="3-configure-permissions">3. Configure Permissions</h3>
+
+<p>Set the following <strong>Repository permissions</strong>:</p>
+
+<ul>
+  <li><strong>Contents</strong>: Read (to clone and read repository files)</li>
+  <li><strong>Metadata</strong>: Read (to access repository information)</li>
+  <li><strong>Pull requests</strong>: Read (optional, for future PR integration)</li>
+  <li><strong>Actions</strong>: Read (optional, for workflow integration)</li>
+</ul>
+
+<h3 id="4-configure-events-optional">4. Configure Events (Optional)</h3>
+
+<p>If you want to use webhooks, subscribe to:</p>
+<ul>
+  <li>Push events</li>
+  <li>Pull request events</li>
+  <li>Repository events</li>
+</ul>
+
+<p><strong>Webhook URL</strong>: Leave blank if not using webhooks</p>
+
+<h3 id="5-where-can-this-github-app-be-installed">5. Where can this GitHub App be installed?</h3>
+
+<p>Choose based on your needs:</p>
+<ul>
+  <li><strong>Only on this account</strong>: For personal use</li>
+  <li><strong>Any account</strong>: If you want others to use your app</li>
+</ul>
+
+<h3 id="6-create-the-app">6. Create the App</h3>
+
+<p>Click “Create GitHub App”</p>
+
+<h3 id="7-generate-private-key">7. Generate Private Key</h3>
+
+<p>After creating the app:</p>
+<ol>
+  <li>Scroll to “Private keys” section</li>
+  <li>Click “Generate a private key”</li>
+  <li>Download the <code class="language-plaintext highlighter-rouge">.pem</code> file - <strong>Keep this secure!</strong></li>
+</ol>
+
+<h3 id="8-note-your-app-id">8. Note Your App ID</h3>
+
+<p>Find your App ID at the top of the app settings page.</p>
+
+<h2 id="installing-the-github-app">Installing the GitHub App</h2>
+
+<h3 id="1-install-to-your-accountorganization">1. Install to Your Account/Organization</h3>
+
+<ol>
+  <li>In your GitHub App settings, click “Install App”</li>
+  <li>Choose where to install (personal account or organization)</li>
+  <li>Select repositories:
+    <ul>
+      <li><strong>All repositories</strong>: Grants access to all current and future repos</li>
+      <li><strong>Selected repositories</strong>: Choose specific repos</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="2-note-the-installation-id">2. Note the Installation ID</h3>
+
+<p>After installation, you’ll be redirected to the installation settings page.
+The URL will be: <code class="language-plaintext highlighter-rouge">https://github.com/settings/installations/{INSTALLATION_ID}</code></p>
+
+<p>Note this Installation ID.</p>
+
+<h2 id="configuring-terry-form-mcp">Configuring Terry-Form MCP</h2>
+
+<h3 id="environment-variables">Environment Variables</h3>
+
+<p>Set the following environment variables:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Required</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_ID</span><span class="o">=</span><span class="s2">"your-app-id"</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_INSTALLATION_ID</span><span class="o">=</span><span class="s2">"your-installation-id"</span>
+
+<span class="c"># Private key - choose one method:</span>
+<span class="c"># Method 1: File path (recommended)</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_PRIVATE_KEY_PATH</span><span class="o">=</span><span class="s2">"/path/to/private-key.pem"</span>
+
+<span class="c"># Method 2: Direct key (use for containers/CI)</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_PRIVATE_KEY</span><span class="o">=</span><span class="s2">"-----BEGIN RSA PRIVATE KEY-----
+...key contents...
+-----END RSA PRIVATE KEY-----"</span>
+
+<span class="c"># Optional</span>
+<span class="nb">export </span><span class="nv">GITHUB_APP_WEBHOOK_SECRET</span><span class="o">=</span><span class="s2">"your-webhook-secret"</span>
+</code></pre></div></div>
+
+<h3 id="docker-configuration">Docker Configuration</h3>
+
+<p>When using Docker, you can:</p>
+
+<ol>
+  <li>Mount the private key file:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-v</span> /path/to/private-key.pem:/keys/github-app.pem <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_PRIVATE_KEY_PATH</span><span class="o">=</span>/keys/github-app.pem <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_ID</span><span class="o">=</span>12345 <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_INSTALLATION_ID</span><span class="o">=</span>67890 <span class="se">\</span>
+  terry-form-mcp
+</code></pre></div>    </div>
+  </li>
+  <li>Or pass the key directly:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_PRIVATE_KEY</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span><span class="nb">cat</span> /path/to/private-key.pem<span class="si">)</span><span class="s2">"</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_ID</span><span class="o">=</span>12345 <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_INSTALLATION_ID</span><span class="o">=</span>67890 <span class="se">\</span>
+  terry-form-mcp
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="kubernetes-configuration">Kubernetes Configuration</h3>
+
+<p>Use secrets for sensitive data:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Secret</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">github-app-secret</span>
+<span class="na">type</span><span class="pi">:</span> <span class="s">Opaque</span>
+<span class="na">data</span><span class="pi">:</span>
+  <span class="na">private-key</span><span class="pi">:</span> <span class="s">&lt;base64-encoded-private-key&gt;</span>
+  
+<span class="nn">---</span>
+<span class="na">apiVersion</span><span class="pi">:</span> <span class="s">apps/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Deployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-mcp</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">template</span><span class="pi">:</span>
+    <span class="na">spec</span><span class="pi">:</span>
+      <span class="na">containers</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">terry-form-mcp</span>
+        <span class="na">env</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">GITHUB_APP_ID</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s2">"</span><span class="s">12345"</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">GITHUB_APP_INSTALLATION_ID</span>
+          <span class="na">value</span><span class="pi">:</span> <span class="s2">"</span><span class="s">67890"</span>
+        <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">GITHUB_APP_PRIVATE_KEY</span>
+          <span class="na">valueFrom</span><span class="pi">:</span>
+            <span class="na">secretKeyRef</span><span class="pi">:</span>
+              <span class="na">name</span><span class="pi">:</span> <span class="s">github-app-secret</span>
+              <span class="na">key</span><span class="pi">:</span> <span class="s">private-key</span>
+</code></pre></div></div>
+
+<h2 id="using-github-integration">Using GitHub Integration</h2>
+
+<p>Once configured, you can use the GitHub tools:</p>
+
+<h3 id="clone-a-repository">Clone a Repository</h3>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"github_clone_repo"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myorg"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"repo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform-configs"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"branch"</span><span class="p">:</span><span class="w"> </span><span class="s2">"main"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="list-terraform-files">List Terraform Files</h3>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"github_list_terraform_files"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myorg"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"repo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform-configs"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/prod"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="prepare-workspace-from-github">Prepare Workspace from GitHub</h3>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"github_prepare_workspace"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myorg"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"repo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform-configs"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"config_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/prod"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="run-terraform-on-github-repository">Run Terraform on GitHub Repository</h3>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"github://myorg/terraform-configs/environments/prod"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="security-best-practices">Security Best Practices</h2>
+
+<ol>
+  <li><strong>Limit Repository Access</strong>: Only grant access to repositories that need Terraform management</li>
+  <li><strong>Use Read-Only Permissions</strong>: The app only needs read access for Terraform operations</li>
+  <li><strong>Secure Private Key Storage</strong>:
+    <ul>
+      <li>Never commit the private key to version control</li>
+      <li>Use secure secret management (Vault, AWS Secrets Manager, etc.)</li>
+      <li>Rotate keys periodically</li>
+    </ul>
+  </li>
+  <li><strong>Monitor App Activity</strong>: Regularly review the app’s activity in GitHub audit logs</li>
+  <li><strong>Use Installation Tokens</strong>: The app automatically uses short-lived installation tokens</li>
+</ol>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="common-issues">Common Issues</h3>
+
+<ol>
+  <li><strong>“Private key not found”</strong>
+    <ul>
+      <li>Check the file path is correct</li>
+      <li>Ensure the file has proper permissions (600)</li>
+      <li>Verify environment variable is set</li>
+    </ul>
+  </li>
+  <li><strong>“Failed to get installation token”</strong>
+    <ul>
+      <li>Verify App ID and Installation ID are correct</li>
+      <li>Check the app is still installed</li>
+      <li>Ensure the private key matches the app</li>
+    </ul>
+  </li>
+  <li><strong>“Repository not accessible”</strong>
+    <ul>
+      <li>Verify the app has access to the repository</li>
+      <li>Check repository permissions in app settings</li>
+      <li>Ensure installation is active</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="debug-mode">Debug Mode</h3>
+
+<p>Enable debug logging:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG
+</code></pre></div></div>
+
+<p>This will show detailed information about GitHub API calls and authentication.</p>
+
+<h2 id="api-rate-limits">API Rate Limits</h2>
+
+<p>GitHub Apps have higher rate limits than personal access tokens:</p>
+<ul>
+  <li><strong>Authenticated requests</strong>: 5,000 per hour per installation</li>
+  <li><strong>Unauthenticated requests</strong>: 60 per hour</li>
+</ul>
+
+<p>The Terry-Form MCP server handles rate limiting automatically.</p>
+
+<h2 id="revoking-access">Revoking Access</h2>
+
+<p>To revoke access:</p>
+<ol>
+  <li>Go to Settings → Applications → Installed GitHub Apps</li>
+  <li>Find Terry-Form MCP</li>
+  <li>Click “Configure” → “Suspend” or “Uninstall”</li>
+</ol>
+
+<h2 id="support">Support</h2>
+
+<p>For issues or questions:</p>
+<ul>
+  <li>Create an issue at: https://github.com/aj-geddes/terry-form-mcp/issues</li>
+  <li>Check the logs for detailed error messages</li>
+  <li>Verify all environment variables are correctly set</li>
+</ul>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Terry-Form MCP</h4>
+        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
+        <div class="social-links">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://twitter.com/terryform" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="/terry-form-mcp/contributing">Contributing</a></li>
+          <li><a href="/terry-form-mcp/changelog">Changelog</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/terry-form-mcp/security">Security</a></li>
+          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+          <li><a href="/terry-form-mcp/deployment/">Deployment</a></li>
+          <li><a href="/terry-form-mcp/monitoring/">Monitoring</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+    </div>
+  </footer>
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+</body>
+</html>
