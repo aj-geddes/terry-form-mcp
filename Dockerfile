@@ -23,6 +23,7 @@ COPY terraform_lsp_client.py .
 COPY mcp_request_validator.py .
 COPY github_app_auth.py .
 COPY github_repo_handler.py .
+COPY terry-form-mcp.py .
 
 # Set up entrypoint to run the enhanced server
 ENTRYPOINT ["python3", "server_enhanced_with_lsp.py"]
