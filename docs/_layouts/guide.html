@@ -8,7 +8,7 @@ layout: default
     <nav class="guide-nav">
       {% assign sorted_guides = site.guides | sort: 'order' %}
       {% for guide in sorted_guides %}
-        <a href="{{ guide.url | relative_url }}" 
+        <a href="{{ guide.url | relative_url }}"
            class="guide-nav-item {% if page.url == guide.url %}active{% endif %}">
           {{ guide.title }}
         </a>
@@ -23,7 +23,6 @@ layout: default
       <p class="guide-description">{{ page.description }}</p>
       {% endif %}
       <div class="guide-meta">
-        <span class="reading-time">📖 {{ content | reading_time }}</span>
         {% if page.last_modified_at %}
         <span class="last-modified">Updated: {{ page.last_modified_at | date: "%B %d, %Y" }}</span>
         {% endif %}
@@ -31,7 +30,7 @@ layout: default
     </header>
 
     {% if page.toc %}
-    <div class="toc"></div>
+    <div class="toc" id="toc"></div>
     {% endif %}
 
     <div class="guide-body">
@@ -46,12 +45,12 @@ layout: default
         {% for guide in guides %}
           {% if guide.order == prev_order %}
             <a href="{{ guide.url | relative_url }}" class="prev-guide">
-              ← {{ guide.title }}
+              <i class="fas fa-arrow-left"></i> {{ guide.title }}
             </a>
           {% endif %}
           {% if guide.order == next_order %}
             <a href="{{ guide.url | relative_url }}" class="next-guide">
-              {{ guide.title }} →
+              {{ guide.title }} <i class="fas fa-arrow-right"></i>
             </a>
           {% endif %}
         {% endfor %}
@@ -60,205 +59,12 @@ layout: default
       <div class="guide-feedback">
         <h4>Was this guide helpful?</h4>
         <p>
-          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20{{ page.title | url_encode }}" 
-             class="feedback-link">
-            Provide feedback
+          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20{{ page.title | url_encode }}"
+             class="feedback-link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-comment"></i> Provide feedback
           </a>
         </p>
       </div>
     </footer>
   </article>
 </div>
-
-<style>
-.guide-container {
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 3rem;
-  margin-top: 2rem;
-}
-
-.guide-sidebar {
-  position: sticky;
-  top: 80px;
-  height: fit-content;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-}
-
-.guide-nav {
-  display: flex;
-  flex-direction: column;
-}
-
-.guide-nav-item {
-  padding: 0.5rem 1rem;
-  color: #666;
-  text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: all 0.2s;
-}
-
-.guide-nav-item:hover {
-  color: #2196F3;
-  background: #f8f9fa;
-}
-
-.guide-nav-item.active {
-  color: #2196F3;
-  background: #e3f2fd;
-  border-left-color: #2196F3;
-  font-weight: 500;
-}
-
-.guide-content {
-  max-width: 800px;
-}
-
-.guide-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.guide-header h1 {
-  margin-bottom: 0.5rem;
-}
-
-.guide-description {
-  font-size: 1.25rem;
-  color: #666;
-  margin: 0.5rem 0;
-}
-
-.guide-meta {
-  display: flex;
-  gap: 2rem;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: #999;
-}
-
-.guide-body {
-  line-height: 1.8;
-}
-
-.guide-body h2 {
-  margin-top: 3rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.guide-body h3 {
-  margin-top: 2rem;
-}
-
-.guide-footer {
-  margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e0e0e0;
-}
-
-.guide-navigation {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 3rem;
-}
-
-.prev-guide, .next-guide {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-  text-decoration: none;
-  color: #333;
-  transition: all 0.2s;
-}
-
-.prev-guide:hover, .next-guide:hover {
-  background: #e3f2fd;
-  color: #2196F3;
-}
-
-.guide-feedback {
-  text-align: center;
-  padding: 2rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-}
-
-.feedback-link {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: #2196F3;
-  color: white;
-  border-radius: 0.25rem;
-  text-decoration: none;
-}
-
-.feedback-link:hover {
-  background: #1976D2;
-}
-
-@media (max-width: 768px) {
-  .guide-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .guide-sidebar {
-    position: static;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 1rem;
-  }
-  
-  .guide-navigation {
-    flex-direction: column;
-    gap: 1rem;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-nav-item {
-    color: #ccc;
-  }
-  
-  .guide-nav-item:hover {
-    background: #333;
-  }
-  
-  .guide-nav-item.active {
-    background: #1e3a5f;
-  }
-  
-  .guide-header {
-    border-bottom-color: #444;
-  }
-  
-  .guide-description {
-    color: #999;
-  }
-  
-  .guide-body h2 {
-    border-bottom-color: #444;
-  }
-  
-  .guide-footer {
-    border-top-color: #444;
-  }
-  
-  .prev-guide, .next-guide {
-    background: #2a2a2a;
-    color: #e0e0e0;
-  }
-  
-  .prev-guide:hover, .next-guide:hover {
-    background: #1e3a5f;
-  }
-  
-  .guide-feedback {
-    background: #2a2a2a;
-  }
-}
-</style>

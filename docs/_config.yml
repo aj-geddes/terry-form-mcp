@@ -6,12 +6,6 @@ email: contact@terry-form.io
 url: "https://aj-geddes.github.io"
 baseurl: "/terry-form-mcp"
 
-# Theme and Appearance
-theme: minima
-remote_theme: pages-themes/cayman@v0.2.0
-skin: dark
-logo: /assets/images/terry-form-logo.png
-
 # Build settings
 markdown: kramdown
 kramdown:
@@ -73,6 +67,12 @@ defaults:
     values:
       layout: "tutorial"
       toc: true
+  - scope:
+      path: ""
+      type: "architecture"
+    values:
+      layout: "default"
+      toc: true
 
 # Navigation
 navigation:
@@ -90,6 +90,7 @@ navigation:
     url: /tutorials/
   - title: GitHub
     url: https://github.com/aj-geddes/terry-form-mcp
+    external: true
 
 # SEO
 twitter:
@@ -100,9 +101,6 @@ social:
   name: Terry-Form MCP
   links:
     - https://github.com/aj-geddes/terry-form-mcp
-
-# Analytics
-google_analytics: UA-XXXXXXXXX-X
 
 # Repository
 repository: aj-geddes/terry-form-mcp
@@ -117,3 +115,6 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - .github/workflows/
+  - README.md
+  - BROKEN-LINKS-REPORT.md
+  - VERIFIED-SITEMAP.md

@@ -1,23 +1,22 @@
 <!DOCTYPE html>
-<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+<html lang="{{ page.lang | default: site.lang | default: 'en' }}">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
+
   {% seo %}
-  
+
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
   {% feed_meta %}
-  
-  <!-- Mermaid for diagrams -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>
-    // Convert code.language-mermaid blocks to div.mermaid for rendering
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
     document.addEventListener('DOMContentLoaded', function() {
+      // Convert code.language-mermaid blocks to div.mermaid for rendering
       document.querySelectorAll('code.language-mermaid').forEach(function(block) {
         const pre = block.parentElement;
         const div = document.createElement('div');
@@ -25,11 +24,12 @@
         div.textContent = block.textContent;
         pre.parentElement.replaceChild(div, pre);
       });
+
       mermaid.initialize({
         startOnLoad: true,
-        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default',
+        securityLevel: 'loose'
       });
-      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
     });
   </script>
 </head>
@@ -38,23 +38,22 @@
   <nav class="main-nav">
     <div class="nav-container">
       <a href="{{ site.baseurl }}/" class="nav-logo">
-        <img src="{{ site.baseurl }}/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
         <span>Terry-Form MCP</span>
       </a>
-      
-      <button class="nav-toggle" aria-label="Toggle navigation">
+
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span>
         <span></span>
         <span></span>
       </button>
-      
+
       <div class="nav-menu">
         {% for item in site.navigation %}
-        <a href="{% if item.url contains 'http' %}{{ item.url }}{% else %}{{ site.baseurl }}{{ item.url }}{% endif %}" 
+        <a href="{% if item.external %}{{ item.url }}{% else %}{{ site.baseurl }}{{ item.url }}{% endif %}"
            class="nav-link {% if page.url == item.url %}active{% endif %}"
-           {% if item.url contains 'http' %}target="_blank" rel="noopener"{% endif %}>
+           {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
           {{ item.title }}
-          {% if item.url contains 'github' %}<i class="fab fa-github"></i>{% endif %}
+          {% if item.external %}<i class="fab fa-github"></i>{% endif %}
         </a>
         {% endfor %}
       </div>
@@ -71,15 +70,12 @@
         <h4>Terry-Form MCP</h4>
         <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
         <div class="social-links">
-          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
+          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-github"></i>
-          </a>
-          <a href="https://twitter.com/terryform" aria-label="Twitter">
-            <i class="fab fa-twitter"></i>
           </a>
         </div>
       </div>
-      
+
       <div class="footer-section">
         <h4>Documentation</h4>
         <ul>
@@ -89,12 +85,12 @@
           <li><a href="{{ site.baseurl }}/tutorials/">Tutorials</a></li>
         </ul>
       </div>
-      
+
       <div class="footer-section">
         <h4>Community</h4>
         <ul>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
         </ul>
       </div>
 
@@ -106,19 +102,12 @@
         </ul>
       </div>
     </div>
-    
+
     <div class="footer-bottom">
-      <p>&copy; {{ 'now' | date: '%Y' }} Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+      <p>&copy; {{ 'now' | date: '%Y' }} Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
     </div>
   </footer>
 
   <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
 </body>
 </html>
