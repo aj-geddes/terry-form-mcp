@@ -14,6 +14,10 @@ RUN TERRAFORM_LS_VERSION="0.33.2" && \
 # Allow pip to install into protected Alpine Python  
 RUN pip install --break-system-packages fastmcp
 
+# Create non-root user for security (Alpine syntax)
+RUN addgroup -g 1001 -S terraform && \
+    adduser -u 1001 -S terraform -G terraform
+
 # Create app directory
 WORKDIR /app
 
@@ -24,6 +28,9 @@ COPY mcp_request_validator.py .
 COPY github_app_auth.py .
 COPY github_repo_handler.py .
 COPY terry-form-mcp.py .
+
+# Switch to non-root user
+USER terraform
 
 # Set up entrypoint to run the enhanced server
 ENTRYPOINT ["python3", "server_enhanced_with_lsp.py"]
