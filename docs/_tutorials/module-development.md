@@ -41,7 +41,7 @@ graph TB
     end
 
     subgraph "Root Configuration"
-        G[module "vpc"] --> A
+        G["module vpc"] --> A
         G --> H[Variables passed in]
         A --> I[Outputs returned]
     end

@@ -191,7 +191,7 @@ graph TB
     end
 
     subgraph "Volume Mounts"
-        F[/mnt/workspace]
+        F["/mnt/workspace"]
     end
 
     A --> F

@@ -1,1 +1,1 @@
-Sitemap: http://0.0.0.0:4000/terry-form-mcp/sitemap.xml
+Sitemap: http://localhost:4001/terry-form-mcp/sitemap.xml

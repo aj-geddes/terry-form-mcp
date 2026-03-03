@@ -130,7 +130,7 @@ Run as a Docker container connected to AI assistants via MCP stdio.
 ```mermaid
 graph LR
     A[AI Assistant] -->|MCP stdio| B[Docker Container]
-    B --> C[/mnt/workspace]
+    B --> C["/mnt/workspace"]
 ```
 
 ## Technology Stack

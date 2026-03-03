@@ -13,15 +13,15 @@
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues" />
 <meta property="og:description" content="Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues" />
-<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting" />
-<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting" />
+<link rel="canonical" href="http://localhost:4001/terry-form-mcp/guides/troubleshooting" />
+<meta property="og:url" content="http://localhost:4001/terry-form-mcp/guides/troubleshooting" />
 <meta property="og:site_name" content="Terry-Form MCP" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta property="article:published_time" content="2026-03-03T07:27:09-06:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Troubleshooting" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:34:04-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues","headline":"Troubleshooting","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting"},"url":"http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T07:07:22-06:00","datePublished":"2026-03-03T07:27:09-06:00","description":"Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues","headline":"Troubleshooting","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4001/terry-form-mcp/guides/troubleshooting"},"url":"http://localhost:4001/terry-form-mcp/guides/troubleshooting"}</script>
 <!-- End Jekyll SEO tag -->
 
 
@@ -32,7 +32,7 @@
 <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
-<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+<link type="application/atom+xml" rel="alternate" href="http://localhost:4001/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
 
 <script type="application/ld+json">
 {
@@ -58,25 +58,30 @@
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
-      const pre = block.parentElement;
+  const isDark = document.documentElement.classList.contains('dark-theme') ||
+    (!document.documentElement.classList.contains('light-theme') &&
+     window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: isDark ? 'dark' : 'default',
+    securityLevel: 'loose'
+  });
+
+  const blocks = document.querySelectorAll('code.language-mermaid');
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const pre = block.parentElement;
+    try {
+      const { svg } = await mermaid.render('mermaid-' + i, block.textContent);
       const div = document.createElement('div');
       div.className = 'mermaid';
-      div.textContent = block.textContent;
+      div.innerHTML = svg;
       pre.parentElement.replaceChild(div, pre);
-    });
-
-    const isDark = document.documentElement.classList.contains('dark-theme') ||
-      (!document.documentElement.classList.contains('light-theme') &&
-       window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: isDark ? 'dark' : 'default',
-      securityLevel: 'loose'
-    });
-  });
+    } catch (err) {
+      console.error('Mermaid render error for diagram ' + i + ':', err);
+    }
+  }
 </script>
 
 </head>
