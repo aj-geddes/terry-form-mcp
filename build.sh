@@ -9,7 +9,7 @@
 #
 # Features:
 # - Builds on official HashiCorp Terraform image
-# - Includes terraform-ls v0.33.2 for language server functionality
+# - Includes terraform-ls v0.38.5 for language server functionality
 # - Comprehensive diagnostic and utility tools
 # - Enhanced LSP client with robust error handling
 #
@@ -57,8 +57,8 @@ echo -e "\n${YELLOW}Verifying the built image...${NC}"
 # Test 1: Check terraform-ls availability
 echo "Test 1: Checking terraform-ls availability..."
 TERRAFORM_LS_VERSION=$(docker run --rm ${FULL_IMAGE_NAME} terraform-ls version 2>/dev/null | head -1)
-if [[ -n "$TERRAFORM_LS_VERSION" && "$TERRAFORM_LS_VERSION" == *"0.33.2"* ]]; then
-    echo -e "${GREEN}✅ terraform-ls v0.33.2 is available${NC}"
+if [[ -n "$TERRAFORM_LS_VERSION" && "$TERRAFORM_LS_VERSION" == *"0.38.5"* ]]; then
+    echo -e "${GREEN}✅ terraform-ls v0.38.5 is available${NC}"
 else
     echo -e "${RED}❌ terraform-ls verification failed${NC}"
     echo "  Output: $TERRAFORM_LS_VERSION"

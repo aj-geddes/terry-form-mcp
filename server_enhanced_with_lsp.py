@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
 """Terry-Form MCP Server - Enhanced with LSP Integration"""
-__version__ = "3.0.0"
+__version__ = "3.1.0"
 
 import asyncio
-import importlib.util
+import importlib
 import json
 import logging
 import os
 import re
 import subprocess
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
 from fastmcp import FastMCP
+
+# Pre-compiled regex patterns for Terraform file analysis
+_RE_PROVIDER = re.compile(r'provider\s+"([^"]+)"')
+_RE_MODULE = re.compile(r'module\s+"[^"]+"')
+_RE_RESOURCE = re.compile(r'resource\s+"[^"]+"\s+"[^"]+"')
+_RE_DATA_SOURCE = re.compile(r'data\s+"[^"]+"\s+"[^"]+"')
+_RE_VARIABLE = re.compile(r'variable\s+"[^"]+"')
+_RE_OUTPUT = re.compile(r'output\s+"[^"]+"')
+_RE_VARIABLE_BLOCK = re.compile(r'variable\s+"([^"]+)"\s*{([^}]+)}', re.DOTALL)
+_RE_HARDCODED_AMI = re.compile(r'ami-[a-f0-9]{8,}')
+_RE_HARDCODED_INSTANCE = re.compile(r'i-[a-f0-9]{8,}')
+_RE_HARDCODED_VPC = re.compile(r'vpc-[a-f0-9]{8,}')
+_RE_HARDCODED_SUBNET = re.compile(r'subnet-[a-f0-9]{8,}')
 
 # Configure logging
 logging.basicConfig(
@@ -21,19 +35,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Lifespan context manager for clean startup/shutdown
+@asynccontextmanager
+async def app_lifespan(server: FastMCP):
+    logger.info("Terry-Form MCP server starting...")
+    yield {}
+    logger.info("Terry-Form MCP server shutting down...")
+    if terraform_lsp_client._lsp_client:
+        await terraform_lsp_client._lsp_client.shutdown()
+
+
 # Initialize the MCP server
-mcp = FastMCP("terry-form")
+mcp = FastMCP("terry-form", lifespan=app_lifespan)
 
 # Import security validator
 try:
-    spec_validator = importlib.util.spec_from_file_location(
-        "mcp_request_validator", "./mcp_request_validator.py"
-    )
-    mcp_request_validator = importlib.util.module_from_spec(spec_validator)
-    spec_validator.loader.exec_module(mcp_request_validator)
-    
-    # Initialize validator
-    request_validator = mcp_request_validator.MCPRequestValidator()
+    from mcp_request_validator import MCPRequestValidator
+    request_validator = MCPRequestValidator()
     logger.info("Security validator initialized")
 except Exception as e:
     logger.error(f"Failed to load security validator: {e}")
@@ -188,141 +206,84 @@ auth_manager = AuthManager()
 logger.info("Authentication manager initialized")
 
 # Security validation decorator
+def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
+    """Shared pre-execution validation: auth, rate limiting, request validation, path checks.
+
+    Returns (ok, info) where info contains either error details or
+    validated context (user_id, role, rate_info).
+    """
+    authenticated, user_id, role = auth_manager.authenticate()
+    if not authenticated:
+        logger.warning(f"Authentication failed for {tool_name}")
+        return False, {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
+
+    if not auth_manager.authorize(tool_name, role):
+        logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
+        return False, {"error": f"Access denied. Role '{role}' not authorized for tool '{tool_name}'"}
+
+    allowed, rate_info = rate_limiter.is_allowed(tool_name)
+    if not allowed:
+        logger.warning(f"Rate limit exceeded for {tool_name}: {rate_info}")
+        return False, {
+            "error": f"Rate limit exceeded. Limit: {rate_info['limit']}/min, Reset: {rate_info['reset']}",
+            "rate_limit": rate_info,
+        }
+
+    logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
+
+    if request_validator:
+        request = {"method": "tools/call", "params": {"name": tool_name, "arguments": kwargs}}
+        is_valid, error_msg = request_validator.validate_request(request)
+        if not is_valid:
+            logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
+            return False, {"error": f"Validation failed: {error_msg}"}
+
+    if "path" in kwargs and not validate_safe_path(kwargs["path"]):
+        return False, {"error": "Invalid path: Access outside workspace is not allowed"}
+
+    return True, {"user_id": user_id, "role": role, "rate_info": rate_info}
+
+
+def _post_process(result: Any, info: dict) -> Any:
+    """Inject metadata into successful tool results."""
+    if isinstance(result, dict):
+        result["_rate_limit"] = info["rate_info"]
+        result["_auth"] = {"user": info["user_id"], "role": info["role"]}
+    return result
+
+
 def validate_request(tool_name: str):
     """Decorator to validate MCP requests before tool execution"""
     def decorator(func):
         import functools
-        import inspect
-        
-        @functools.wraps(func)
-        def wrapper(**kwargs):
-            # Authentication and authorization check
-            # Note: In MCP context, we'll use default role since headers aren't easily accessible
-            authenticated, user_id, role = auth_manager.authenticate()
-            if not authenticated:
-                logger.warning(f"Authentication failed for {tool_name}")
-                return {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
-            
-            # Check authorization
-            if not auth_manager.authorize(tool_name, role):
-                logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
-                return {"error": f"Access denied. Role '{role}' not authorized for tool '{tool_name}'"}
-            
-            # Check rate limits
-            allowed, rate_info = rate_limiter.is_allowed(tool_name)
-            if not allowed:
-                logger.warning(f"Rate limit exceeded for {tool_name}: {rate_info}")
-                return {
-                    "error": f"Rate limit exceeded. Limit: {rate_info['limit']}/min, Reset: {rate_info['reset']}",
-                    "rate_limit": rate_info
-                }
-            
-            # Log tool invocation for audit trail
-            logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
-            
-            # Validate request if validator is available
-            if request_validator:
-                # Construct MCP request format
-                request = {
-                    "method": "tools/call",
-                    "params": {
-                        "name": tool_name,
-                        "arguments": kwargs
-                    }
-                }
-                
-                is_valid, error_msg = request_validator.validate_request(request)
-                if not is_valid:
-                    logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
-                    return {"error": f"Validation failed: {error_msg}"}
-            
-            # Path validation for path-based tools
-            if "path" in kwargs:
-                path = kwargs["path"]
-                if not validate_safe_path(path):
-                    return {"error": "Invalid path: Access outside workspace is not allowed"}
-            
-            # Execute the tool
-            try:
-                result = func(**kwargs)
-                logger.info(f"Tool {tool_name} completed successfully for user {user_id}")
-                
-                # Add metadata to response
-                if isinstance(result, dict):
-                    result["_rate_limit"] = rate_info
-                    result["_auth"] = {"user": user_id, "role": role}
-                
-                return result
-            except Exception as e:
-                logger.error(f"Tool {tool_name} failed with error: {e}")
-                return {"error": f"Tool execution failed: {str(e)}"}
-        
-        # Preserve async functions
+
         if asyncio.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapper(**kwargs):
-                # Authentication and authorization check
-                authenticated, user_id, role = auth_manager.authenticate()
-                if not authenticated:
-                    logger.warning(f"Authentication failed for {tool_name}")
-                    return {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
-                
-                # Check authorization
-                if not auth_manager.authorize(tool_name, role):
-                    logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
-                    return {"error": f"Access denied. Role '{role}' not authorized for tool '{tool_name}'"}
-                
-                # Check rate limits
-                allowed, rate_info = rate_limiter.is_allowed(tool_name)
-                if not allowed:
-                    logger.warning(f"Rate limit exceeded for {tool_name}: {rate_info}")
-                    return {
-                        "error": f"Rate limit exceeded. Limit: {rate_info['limit']}/min, Reset: {rate_info['reset']}",
-                        "rate_limit": rate_info
-                    }
-                
-                # Log tool invocation for audit trail
-                logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
-                
-                # Validate request if validator is available
-                if request_validator:
-                    # Construct MCP request format
-                    request = {
-                        "method": "tools/call",
-                        "params": {
-                            "name": tool_name,
-                            "arguments": kwargs
-                        }
-                    }
-                    
-                    is_valid, error_msg = request_validator.validate_request(request)
-                    if not is_valid:
-                        logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
-                        return {"error": f"Validation failed: {error_msg}"}
-                
-                # Path validation for path-based tools
-                if "path" in kwargs:
-                    path = kwargs["path"]
-                    if not validate_safe_path(path):
-                        return {"error": "Invalid path: Access outside workspace is not allowed"}
-                
-                # Execute the tool
+                ok, info = _pre_validate(tool_name, kwargs)
+                if not ok:
+                    return info
                 try:
                     result = await func(**kwargs)
-                    logger.info(f"Tool {tool_name} completed successfully for user {user_id}")
-                    
-                    # Add metadata to response
-                    if isinstance(result, dict):
-                        result["_rate_limit"] = rate_info
-                        result["_auth"] = {"user": user_id, "role": role}
-                    
-                    return result
+                    logger.info(f"Tool {tool_name} completed successfully for user {info['user_id']}")
+                    return _post_process(result, info)
                 except Exception as e:
                     logger.error(f"Tool {tool_name} failed with error: {e}")
                     return {"error": f"Tool execution failed: {str(e)}"}
-            
             return async_wrapper
-        
+
+        @functools.wraps(func)
+        def wrapper(**kwargs):
+            ok, info = _pre_validate(tool_name, kwargs)
+            if not ok:
+                return info
+            try:
+                result = func(**kwargs)
+                logger.info(f"Tool {tool_name} completed successfully for user {info['user_id']}")
+                return _post_process(result, info)
+            except Exception as e:
+                logger.error(f"Tool {tool_name} failed with error: {e}")
+                return {"error": f"Tool execution failed: {str(e)}"}
         return wrapper
     return decorator
 
@@ -352,17 +313,11 @@ def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> boo
         return False
 
 
-# Load the existing Terraform tool logic (kebab-case)
-spec = importlib.util.spec_from_file_location("terry_form", "./terry-form-mcp.py")
-terry_form = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(terry_form)
+# Load the existing Terraform tool logic (kebab-case filename requires importlib)
+terry_form = importlib.import_module("terry-form-mcp")
 
 # Load the LSP client
-spec_lsp = importlib.util.spec_from_file_location(
-    "terraform_lsp_client", "./terraform_lsp_client.py"
-)
-terraform_lsp_client = importlib.util.module_from_spec(spec_lsp)
-spec_lsp.loader.exec_module(terraform_lsp_client)
+import terraform_lsp_client
 
 # ============================================================================
 # EXISTING TERRAFORM EXECUTION TOOLS
@@ -439,22 +394,21 @@ def terry_workspace_list() -> Dict[str, object]:
                         ["date", "-u", "-d", f"@{int(mtime)}", "+%Y-%m-%dT%H:%M:%SZ"],
                         capture_output=True, text=True
                     ).stdout.strip()
-                except:
+                except Exception:
                     pass
-                
+
                 # Extract provider information
                 for tf_file in tf_files:
                     try:
                         with open(os.path.join(root, tf_file), 'r') as f:
                             content = f.read()
                             # Simple provider extraction
-                            import re
-                            providers = re.findall(r'provider\s+"([^"]+)"', content)
+                            providers = _RE_PROVIDER.findall(content)
                             workspace_info["providers"].extend(providers)
                             # Count module calls
-                            modules = re.findall(r'module\s+"[^"]+"', content)
+                            modules = _RE_MODULE.findall(content)
                             workspace_info["modules"] += len(modules)
-                    except:
+                    except Exception:
                         pass
                 
                 workspace_info["providers"] = list(set(workspace_info["providers"]))
@@ -1232,33 +1186,33 @@ def terry_analyze(path: str) -> Dict[str, object]:
                 content = f.read()
                 
                 # Count resources
-                resources = re.findall(r'resource\s+"[^"]+"\s+"[^"]+"', content)
+                resources = _RE_RESOURCE.findall(content)
                 analysis["statistics"]["resources"] += len(resources)
-                
+
                 # Count data sources
-                data_sources = re.findall(r'data\s+"[^"]+"\s+"[^"]+"', content)
+                data_sources = _RE_DATA_SOURCE.findall(content)
                 analysis["statistics"]["data_sources"] += len(data_sources)
-                
+
                 # Count modules
-                modules = re.findall(r'module\s+"[^"]+"', content)
+                modules = _RE_MODULE.findall(content)
                 analysis["statistics"]["modules"] += len(modules)
-                
+
                 # Count providers
-                providers = re.findall(r'provider\s+"[^"]+"', content)
+                providers = _RE_PROVIDER.findall(content)
                 analysis["statistics"]["providers"] += len(set(providers))
-                
+
                 # Count variables
-                variables = re.findall(r'variable\s+"[^"]+"', content)
+                variables = _RE_VARIABLE.findall(content)
                 analysis["statistics"]["variables"] += len(variables)
-                
+
                 # Count outputs
-                outputs = re.findall(r'output\s+"[^"]+"', content)
+                outputs = _RE_OUTPUT.findall(content)
                 analysis["statistics"]["outputs"] += len(outputs)
-                
+
                 # Check for common issues
-                
+
                 # Missing descriptions on variables
-                var_blocks = re.findall(r'variable\s+"([^"]+)"\s*{([^}]+)}', content, re.DOTALL)
+                var_blocks = _RE_VARIABLE_BLOCK.findall(content)
                 for var_name, var_body in var_blocks:
                     if 'description' not in var_body:
                         analysis["issues"].append({
@@ -1269,17 +1223,17 @@ def terry_analyze(path: str) -> Dict[str, object]:
                             "recommendation": "Add description field to variable block"
                         })
                         analysis["score"] -= 2
-                
+
                 # Check for hardcoded values
                 hardcoded_patterns = [
-                    (r'ami-[a-f0-9]{8,}', "Hardcoded AMI ID detected"),
-                    (r'i-[a-f0-9]{8,}', "Hardcoded instance ID detected"),
-                    (r'vpc-[a-f0-9]{8,}', "Hardcoded VPC ID detected"),
-                    (r'subnet-[a-f0-9]{8,}', "Hardcoded subnet ID detected")
+                    (_RE_HARDCODED_AMI, "Hardcoded AMI ID detected"),
+                    (_RE_HARDCODED_INSTANCE, "Hardcoded instance ID detected"),
+                    (_RE_HARDCODED_VPC, "Hardcoded VPC ID detected"),
+                    (_RE_HARDCODED_SUBNET, "Hardcoded subnet ID detected"),
                 ]
-                
+
                 for pattern, message in hardcoded_patterns:
-                    if re.search(pattern, content):
+                    if pattern.search(content):
                         analysis["issues"].append({
                             "severity": "warning",
                             "type": "hardcoding",
@@ -1292,7 +1246,10 @@ def terry_analyze(path: str) -> Dict[str, object]:
                 # Check for missing tags on taggable resources
                 taggable_resources = ['aws_instance', 'aws_s3_bucket', 'aws_vpc', 'aws_security_group']
                 for resource_type in taggable_resources:
-                    resource_blocks = re.findall(rf'resource\s+"{resource_type}"\s+"[^"]+"\s*{{([^}}]+)}}', content, re.DOTALL)
+                    resource_blocks = re.findall(
+                        rf'resource\s+"{re.escape(resource_type)}"\s+"[^"]+"\s*{{([^}}]+)}}',
+                        content, re.DOTALL,
+                    )
                     for resource_body in resource_blocks:
                         if 'tags' not in resource_body:
                             analysis["issues"].append({
@@ -1813,31 +1770,21 @@ def tf_cloud_get_state_outputs(organization: str, workspace: str) -> Dict[str, o
 
 # Import GitHub integration modules
 try:
-    spec_github_auth = importlib.util.spec_from_file_location(
-        "github_app_auth", "./github_app_auth.py"
-    )
-    github_app_auth = importlib.util.module_from_spec(spec_github_auth)
-    spec_github_auth.loader.exec_module(github_app_auth)
-    
-    spec_github_handler = importlib.util.spec_from_file_location(
-        "github_repo_handler", "./github_repo_handler.py"
-    )
-    github_repo_handler = importlib.util.module_from_spec(spec_github_handler)
-    spec_github_handler.loader.exec_module(github_repo_handler)
-    
-    # Initialize GitHub auth and handler
+    from github_app_auth import GitHubAppConfig, GitHubAppAuth
+    from github_repo_handler import GitHubRepoHandler
+
     github_auth = None
     github_handler = None
-    
+
     try:
-        github_config = github_app_auth.GitHubAppConfig.from_env()
-        github_auth = github_app_auth.GitHubAppAuth(github_config)
-        github_handler = github_repo_handler.GitHubRepoHandler(github_auth)
+        github_config = GitHubAppConfig.from_env()
+        github_auth = GitHubAppAuth(github_config)
+        github_handler = GitHubRepoHandler(github_auth)
     except Exception as e:
-        print(f"GitHub integration not configured: {e}")
-        
+        logger.info(f"GitHub integration not configured: {e}")
+
 except Exception as e:
-    print(f"Failed to load GitHub integration: {e}")
+    logger.error(f"Failed to load GitHub integration: {e}")
     github_handler = None
 
 
@@ -1951,37 +1898,8 @@ async def github_prepare_workspace(
 
 
 # ============================================================================
-# SERVER STARTUP AND SHUTDOWN
+# SERVER STARTUP
 # ============================================================================
 
-
-async def _shutdown_handler():
-    """Cleanup LSP client on server shutdown"""
-    if terraform_lsp_client._lsp_client:
-        await terraform_lsp_client._lsp_client.shutdown()
-
-
 if __name__ == "__main__":
-    try:
-        # Register shutdown handler
-        import atexit
-        import signal
-
-        def cleanup():
-            if terraform_lsp_client._lsp_client:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(terraform_lsp_client._lsp_client.shutdown())
-                loop.close()
-
-        atexit.register(cleanup)
-        signal.signal(signal.SIGTERM, lambda s, f: cleanup())
-
-        # Start MCP server
-        mcp.run()
-
-    except KeyboardInterrupt:
-        # Cleanup on Ctrl+C
-        if terraform_lsp_client._lsp_client:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(terraform_lsp_client._lsp_client.shutdown())
+    mcp.run()

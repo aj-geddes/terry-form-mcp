@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import subprocess
+from pathlib import Path
 from typing import Dict
 
 
@@ -257,8 +258,9 @@ class TerraformLSPClient:
             if not os.path.exists(file_path):
                 return {"error": f"File does not exist: {file_path}"}
 
-            with open(file_path, "r") as f:
-                content = f.read()
+            content = await asyncio.to_thread(
+                Path(file_path).read_text, encoding="utf-8"
+            )
 
             await self._send_notification(
                 "textDocument/didOpen",
@@ -299,8 +301,9 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                with open(file_path, "r") as f:
-                    content = f.read()
+                content = await asyncio.to_thread(
+                    Path(file_path).read_text, encoding="utf-8"
+                )
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -351,8 +354,9 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                with open(file_path, "r") as f:
-                    content = f.read()
+                content = await asyncio.to_thread(
+                    Path(file_path).read_text, encoding="utf-8"
+                )
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -402,8 +406,9 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                with open(file_path, "r") as f:
-                    content = f.read()
+                content = await asyncio.to_thread(
+                    Path(file_path).read_text, encoding="utf-8"
+                )
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -446,7 +451,12 @@ class TerraformLSPClient:
 
             if self.terraform_ls_process:
                 self.terraform_ls_process.terminate()
-                await self.terraform_ls_process.wait()
+                try:
+                    await asyncio.wait_for(self.terraform_ls_process.wait(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    self.logger.warning("terraform-ls did not exit in time, killing")
+                    self.terraform_ls_process.kill()
+                    await self.terraform_ls_process.wait()
 
         except Exception as e:
             self.logger.error(f"Error during shutdown: {e}")
@@ -465,10 +475,12 @@ async def get_lsp_client(workspace_path: str = None) -> TerraformLSPClient:
         if workspace_path and not _lsp_client.initialized:
             success = await _lsp_client.start_terraform_ls(workspace_path)
             if not success:
+                # Capture error before nulling the client
+                error_msg = _lsp_client.initialization_error or "Unknown error"
                 # Reset client on failure so next call will retry
                 _lsp_client = None
                 raise RuntimeError(
-                    f"Failed to initialize LSP client: {_lsp_client.initialization_error if _lsp_client else 'Unknown error'}"
+                    f"Failed to initialize LSP client: {error_msg}"
                 )
 
     return _lsp_client

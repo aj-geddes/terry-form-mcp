@@ -22,6 +22,8 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+GITHUB_API_VERSION = "2022-11-28"
+
 
 @dataclass
 class GitHubAppConfig:
@@ -93,7 +95,7 @@ class GitHubAppAuth:
         """Get headers for GitHub API requests"""
         headers = {
             "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
         }
 
         if use_jwt:
@@ -148,7 +150,7 @@ class GitHubAppAuth:
         return {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "X-GitHub-Api-Version": GITHUB_API_VERSION,
         }
 
     def list_installations(self) -> list[Dict[str, Any]]:
@@ -195,8 +197,8 @@ class GitHubAppAuth:
     def verify_webhook(self, payload: bytes, signature: str) -> bool:
         """Verify a GitHub webhook signature"""
         if not self.config.webhook_secret:
-            logger.warning("No webhook secret configured, skipping verification")
-            return True
+            logger.error("No webhook secret configured, rejecting webhook")
+            return False
 
         import hashlib
         import hmac

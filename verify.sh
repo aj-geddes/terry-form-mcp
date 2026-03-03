@@ -72,10 +72,10 @@ fi
 # Test 4: Check terraform-ls availability
 echo -e "${YELLOW}[4/8]${NC} Checking terraform-ls..."
 TF_LS_VERSION=$(docker run --rm $IMAGE_NAME sh -c "terraform-ls version 2>&1 | head -1" 2>/dev/null || echo "")
-if echo "$TF_LS_VERSION" | grep -q "0.33.2"; then
+if echo "$TF_LS_VERSION" | grep -q "0.38.5"; then
     test_result "Terraform Language Server" "PASS" "$TF_LS_VERSION"
 else
-    test_result "Terraform Language Server" "FAIL" "Expected v0.33.2"
+    test_result "Terraform Language Server" "FAIL" "Expected v0.38.5"
 fi
 
 # Test 5: Check Python and FastMCP

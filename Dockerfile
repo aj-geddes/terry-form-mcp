@@ -1,18 +1,19 @@
-FROM hashicorp/terraform:latest
+FROM hashicorp/terraform:1.12
 
 # Install Python, pip, and other dependencies
 RUN apk add --no-cache python3 py3-pip curl unzip bash
 
 # Install terraform-ls
-RUN TERRAFORM_LS_VERSION="0.33.2" && \
+RUN TERRAFORM_LS_VERSION="0.38.5" && \
     curl -sSL "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -o terraform-ls.zip && \
     unzip terraform-ls.zip && \
     mv terraform-ls /usr/local/bin/ && \
     chmod +x /usr/local/bin/terraform-ls && \
     rm terraform-ls.zip
 
-# Allow pip to install into protected Alpine Python  
-RUN pip install --break-system-packages fastmcp
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --break-system-packages -r requirements.txt
 
 # Create non-root user for security (Alpine syntax)
 RUN addgroup -g 1001 -S terraform && \

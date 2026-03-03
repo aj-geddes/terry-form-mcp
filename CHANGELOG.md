@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-03-03
+
+### Changed
+- **Dependencies**: Full rewrite of `requirements.txt` with updated versions
+  - `fastmcp` 0.x -> 3.0+, `aiohttp` 3.8 -> 3.13+, `PyJWT` 2.8 -> 2.11+
+  - `cryptography` 41 -> 46+, `jsonschema` 4.19 -> 4.26+ (requires Python >= 3.10)
+  - `asyncio-lru` renamed to `async-lru` (PyPI package rename)
+  - Removed unused `openai` and `anthropic` dependencies
+- **Docker**: Pinned `hashicorp/terraform:1.12`, upgraded `terraform-ls` 0.33.2 -> 0.38.5
+- **Dockerfile**: Now installs full requirements.txt instead of just fastmcp
+- **Dockerfile_github_enhanced**: Removed references to deleted files (`server_mcp_only.py`, `server_web_only.py`, `internal/`)
+- **Imports**: Replaced fragile `importlib.util.spec_from_file_location` hacks with standard `import`/`from` statements
+- **Shutdown**: Replaced duplicated `atexit`/`signal`/`KeyboardInterrupt` cleanup with FastMCP 3.0 `lifespan` context manager
+- **Decorator**: Consolidated `validate_request` sync/async wrappers (~135 lines) into shared `_pre_validate`/`_post_process` helpers (~55 lines)
+
+### Fixed
+- **LSP client None reference**: `_lsp_client.initialization_error` was accessed after setting `_lsp_client = None`, always returning "Unknown error"
+- **Bare except clauses**: Changed `except:` to `except Exception:` in `terry_workspace_list`
+- **Logging**: Replaced `print()` calls with `logger.info()`/`logger.error()` in GitHub integration setup
+- **Redundant import**: Removed `import re` inside loop body (already imported at module level)
+- **Blocking I/O in async**: Replaced synchronous `open()` calls in LSP client with `asyncio.to_thread(Path.read_text)`
+- **Unbounded wait**: Added 5-second timeout to `process.wait()` in LSP shutdown, with `kill()` fallback
+
+### Security
+- **Webhook verification**: Changed `verify_webhook` to return `False` (not `True`) when no webhook secret is configured
+- **API version constant**: Extracted hardcoded `"2022-11-28"` into `GITHUB_API_VERSION` module-level constant
+- **Compiled regex**: Pre-compiled all Terraform file analysis regex patterns at module level for performance and safety
+
 ## [3.0.0] - 2025-10-05
 
 ### 🎯 Major Release - Production Ready
@@ -121,7 +149,8 @@ This release represents a complete refactoring and cleanup of the Terry-Form MCP
 - Troubleshooting guide and best practices
 - Security considerations and limitations
 
-[Unreleased]: https://github.com/aj-geddes/terry-form-mcp/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/aj-geddes/terry-form-mcp/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/aj-geddes/terry-form-mcp/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/aj-geddes/terry-form-mcp/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/aj-geddes/terry-form-mcp/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/aj-geddes/terry-form-mcp/releases/tag/v1.0.0
