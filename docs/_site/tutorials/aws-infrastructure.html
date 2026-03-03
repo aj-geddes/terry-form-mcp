@@ -2,154 +2,205 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  
-  <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Building AWS Infrastructure with Terry-Form MCP | Terry-Form MCP</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Building AWS Infrastructure | Terry-Form MCP</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Building AWS Infrastructure with Terry-Form MCP" />
+<meta property="og:title" content="Building AWS Infrastructure" />
 <meta name="author" content="AJ Geddes" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Step-by-step tutorial for managing AWS infrastructure" />
-<meta property="og:description" content="Step-by-step tutorial for managing AWS infrastructure" />
-<link rel="canonical" href="http://localhost:4000/terry-form-mcp/tutorials/aws-infrastructure" />
-<meta property="og:url" content="http://localhost:4000/terry-form-mcp/tutorials/aws-infrastructure" />
+<meta name="description" content="Build a complete VPC with subnets, security groups, and a load balancer using Terry-Form MCP" />
+<meta property="og:description" content="Build a complete VPC with subnets, security groups, and a load balancer using Terry-Form MCP" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/tutorials/aws-infrastructure" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/tutorials/aws-infrastructure" />
 <meta property="og:site_name" content="Terry-Form MCP" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2025-10-06T05:22:44-05:00" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Building AWS Infrastructure with Terry-Form MCP" />
-<meta name="twitter:site" content="@terryform" />
-<meta name="twitter:creator" content="@AJ Geddes" />
+<meta property="twitter:title" content="Building AWS Infrastructure" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-07-25T14:38:37-05:00","datePublished":"2025-10-06T05:22:44-05:00","description":"Step-by-step tutorial for managing AWS infrastructure","headline":"Building AWS Infrastructure with Terry-Form MCP","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/terry-form-mcp/tutorials/aws-infrastructure"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"http://localhost:4000/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"http://localhost:4000/terry-form-mcp/tutorials/aws-infrastructure"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-10-06T05:36:30-05:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Build a complete VPC with subnets, security groups, and a load balancer using Terry-Form MCP","headline":"Building AWS Infrastructure","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/tutorials/aws-infrastructure"},"url":"http://0.0.0.0:4000/terry-form-mcp/tutorials/aws-infrastructure"}</script>
 <!-- End Jekyll SEO tag -->
 
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
   
-  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  
-  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
-  
-  <!-- Mermaid for diagrams -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>
-    // Convert code.language-mermaid blocks to div.mermaid for rendering
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
-        const pre = block.parentElement;
-        const div = document.createElement('div');
-        div.className = 'mermaid';
-        div.textContent = block.textContent;
-        pre.parentElement.replaceChild(div, pre);
-      });
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-      });
-      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
     });
-  </script>
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
 </head>
 
 <body>
   <nav class="main-nav">
-    <div class="nav-container">
-      <a href="/terry-form-mcp/" class="nav-logo">
-        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
-        <span>Terry-Form MCP</span>
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
       </a>
       
-      <button class="nav-toggle" aria-label="Toggle navigation">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
       
-      <div class="nav-menu">
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
         
-        <a href="/terry-form-mcp/" 
-           class="nav-link "
-           >
-          Home
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
         
-        <a href="/terry-form-mcp/getting-started" 
-           class="nav-link "
-           >
-          Getting Started
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
         
-        <a href="/terry-form-mcp/guides/" 
-           class="nav-link "
-           >
-          Guides
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
         
-        <a href="/terry-form-mcp/api/" 
-           class="nav-link "
-           >
-          API Reference
-          
-        </a>
-        
-        <a href="/terry-form-mcp/architecture/" 
-           class="nav-link "
-           >
-          Architecture
-          
-        </a>
-        
-        <a href="/terry-form-mcp/tutorials/" 
-           class="nav-link "
-           >
-          Tutorials
-          
-        </a>
-        
-        <a href="https://github.com/aj-geddes/terry-form-mcp" 
-           class="nav-link "
-           target="_blank" rel="noopener">
-          GitHub
-          <i class="fab fa-github"></i>
-        </a>
-        
-      </div>
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
     </div>
-  </nav>
+  </div>
+</nav>
+
 
   <main class="main-content">
     <article class="tutorial">
   <header class="tutorial-header">
-    <h1>Building AWS Infrastructure with Terry-Form MCP</h1>
+    <h1>Building AWS Infrastructure</h1>
     
-    <p class="tutorial-description">Step-by-step tutorial for managing AWS infrastructure</p>
+    <p class="tutorial-description">Build a complete VPC with subnets, security groups, and a load balancer using Terry-Form MCP</p>
     
-    
-    <span class="difficulty-badge">intermediate</span>
-    
+    <div class="tutorial-meta">
+      
+      <span class="difficulty-badge difficulty-intermediate">intermediate</span>
+      
+      
+      <span class="duration"><i class="fas fa-clock"></i> 30 minutes</span>
+      
+    </div>
   </header>
 
+  
+  <div class="prereq-list">
+    <h4>Prerequisites</h4>
+    <ul>
+      
+      <li>Terry-Form MCP installed and configured</li>
+      
+      <li>AWS credentials available (for plan to succeed)</li>
+      
+      <li>Completed the "Your First Project" tutorial</li>
+      
+    </ul>
+  </div>
+  
+
+  
+  
+
+<div class="toc" id="toc"></div>
+
+  
+
   <div class="tutorial-content">
-    <h1 id="building-aws-infrastructure-with-terry-form-mcp">Building AWS Infrastructure with Terry-Form MCP</h1>
+    <h1 id="building-aws-infrastructure">Building AWS Infrastructure</h1>
 
-<p>In this tutorial, you’ll learn how to use Terry-Form MCP to build and manage AWS infrastructure safely through an AI assistant.</p>
+<p>In this tutorial, you’ll use Terry-Form MCP to build and validate a complete AWS networking setup — VPC, subnets, security groups, and an Application Load Balancer.</p>
 
-<h2 id="prerequisites">Prerequisites</h2>
-
-<ul>
-  <li>Terry-Form MCP installed and running</li>
-  <li>AWS account with credentials configured</li>
-  <li>Basic understanding of Terraform</li>
-  <li>AI assistant configured with Terry-Form MCP</li>
-</ul>
-
-<h2 id="what-well-build">What We’ll Build</h2>
+<h2 id="what-youll-build">What You’ll Build</h2>
 
 <pre><code class="language-mermaid">graph TB
     subgraph "VPC"
@@ -157,54 +208,48 @@
         B[Public Subnet]
         C[Private Subnet]
         D[NAT Gateway]
-        
+
         subgraph "Public Resources"
             E[Load Balancer]
-            F[Bastion Host]
         end
-        
+
         subgraph "Private Resources"
             G[Web Servers]
-            H[RDS Database]
-            I[ElastiCache]
         end
     end
-    
+
     A --&gt; B
     B --&gt; D
     D --&gt; C
     B --&gt; E
-    B --&gt; F
     C --&gt; G
-    C --&gt; H
-    C --&gt; I
     E --&gt; G
 </code></pre>
 
 <h2 id="step-1-project-setup">Step 1: Project Setup</h2>
 
-<p>First, let’s create a project structure:</p>
+<p>Create a project structure in your workspace:</p>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>workspace/
-├── aws-tutorial/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── terraform.tfvars.example
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>workspace/
+└── aws-tutorial/
+    ├── main.tf
+    ├── variables.tf
+    ├── vpc.tf
+    ├── security_groups.tf
+    ├── alb.tf
+    └── outputs.tf
 </code></pre></div></div>
 
 <p>Ask your AI assistant:</p>
 
 <blockquote>
-  <p>“Please create a new Terraform workspace at ‘aws-tutorial’ with basic AWS provider configuration”</p>
+  <p>“Create a new Terraform project at aws-tutorial with AWS provider configuration”</p>
 </blockquote>
-
-<p>The assistant will use Terry-Form to create:</p>
 
 <p><strong>main.tf:</strong></p>
 <div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
   <span class="nx">required_version</span> <span class="p">=</span> <span class="s2">"&gt;= 1.0"</span>
-  
+
   <span class="nx">required_providers</span> <span class="p">{</span>
     <span class="nx">aws</span> <span class="p">=</span> <span class="p">{</span>
       <span class="nx">source</span>  <span class="p">=</span> <span class="s2">"hashicorp/aws"</span>
@@ -215,7 +260,7 @@
 
 <span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
   <span class="nx">region</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">aws_region</span>
-  
+
   <span class="nx">default_tags</span> <span class="p">{</span>
     <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
       <span class="nx">Project</span>     <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
@@ -260,15 +305,11 @@
   <p>“Add a VPC with public and private subnets across 2 availability zones to my aws-tutorial workspace”</p>
 </blockquote>
 
-<p>The assistant will create:</p>
-
 <p><strong>vpc.tf:</strong></p>
-<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Get available AZs</span>
-<span class="nx">data</span> <span class="s2">"aws_availability_zones"</span> <span class="s2">"available"</span> <span class="p">{</span>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">data</span> <span class="s2">"aws_availability_zones"</span> <span class="s2">"available"</span> <span class="p">{</span>
   <span class="nx">state</span> <span class="p">=</span> <span class="s2">"available"</span>
 <span class="p">}</span>
 
-<span class="c1"># VPC</span>
 <span class="nx">resource</span> <span class="s2">"aws_vpc"</span> <span class="s2">"main"</span> <span class="p">{</span>
   <span class="nx">cidr_block</span>           <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">vpc_cidr</span>
   <span class="nx">enable_dns_hostnames</span> <span class="p">=</span> <span class="kc">true</span>
@@ -279,7 +320,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Internet Gateway</span>
 <span class="nx">resource</span> <span class="s2">"aws_internet_gateway"</span> <span class="s2">"main"</span> <span class="p">{</span>
   <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
 
@@ -288,7 +328,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Public Subnets</span>
 <span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"public"</span> <span class="p">{</span>
   <span class="nx">count</span> <span class="p">=</span> <span class="mi">2</span>
 
@@ -303,7 +342,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Private Subnets</span>
 <span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"private"</span> <span class="p">{</span>
   <span class="nx">count</span> <span class="p">=</span> <span class="mi">2</span>
 
@@ -317,7 +355,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Elastic IP for NAT Gateway</span>
 <span class="nx">resource</span> <span class="s2">"aws_eip"</span> <span class="s2">"nat"</span> <span class="p">{</span>
   <span class="nx">count</span>  <span class="p">=</span> <span class="mi">1</span>
   <span class="nx">domain</span> <span class="p">=</span> <span class="s2">"vpc"</span>
@@ -327,7 +364,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># NAT Gateway</span>
 <span class="nx">resource</span> <span class="s2">"aws_nat_gateway"</span> <span class="s2">"main"</span> <span class="p">{</span>
   <span class="nx">count</span> <span class="p">=</span> <span class="mi">1</span>
 
@@ -341,7 +377,6 @@
   <span class="nx">depends_on</span> <span class="p">=</span> <span class="p">[</span><span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">main</span><span class="p">]</span>
 <span class="p">}</span>
 
-<span class="c1"># Route Tables</span>
 <span class="nx">resource</span> <span class="s2">"aws_route_table"</span> <span class="s2">"public"</span> <span class="p">{</span>
   <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
 
@@ -368,7 +403,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Route Table Associations</span>
 <span class="nx">resource</span> <span class="s2">"aws_route_table_association"</span> <span class="s2">"public"</span> <span class="p">{</span>
   <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="err">)</span>
 
@@ -416,6 +450,16 @@
   <p>“Generate a Terraform plan for aws-tutorial with environment=dev”</p>
 </blockquote>
 
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws-tutorial"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
 <h2 id="step-4-add-security-groups">Step 4: Add Security Groups</h2>
 
 <p>Ask your AI assistant:</p>
@@ -425,8 +469,7 @@
 </blockquote>
 
 <p><strong>security_groups.tf:</strong></p>
-<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># ALB Security Group</span>
-<span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"alb"</span> <span class="p">{</span>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"alb"</span> <span class="p">{</span>
   <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-alb-"</span>
   <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for Application Load Balancer"</span>
   <span class="nx">vpc_id</span>      <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">id</span>
@@ -460,7 +503,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Web Server Security Group</span>
 <span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"web"</span> <span class="p">{</span>
   <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-web-"</span>
   <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for web servers"</span>
@@ -487,7 +529,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># RDS Security Group</span>
 <span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"rds"</span> <span class="p">{</span>
   <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.project_name}-rds-"</span>
   <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group for RDS database"</span>
@@ -507,17 +548,16 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<h2 id="step-5-add-application-resources">Step 5: Add Application Resources</h2>
+<h2 id="step-5-add-application-load-balancer">Step 5: Add Application Load Balancer</h2>
 
 <p>Ask your AI assistant:</p>
 
 <blockquote>
-  <p>“Add an Application Load Balancer and Auto Scaling Group for web servers”</p>
+  <p>“Add an Application Load Balancer with a target group and HTTP listener”</p>
 </blockquote>
 
 <p><strong>alb.tf:</strong></p>
-<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Application Load Balancer</span>
-<span class="nx">resource</span> <span class="s2">"aws_lb"</span> <span class="s2">"main"</span> <span class="p">{</span>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_lb"</span> <span class="s2">"main"</span> <span class="p">{</span>
   <span class="nx">name</span>               <span class="p">=</span> <span class="s2">"${var.project_name}-alb"</span>
   <span class="nx">internal</span>           <span class="p">=</span> <span class="kc">false</span>
   <span class="nx">load_balancer_type</span> <span class="p">=</span> <span class="s2">"application"</span>
@@ -532,7 +572,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># Target Group</span>
 <span class="nx">resource</span> <span class="s2">"aws_lb_target_group"</span> <span class="s2">"web"</span> <span class="p">{</span>
   <span class="nx">name</span>     <span class="p">=</span> <span class="s2">"${var.project_name}-web-tg"</span>
   <span class="nx">port</span>     <span class="p">=</span> <span class="mi">80</span>
@@ -554,7 +593,6 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c1"># ALB Listener</span>
 <span class="nx">resource</span> <span class="s2">"aws_lb_listener"</span> <span class="s2">"web"</span> <span class="p">{</span>
   <span class="nx">load_balancer_arn</span> <span class="p">=</span> <span class="nx">aws_lb</span><span class="err">.</span><span class="nx">main</span><span class="err">.</span><span class="nx">arn</span>
   <span class="nx">port</span>              <span class="p">=</span> <span class="mi">80</span>
@@ -567,92 +605,7 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<h2 id="step-6-review-and-analyze">Step 6: Review and Analyze</h2>
-
-<p>Ask your AI assistant:</p>
-
-<blockquote>
-  <p>“Analyze my aws-tutorial configuration for security best practices”</p>
-</blockquote>
-
-<p>The assistant will use Terry-Form’s analysis tools:</p>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"score"</span><span class="p">:</span><span class="w"> </span><span class="mi">85</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"issues"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-      </span><span class="p">{</span><span class="w">
-        </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"warning"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"security"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ALB is not using HTTPS listener"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"recommendation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add HTTPS listener with SSL certificate"</span><span class="w">
-      </span><span class="p">},</span><span class="w">
-      </span><span class="p">{</span><span class="w">
-        </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cost"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NAT Gateway incurs hourly charges"</span><span class="p">,</span><span class="w">
-        </span><span class="nl">"recommendation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Consider NAT instances for dev environments"</span><span class="w">
-      </span><span class="p">}</span><span class="w">
-    </span><span class="p">]</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div></div>
-
-<h2 id="step-7-cost-estimation">Step 7: Cost Estimation</h2>
-
-<p>Ask your AI assistant:</p>
-
-<blockquote>
-  <p>“Can you estimate the monthly cost for this infrastructure?”</p>
-</blockquote>
-
-<p><strong>Approximate AWS Costs:</strong></p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Resource</th>
-      <th>Count</th>
-      <th>Monthly Cost</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>VPC</td>
-      <td>1</td>
-      <td>$0</td>
-    </tr>
-    <tr>
-      <td>NAT Gateway</td>
-      <td>1</td>
-      <td>~$45</td>
-    </tr>
-    <tr>
-      <td>ALB</td>
-      <td>1</td>
-      <td>~$22</td>
-    </tr>
-    <tr>
-      <td>t3.micro instances</td>
-      <td>2</td>
-      <td>~$15</td>
-    </tr>
-    <tr>
-      <td>RDS db.t3.micro</td>
-      <td>1</td>
-      <td>~$15</td>
-    </tr>
-    <tr>
-      <td><strong>Total</strong></td>
-      <td> </td>
-      <td><strong>~$97/month</strong></td>
-    </tr>
-  </tbody>
-</table>
-
-<h2 id="step-8-outputs">Step 8: Outputs</h2>
-
-<p>Add outputs to see important values:</p>
+<h2 id="step-6-add-outputs">Step 6: Add Outputs</h2>
 
 <p><strong>outputs.tf:</strong></p>
 <div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"alb_dns_name"</span> <span class="p">{</span>
@@ -676,45 +629,112 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
+<h2 id="step-7-analyze-for-best-practices">Step 7: Analyze for Best Practices</h2>
+
+<p>Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Analyze my aws-tutorial configuration for best practices”</p>
+</blockquote>
+
+<p>The assistant uses <code class="language-plaintext highlighter-rouge">terry_analyze</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_analyze"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws-tutorial"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The analysis checks for:</p>
+
+<ul>
+  <li><strong>Variables without descriptions</strong> — All variables should have a <code class="language-plaintext highlighter-rouge">description</code> attribute</li>
+  <li><strong>Hardcoded values</strong> — AMI IDs, VPC IDs, and similar values should use variables or data sources</li>
+  <li><strong>Missing tags</strong> — All taggable resources should have tags</li>
+  <li><strong>Provider configuration</strong> — Using <code class="language-plaintext highlighter-rouge">default_tags</code> is recommended</li>
+</ul>
+
+<p>Since we followed best practices throughout, the analysis should return minimal issues.</p>
+
+<h2 id="step-8-run-security-scan">Step 8: Run Security Scan</h2>
+
+<blockquote>
+  <p>“Run a security scan on aws-tutorial”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_security_scan"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws-tutorial"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"medium"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The security scan may flag:</p>
+<ul>
+  <li>ALB using HTTP listener without HTTPS (expected for this tutorial)</li>
+  <li>Security group rules that could be tightened</li>
+</ul>
+
+<h2 id="step-9-re-validate-after-changes">Step 9: Re-validate After Changes</h2>
+
+<p>After any modifications, always re-run the validation cycle:</p>
+
+<blockquote>
+  <p>“Format, validate, and plan aws-tutorial”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws-tutorial"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
 <h2 id="best-practices-demonstrated">Best Practices Demonstrated</h2>
 
 <ol>
-  <li><strong>Multi-AZ Deployment</strong>: Resources spread across availability zones</li>
-  <li><strong>Network Isolation</strong>: Public/private subnet separation</li>
-  <li><strong>Security Groups</strong>: Least privilege access</li>
-  <li><strong>Tagging Strategy</strong>: Consistent resource tagging</li>
-  <li><strong>Modular Design</strong>: Separated into logical files</li>
+  <li><strong>Multi-AZ Deployment</strong> — Resources spread across availability zones</li>
+  <li><strong>Network Isolation</strong> — Public/private subnet separation</li>
+  <li><strong>Security Groups</strong> — Least privilege access with descriptions on all rules</li>
+  <li><strong>Tagging Strategy</strong> — Consistent resource tagging with <code class="language-plaintext highlighter-rouge">default_tags</code></li>
+  <li><strong>Modular Design</strong> — Separated into logical files</li>
 </ol>
 
 <h2 id="cleanup">Cleanup</h2>
 
-<p>When you’re done experimenting:</p>
+<p>When you’re done experimenting, you can generate a destroy plan to see what would be removed:</p>
 
 <blockquote>
-  <p>“Generate a plan to destroy all resources in aws-tutorial”</p>
+  <p>“Generate a Terraform plan for aws-tutorial to see the current state”</p>
 </blockquote>
 
 <div class="alert alert-warning">
-<strong>⚠️ Important</strong><br />
-Terry-Form MCP blocks <code>destroy</code> operations by default. This is intentional for safety. To destroy resources, you'll need to run Terraform directly or enable destroy in Terry-Form's configuration.
+  <strong>Important</strong><br />
+  Terry-Form MCP blocks <code>apply</code> and <code>destroy</code> operations. To actually create or destroy resources, run Terraform directly or use your CI/CD pipeline.
 </div>
 
 <h2 id="next-steps">Next Steps</h2>
 
 <ol>
-  <li><strong>Add HTTPS</strong>: Configure ACM certificate and HTTPS listener</li>
-  <li><strong>Add RDS</strong>: Create a managed database instance</li>
-  <li><strong>Add Monitoring</strong>: CloudWatch alarms and dashboards</li>
-  <li><strong>Add Backup</strong>: Automated snapshots and retention</li>
-  <li><strong>Add CI/CD</strong>: Integrate with deployment pipeline</li>
+  <li><strong>Add HTTPS</strong> — Configure ACM certificate and HTTPS listener</li>
+  <li><strong>Add RDS</strong> — Create a managed database instance</li>
+  <li><a href="/terry-form-mcp/tutorials/security-scanning/">Security Scanning</a> — Deep dive into analysis tools</li>
+  <li><a href="/terry-form-mcp/tutorials/module-development/">Module Development</a> — Extract reusable modules</li>
 </ol>
 
-<h2 id="advanced-topics">Advanced Topics</h2>
+<h2 id="advanced-using-terraform-modules">Advanced: Using Terraform Modules</h2>
 
-<h3 id="using-terraform-modules">Using Terraform Modules</h3>
+<p>Replace the inline VPC configuration with a community module:</p>
 
 <div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
-  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"terraform-aws-modules/vpc/aws"</span>
+  <span class="nx">source</span>  <span class="p">=</span> <span class="s2">"terraform-aws-modules/vpc/aws"</span>
   <span class="nx">version</span> <span class="p">=</span> <span class="s2">"5.0.0"</span>
 
   <span class="nx">name</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
@@ -729,14 +749,15 @@ Terry-Form MCP blocks <code>destroy</code> operations by default. This is intent
 <span class="p">}</span>
 </code></pre></div></div>
 
-<h3 id="state-management">State Management</h3>
+<h2 id="advanced-state-management">Advanced: State Management</h2>
+
+<p>For real projects, configure remote state:</p>
 
 <div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
   <span class="nx">backend</span> <span class="s2">"s3"</span> <span class="p">{</span>
-    <span class="nx">bucket</span> <span class="p">=</span> <span class="s2">"my-terraform-state"</span>
-    <span class="nx">key</span>    <span class="p">=</span> <span class="s2">"aws-tutorial/terraform.tfstate"</span>
-    <span class="nx">region</span> <span class="p">=</span> <span class="s2">"us-east-1"</span>
-    
+    <span class="nx">bucket</span>         <span class="p">=</span> <span class="s2">"my-terraform-state"</span>
+    <span class="nx">key</span>            <span class="p">=</span> <span class="s2">"aws-tutorial/terraform.tfstate"</span>
+    <span class="nx">region</span>         <span class="p">=</span> <span class="s2">"us-east-1"</span>
     <span class="nx">dynamodb_table</span> <span class="p">=</span> <span class="s2">"terraform-state-lock"</span>
     <span class="nx">encrypt</span>        <span class="p">=</span> <span class="kc">true</span>
   <span class="p">}</span>
@@ -747,11 +768,13 @@ Terry-Form MCP blocks <code>destroy</code> operations by default. This is intent
 
 <p>In this tutorial, you learned how to:</p>
 
-<p>✅ Create a VPC with public/private subnets<br />
-✅ Configure security groups<br />
-✅ Set up an Application Load Balancer<br />
-✅ Use Terry-Form MCP for safe Terraform operations<br />
-✅ Analyze configurations for best practices</p>
+<ul>
+  <li>Create a VPC with public and private subnets</li>
+  <li>Configure security groups with least-privilege access</li>
+  <li>Set up an Application Load Balancer</li>
+  <li>Use Terry-Form MCP’s init-validate-plan workflow</li>
+  <li>Analyze configurations for best practices and security</li>
+</ul>
 
 <h2 id="resources">Resources</h2>
 
@@ -764,7 +787,8 @@ Terry-Form MCP blocks <code>destroy</code> operations by default. This is intent
 <hr />
 
 <div class="tutorial-nav">
-  <a href="/terry-form-mcp/tutorials/" class="btn">← Back to Tutorials</a>
+  <a href="/terry-form-mcp/tutorials/first-project/" class="btn">← First Project</a>
+  <a href="/terry-form-mcp/tutorials/security-scanning/" class="btn btn-primary">Next: Security Scanning →</a>
 </div>
 
   </div>
@@ -773,59 +797,51 @@ Terry-Form MCP blocks <code>destroy</code> operations by default. This is intent
   </main>
 
   <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-section">
-        <h4>Terry-Form MCP</h4>
-        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
-        <div class="social-links">
-          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
-            <i class="fab fa-github"></i>
-          </a>
-          <a href="https://twitter.com/terryform" aria-label="Twitter">
-            <i class="fab fa-twitter"></i>
-          </a>
-        </div>
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
       </div>
-      
-      <div class="footer-section">
-        <h4>Documentation</h4>
-        <ul>
-          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
-          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
-          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
-          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
-        </ul>
-      </div>
-      
-      <div class="footer-section">
-        <h4>Community</h4>
-        <ul>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
-        </ul>
-      </div>
+    </div>
 
-      <div class="footer-section">
-        <h4>Resources</h4>
-        <ul>
-          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
-          <li><a href="/terry-form-mcp/guides/security">Security</a></li>
-        </ul>
-      </div>
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
     </div>
-    
-    <div class="footer-bottom">
-      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
     </div>
-  </footer>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
 
   <script src="/terry-form-mcp/assets/js/main.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
 </body>
 </html>

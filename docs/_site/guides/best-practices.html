@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Best Practices | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Best Practices" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Workspace organization, file structure, recommended workflows, and AI assistant tips" />
+<meta property="og:description" content="Workspace organization, file structure, recommended workflows, and AI assistant tips" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/guides/best-practices" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/guides/best-practices" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Best Practices" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:34:31-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Workspace organization, file structure, recommended workflows, and AI assistant tips","headline":"Best Practices","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/guides/best-practices"},"url":"http://0.0.0.0:4000/terry-form-mcp/guides/best-practices"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <div class="guide-container">
+  
+
+<aside class="guide-sidebar">
+  <h4>Guides</h4>
+  <nav class="guide-nav">
+    
+    
+      
+    
+      
+      <a href="/terry-form-mcp/guides/security"
+         class="guide-nav-item ">
+        Security Guide
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/configuration"
+         class="guide-nav-item ">
+        Configuration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/docker-deployment"
+         class="guide-nav-item ">
+        Docker Deployment
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-operations"
+         class="guide-nav-item ">
+        Terraform Operations
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/lsp-integration"
+         class="guide-nav-item ">
+        LSP Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/github-integration"
+         class="guide-nav-item ">
+        GitHub Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-cloud"
+         class="guide-nav-item ">
+        Terraform Cloud
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/ci-cd-integration"
+         class="guide-nav-item ">
+        CI/CD Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/troubleshooting"
+         class="guide-nav-item ">
+        Troubleshooting
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/best-practices"
+         class="guide-nav-item active">
+        Best Practices
+      </a>
+      
+    
+  </nav>
+</aside>
+
+
+  <article class="guide-content">
+    <header class="guide-header">
+      <h1>Best Practices</h1>
+      
+      <p class="guide-description">Workspace organization, file structure, recommended workflows, and AI assistant tips</p>
+      
+      <div class="guide-meta">
+        
+        <span class="last-modified">Updated: March 03, 2026</span>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp/edit/main/docs/_guides/best-practices.md" class="edit-link" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-edit"></i> Edit on GitHub
+        </a>
+      </div>
+    </header>
+
+    
+    
+
+<div class="toc" id="toc"></div>
+
+    
+
+    <div class="guide-body">
+      <h1 id="best-practices-guide">Best Practices Guide</h1>
+
+<p>Recommendations for getting the most out of Terry-Form MCP.</p>
+
+<h2 id="workspace-organization">Workspace Organization</h2>
+
+<h3 id="recommended-structure">Recommended Structure</h3>
+
+<p>Organize your <code class="language-plaintext highlighter-rouge">/mnt/workspace</code> with a clear directory structure:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/mnt/workspace/
+├── shared-modules/           # Reusable modules
+│   ├── vpc/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── security-group/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf          # Uses shared modules
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── terraform.tfvars
+│   ├── staging/
+│   └── prod/
+└── experiments/              # Scratch space for learning
+    └── test-project/
+</code></pre></div></div>
+
+<h3 id="file-naming-conventions">File Naming Conventions</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">main.tf</code></td>
+      <td>Primary resource definitions</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">variables.tf</code></td>
+      <td>Input variable declarations</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">outputs.tf</code></td>
+      <td>Output value declarations</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">providers.tf</code></td>
+      <td>Provider configuration</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">versions.tf</code></td>
+      <td>Terraform and provider version constraints</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">locals.tf</code></td>
+      <td>Local values</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data.tf</code></td>
+      <td>Data source definitions</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">terraform.tfvars</code></td>
+      <td>Variable values (never commit secrets)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="recommended-workflow">Recommended Workflow</h2>
+
+<h3 id="the-init-validate-plan-pattern">The init-validate-plan Pattern</h3>
+
+<p>Always follow this sequence:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/dev"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+  </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<ol>
+  <li><strong>init</strong>: Downloads providers, initializes backend</li>
+  <li><strong>validate</strong>: Checks HCL syntax and configuration</li>
+  <li><strong>plan</strong>: Shows what would change</li>
+</ol>
+
+<h3 id="analysis-pipeline">Analysis Pipeline</h3>
+
+<p>After the basic workflow, run analysis tools:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">terry_analyze</code> — Check for best practices (variable descriptions, hardcoded values, missing tags)</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_security_scan</code> — Find security vulnerabilities (public buckets, open security groups, unencrypted resources)</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_recommendations</code> — Get improvement suggestions for security, cost, performance, or reliability</li>
+</ol>
+
+<h3 id="format-before-committing">Format Before Committing</h3>
+
+<p>Always format before validation:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="working-with-ai-assistants">Working with AI Assistants</h2>
+
+<h3 id="be-specific">Be Specific</h3>
+
+<p>Instead of:</p>
+<blockquote>
+  <p>“Check my Terraform”</p>
+</blockquote>
+
+<p>Try:</p>
+<blockquote>
+  <p>“Validate and plan my Terraform configuration in environments/dev with variable environment=development”</p>
+</blockquote>
+
+<h3 id="use-discovery-tools-first">Use Discovery Tools First</h3>
+
+<p>Start new sessions by discovering what’s available:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">terry_environment_check</code> — Verify the environment is healthy</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_workspace_list</code> — See all available workspaces</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_workspace_info</code> — Understand a specific workspace’s structure</li>
+</ol>
+
+<h3 id="leverage-lsp-features">Leverage LSP Features</h3>
+
+<p>Ask your AI assistant to use LSP tools for code intelligence:</p>
+
+<blockquote>
+  <p>“Can you check the documentation for the aws_instance resource type at line 15 of my main.tf?”</p>
+</blockquote>
+
+<p>This uses <code class="language-plaintext highlighter-rouge">terraform_hover</code> to get provider documentation directly.</p>
+
+<h3 id="iterative-development">Iterative Development</h3>
+
+<p>Build configurations incrementally:</p>
+
+<ol>
+  <li>Start with a minimal <code class="language-plaintext highlighter-rouge">main.tf</code> (provider block only)</li>
+  <li><code class="language-plaintext highlighter-rouge">init</code> to download providers</li>
+  <li>Add resources one at a time</li>
+  <li><code class="language-plaintext highlighter-rouge">validate</code> after each addition</li>
+  <li><code class="language-plaintext highlighter-rouge">plan</code> when ready to review</li>
+</ol>
+
+<h2 id="security-best-practices">Security Best Practices</h2>
+
+<h3 id="variable-descriptions">Variable Descriptions</h3>
+
+<p>Always add descriptions to variables. The <code class="language-plaintext highlighter-rouge">terry_analyze</code> tool checks for this:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Good</span>
+<span class="nx">variable</span> <span class="s2">"instance_type"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"EC2 instance type for web servers"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"t3.micro"</span>
+<span class="p">}</span>
+
+<span class="c1"># Bad - will trigger a warning</span>
+<span class="nx">variable</span> <span class="s2">"instance_type"</span> <span class="p">{</span>
+  <span class="nx">type</span>    <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span> <span class="p">=</span> <span class="s2">"t3.micro"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="avoid-hardcoded-values">Avoid Hardcoded Values</h3>
+
+<p>Don’t hardcode AMI IDs, instance IDs, or VPC IDs. Use variables or data sources:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Good</span>
+<span class="nx">data</span> <span class="s2">"aws_ami"</span> <span class="s2">"ubuntu"</span> <span class="p">{</span>
+  <span class="nx">most_recent</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">owners</span>      <span class="p">=</span> <span class="p">[</span><span class="s2">"099720109477"</span><span class="p">]</span>
+  <span class="nx">filter</span> <span class="p">{</span>
+    <span class="nx">name</span>   <span class="p">=</span> <span class="s2">"name"</span>
+    <span class="nx">values</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Bad - will trigger a warning</span>
+<span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">ami</span> <span class="p">=</span> <span class="s2">"ami-0123456789abcdef0"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="tag-all-resources">Tag All Resources</h3>
+
+<p>Add tags to every taggable resource:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="c1"># ... configuration ...</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Name</span>        <span class="p">=</span> <span class="s2">"${var.project_name}-web"</span>
+    <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+    <span class="nx">ManagedBy</span>   <span class="p">=</span> <span class="s2">"Terraform"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="use-default-tags">Use Default Tags</h3>
+
+<p>Configure default tags in the provider block:</p>
+
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">region</span>
+
+  <span class="nx">default_tags</span> <span class="p">{</span>
+    <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">Project</span>     <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
+      <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+      <span class="nx">ManagedBy</span>   <span class="p">=</span> <span class="s2">"Terraform"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="performance-tips">Performance Tips</h2>
+
+<h3 id="minimize-workspace-size">Minimize Workspace Size</h3>
+
+<ul>
+  <li>Keep only relevant <code class="language-plaintext highlighter-rouge">.tf</code> files in each workspace</li>
+  <li>Use a modular structure with small, focused workspaces</li>
+  <li>Large monolithic workspaces slow down <code class="language-plaintext highlighter-rouge">init</code>, <code class="language-plaintext highlighter-rouge">plan</code>, and LSP operations</li>
+</ul>
+
+<h3 id="pre-initialize-workspaces">Pre-initialize Workspaces</h3>
+
+<p>If you’ll use the same workspace repeatedly, run <code class="language-plaintext highlighter-rouge">init</code> once and reuse:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Subsequent operations skip provider downloads.</p>
+
+<h3 id="warm-up-lsp">Warm Up LSP</h3>
+
+<p>If you plan to use LSP features, initialize early:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_lsp_init"</span><span class="p">,</span><span class="w"> </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"workspace_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">}}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This avoids the 1-2 second startup delay on the first LSP call.</p>
+
+<h2 id="what-terry-form-mcp-is-not-for">What Terry-Form MCP Is NOT For</h2>
+
+<ul>
+  <li><strong>Applying changes</strong> — Use your CI/CD pipeline or manual <code class="language-plaintext highlighter-rouge">terraform apply</code></li>
+  <li><strong>State management</strong> — Managing remote state backends, state locking</li>
+  <li><strong>Secret management</strong> — Use dedicated tools (Vault, AWS Secrets Manager)</li>
+  <li><strong>Monitoring</strong> — Use your existing monitoring stack</li>
+  <li><strong>Multi-tenancy</strong> — Each container is single-user, single-session</li>
+</ul>
+
+    </div>
+
+    <footer class="guide-footer">
+      <div class="guide-navigation">
+        
+        
+        
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+            <a href="/terry-form-mcp/guides/troubleshooting" class="prev-guide">
+              <i class="fas fa-arrow-left"></i> Troubleshooting
+            </a>
+          
+          
+        
+          
+          
+        
+      </div>
+
+      <div class="guide-feedback">
+        <h4>Was this guide helpful?</h4>
+        <p>
+          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20Best+Practices"
+             class="feedback-link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-comment"></i> Provide feedback
+          </a>
+        </p>
+      </div>
+    </footer>
+  </article>
+</div>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

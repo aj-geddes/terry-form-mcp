@@ -1,23 +1,24 @@
 ---
-title: Building AWS Infrastructure with Terry-Form MCP
-description: Step-by-step tutorial for managing AWS infrastructure
-order: 1
+title: Building AWS Infrastructure
+description: Build a complete VPC with subnets, security groups, and a load balancer using Terry-Form MCP
+order: 2
 duration: 30 minutes
 difficulty: intermediate
+prerequisites:
+  - Terry-Form MCP installed and configured
+  - AWS credentials available (for plan to succeed)
+  - Completed the "Your First Project" tutorial
+topics:
+  - aws
+  - vpc
+  - networking
 ---
 
-# Building AWS Infrastructure with Terry-Form MCP
+# Building AWS Infrastructure
 
-In this tutorial, you'll learn how to use Terry-Form MCP to build and manage AWS infrastructure safely through an AI assistant.
+In this tutorial, you'll use Terry-Form MCP to build and validate a complete AWS networking setup — VPC, subnets, security groups, and an Application Load Balancer.
 
-## Prerequisites
-
-- Terry-Form MCP installed and running
-- AWS account with credentials configured
-- Basic understanding of Terraform
-- AI assistant configured with Terry-Form MCP
-
-## What We'll Build
+## What You'll Build
 
 ```mermaid
 graph TB
@@ -26,54 +27,48 @@ graph TB
         B[Public Subnet]
         C[Private Subnet]
         D[NAT Gateway]
-        
+
         subgraph "Public Resources"
             E[Load Balancer]
-            F[Bastion Host]
         end
-        
+
         subgraph "Private Resources"
             G[Web Servers]
-            H[RDS Database]
-            I[ElastiCache]
         end
     end
-    
+
     A --> B
     B --> D
     D --> C
     B --> E
-    B --> F
     C --> G
-    C --> H
-    C --> I
     E --> G
 ```
 
 ## Step 1: Project Setup
 
-First, let's create a project structure:
+Create a project structure in your workspace:
 
-```bash
+```
 workspace/
-├── aws-tutorial/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── terraform.tfvars.example
+└── aws-tutorial/
+    ├── main.tf
+    ├── variables.tf
+    ├── vpc.tf
+    ├── security_groups.tf
+    ├── alb.tf
+    └── outputs.tf
 ```
 
 Ask your AI assistant:
 
-> "Please create a new Terraform workspace at 'aws-tutorial' with basic AWS provider configuration"
-
-The assistant will use Terry-Form to create:
+> "Create a new Terraform project at aws-tutorial with AWS provider configuration"
 
 **main.tf:**
 ```hcl
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -84,7 +79,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Project     = var.project_name
@@ -128,16 +123,12 @@ Ask your AI assistant:
 
 > "Add a VPC with public and private subnets across 2 availability zones to my aws-tutorial workspace"
 
-The assistant will create:
-
 **vpc.tf:**
 ```hcl
-# Get available AZs
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
@@ -148,7 +139,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -157,7 +147,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Public Subnets
 resource "aws_subnet" "public" {
   count = 2
 
@@ -172,7 +161,6 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Private Subnets
 resource "aws_subnet" "private" {
   count = 2
 
@@ -186,7 +174,6 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
   count  = 1
   domain = "vpc"
@@ -196,7 +183,6 @@ resource "aws_eip" "nat" {
   }
 }
 
-# NAT Gateway
 resource "aws_nat_gateway" "main" {
   count = 1
 
@@ -210,7 +196,6 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route Tables
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -237,7 +222,6 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Route Table Associations
 resource "aws_route_table_association" "public" {
   count = length(aws_subnet.public)
 
@@ -282,6 +266,17 @@ Now create a plan:
 
 > "Generate a Terraform plan for aws-tutorial with environment=dev"
 
+```json
+{
+  "tool": "terry",
+  "arguments": {
+    "path": "aws-tutorial",
+    "actions": ["plan"],
+    "vars": {"environment": "dev"}
+  }
+}
+```
+
 ## Step 4: Add Security Groups
 
 Ask your AI assistant:
@@ -290,7 +285,6 @@ Ask your AI assistant:
 
 **security_groups.tf:**
 ```hcl
-# ALB Security Group
 resource "aws_security_group" "alb" {
   name_prefix = "${var.project_name}-alb-"
   description = "Security group for Application Load Balancer"
@@ -325,7 +319,6 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Web Server Security Group
 resource "aws_security_group" "web" {
   name_prefix = "${var.project_name}-web-"
   description = "Security group for web servers"
@@ -352,7 +345,6 @@ resource "aws_security_group" "web" {
   }
 }
 
-# RDS Security Group
 resource "aws_security_group" "rds" {
   name_prefix = "${var.project_name}-rds-"
   description = "Security group for RDS database"
@@ -372,15 +364,14 @@ resource "aws_security_group" "rds" {
 }
 ```
 
-## Step 5: Add Application Resources
+## Step 5: Add Application Load Balancer
 
 Ask your AI assistant:
 
-> "Add an Application Load Balancer and Auto Scaling Group for web servers"
+> "Add an Application Load Balancer with a target group and HTTP listener"
 
 **alb.tf:**
 ```hcl
-# Application Load Balancer
 resource "aws_lb" "main" {
   name               = "${var.project_name}-alb"
   internal           = false
@@ -396,7 +387,6 @@ resource "aws_lb" "main" {
   }
 }
 
-# Target Group
 resource "aws_lb_target_group" "web" {
   name     = "${var.project_name}-web-tg"
   port     = 80
@@ -418,7 +408,6 @@ resource "aws_lb_target_group" "web" {
   }
 }
 
-# ALB Listener
 resource "aws_lb_listener" "web" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
@@ -431,56 +420,7 @@ resource "aws_lb_listener" "web" {
 }
 ```
 
-## Step 6: Review and Analyze
-
-Ask your AI assistant:
-
-> "Analyze my aws-tutorial configuration for security best practices"
-
-The assistant will use Terry-Form's analysis tools:
-
-```json
-{
-  "analysis": {
-    "score": 85,
-    "issues": [
-      {
-        "severity": "warning",
-        "type": "security",
-        "message": "ALB is not using HTTPS listener",
-        "recommendation": "Add HTTPS listener with SSL certificate"
-      },
-      {
-        "severity": "info",
-        "type": "cost",
-        "message": "NAT Gateway incurs hourly charges",
-        "recommendation": "Consider NAT instances for dev environments"
-      }
-    ]
-  }
-}
-```
-
-## Step 7: Cost Estimation
-
-Ask your AI assistant:
-
-> "Can you estimate the monthly cost for this infrastructure?"
-
-**Approximate AWS Costs:**
-
-| Resource | Count | Monthly Cost |
-|----------|-------|--------------|
-| VPC | 1 | $0 |
-| NAT Gateway | 1 | ~$45 |
-| ALB | 1 | ~$22 |
-| t3.micro instances | 2 | ~$15 |
-| RDS db.t3.micro | 1 | ~$15 |
-| **Total** | | **~$97/month** |
-
-## Step 8: Outputs
-
-Add outputs to see important values:
+## Step 6: Add Outputs
 
 **outputs.tf:**
 ```hcl
@@ -505,40 +445,97 @@ output "private_subnet_ids" {
 }
 ```
 
+## Step 7: Analyze for Best Practices
+
+Ask your AI assistant:
+
+> "Analyze my aws-tutorial configuration for best practices"
+
+The assistant uses `terry_analyze`:
+
+```json
+{
+  "tool": "terry_analyze",
+  "arguments": {
+    "path": "aws-tutorial"
+  }
+}
+```
+
+The analysis checks for:
+
+- **Variables without descriptions** — All variables should have a `description` attribute
+- **Hardcoded values** — AMI IDs, VPC IDs, and similar values should use variables or data sources
+- **Missing tags** — All taggable resources should have tags
+- **Provider configuration** — Using `default_tags` is recommended
+
+Since we followed best practices throughout, the analysis should return minimal issues.
+
+## Step 8: Run Security Scan
+
+> "Run a security scan on aws-tutorial"
+
+```json
+{
+  "tool": "terry_security_scan",
+  "arguments": {
+    "path": "aws-tutorial",
+    "severity": "medium"
+  }
+}
+```
+
+The security scan may flag:
+- ALB using HTTP listener without HTTPS (expected for this tutorial)
+- Security group rules that could be tightened
+
+## Step 9: Re-validate After Changes
+
+After any modifications, always re-run the validation cycle:
+
+> "Format, validate, and plan aws-tutorial"
+
+```json
+{
+  "tool": "terry",
+  "arguments": {
+    "path": "aws-tutorial",
+    "actions": ["fmt", "validate", "plan"],
+    "vars": {"environment": "dev"}
+  }
+}
+```
+
 ## Best Practices Demonstrated
 
-1. **Multi-AZ Deployment**: Resources spread across availability zones
-2. **Network Isolation**: Public/private subnet separation
-3. **Security Groups**: Least privilege access
-4. **Tagging Strategy**: Consistent resource tagging
-5. **Modular Design**: Separated into logical files
+1. **Multi-AZ Deployment** — Resources spread across availability zones
+2. **Network Isolation** — Public/private subnet separation
+3. **Security Groups** — Least privilege access with descriptions on all rules
+4. **Tagging Strategy** — Consistent resource tagging with `default_tags`
+5. **Modular Design** — Separated into logical files
 
 ## Cleanup
 
-When you're done experimenting:
+When you're done experimenting, you can generate a destroy plan to see what would be removed:
 
-> "Generate a plan to destroy all resources in aws-tutorial"
+> "Generate a Terraform plan for aws-tutorial to see the current state"
 
-<div class="alert alert-warning">
-<strong>⚠️ Important</strong><br>
-Terry-Form MCP blocks <code>destroy</code> operations by default. This is intentional for safety. To destroy resources, you'll need to run Terraform directly or enable destroy in Terry-Form's configuration.
-</div>
+{% include alert.html type="warning" title="Important" content="Terry-Form MCP blocks <code>apply</code> and <code>destroy</code> operations. To actually create or destroy resources, run Terraform directly or use your CI/CD pipeline." %}
 
 ## Next Steps
 
-1. **Add HTTPS**: Configure ACM certificate and HTTPS listener
-2. **Add RDS**: Create a managed database instance
-3. **Add Monitoring**: CloudWatch alarms and dashboards
-4. **Add Backup**: Automated snapshots and retention
-5. **Add CI/CD**: Integrate with deployment pipeline
+1. **Add HTTPS** — Configure ACM certificate and HTTPS listener
+2. **Add RDS** — Create a managed database instance
+3. [Security Scanning]({{ site.baseurl }}/tutorials/security-scanning/) — Deep dive into analysis tools
+4. [Module Development]({{ site.baseurl }}/tutorials/module-development/) — Extract reusable modules
 
-## Advanced Topics
+## Advanced: Using Terraform Modules
 
-### Using Terraform Modules
+Replace the inline VPC configuration with a community module:
 
 ```hcl
 module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
 
   name = var.project_name
@@ -553,15 +550,16 @@ module "vpc" {
 }
 ```
 
-### State Management
+## Advanced: State Management
+
+For real projects, configure remote state:
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket = "my-terraform-state"
-    key    = "aws-tutorial/terraform.tfstate"
-    region = "us-east-1"
-    
+    bucket         = "my-terraform-state"
+    key            = "aws-tutorial/terraform.tfstate"
+    region         = "us-east-1"
     dynamodb_table = "terraform-state-lock"
     encrypt        = true
   }
@@ -572,11 +570,11 @@ terraform {
 
 In this tutorial, you learned how to:
 
-✅ Create a VPC with public/private subnets  
-✅ Configure security groups  
-✅ Set up an Application Load Balancer  
-✅ Use Terry-Form MCP for safe Terraform operations  
-✅ Analyze configurations for best practices  
+- Create a VPC with public and private subnets
+- Configure security groups with least-privilege access
+- Set up an Application Load Balancer
+- Use Terry-Form MCP's init-validate-plan workflow
+- Analyze configurations for best practices and security
 
 ## Resources
 
@@ -587,5 +585,6 @@ In this tutorial, you learned how to:
 ---
 
 <div class="tutorial-nav">
-  <a href="{{ site.baseurl }}/tutorials/" class="btn">← Back to Tutorials</a>
+  <a href="{{ site.baseurl }}/tutorials/first-project/" class="btn">← First Project</a>
+  <a href="{{ site.baseurl }}/tutorials/security-scanning/" class="btn btn-primary">Next: Security Scanning →</a>
 </div>

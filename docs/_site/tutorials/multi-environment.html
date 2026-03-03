@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Multi-Environment Setup | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Multi-Environment Setup" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Manage dev, staging, and production environments with shared modules and cross-environment planning" />
+<meta property="og:description" content="Manage dev, staging, and production environments with shared modules and cross-environment planning" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/tutorials/multi-environment" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/tutorials/multi-environment" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Multi-Environment Setup" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:40:26-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Manage dev, staging, and production environments with shared modules and cross-environment planning","headline":"Multi-Environment Setup","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/tutorials/multi-environment"},"url":"http://0.0.0.0:4000/terry-form-mcp/tutorials/multi-environment"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <article class="tutorial">
+  <header class="tutorial-header">
+    <h1>Multi-Environment Setup</h1>
+    
+    <p class="tutorial-description">Manage dev, staging, and production environments with shared modules and cross-environment planning</p>
+    
+    <div class="tutorial-meta">
+      
+      <span class="difficulty-badge difficulty-advanced">advanced</span>
+      
+      
+      <span class="duration"><i class="fas fa-clock"></i> 35 minutes</span>
+      
+    </div>
+  </header>
+
+  
+  <div class="prereq-list">
+    <h4>Prerequisites</h4>
+    <ul>
+      
+      <li>Terry-Form MCP installed and configured</li>
+      
+      <li>Completed the "Module Development" tutorial</li>
+      
+      <li>Understanding of Terraform modules and workspaces</li>
+      
+    </ul>
+  </div>
+  
+
+  
+  
+
+<div class="toc" id="toc"></div>
+
+  
+
+  <div class="tutorial-content">
+    <h1 id="multi-environment-setup">Multi-Environment Setup</h1>
+
+<p>This tutorial shows you how to structure a multi-environment Terraform project with shared modules, environment-specific configurations, and cross-environment validation using Terry-Form MCP.</p>
+
+<h2 id="what-youll-learn">What You’ll Learn</h2>
+
+<ul>
+  <li>How to structure a multi-environment project</li>
+  <li>How to share modules across environments</li>
+  <li>How to use per-environment variable files</li>
+  <li>How to validate and plan all environments</li>
+  <li>How to compare plans across environments</li>
+</ul>
+
+<h2 id="architecture">Architecture</h2>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Shared Modules"
+        M1[modules/vpc]
+        M2[modules/security-group]
+        M3[modules/compute]
+    end
+
+    subgraph "Environments"
+        subgraph "dev"
+            D1[main.tf] --&gt; M1
+            D1 --&gt; M2
+            D1 --&gt; M3
+            D2[terraform.tfvars]
+        end
+
+        subgraph "staging"
+            S1[main.tf] --&gt; M1
+            S1 --&gt; M2
+            S1 --&gt; M3
+            S2[terraform.tfvars]
+        end
+
+        subgraph "prod"
+            P1[main.tf] --&gt; M1
+            P1 --&gt; M2
+            P1 --&gt; M3
+            P2[terraform.tfvars]
+        end
+    end
+</code></pre>
+
+<h2 id="step-1-project-structure">Step 1: Project Structure</h2>
+
+<p>Create the workspace layout:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>workspace/
+└── multi-env/
+    ├── modules/
+    │   ├── vpc/
+    │   │   ├── main.tf
+    │   │   ├── variables.tf
+    │   │   └── outputs.tf
+    │   ├── security-group/
+    │   │   ├── main.tf
+    │   │   ├── variables.tf
+    │   │   └── outputs.tf
+    │   └── compute/
+    │       ├── main.tf
+    │       ├── variables.tf
+    │       └── outputs.tf
+    └── environments/
+        ├── dev/
+        │   ├── main.tf
+        │   ├── variables.tf
+        │   ├── outputs.tf
+        │   └── terraform.tfvars
+        ├── staging/
+        │   ├── main.tf
+        │   ├── variables.tf
+        │   ├── outputs.tf
+        │   └── terraform.tfvars
+        └── prod/
+            ├── main.tf
+            ├── variables.tf
+            ├── outputs.tf
+            └── terraform.tfvars
+</code></pre></div></div>
+
+<h2 id="step-2-create-the-vpc-module">Step 2: Create the VPC Module</h2>
+
+<p>If you completed the <a href="/terry-form-mcp/tutorials/module-development/">Module Development</a> tutorial, you already have a VPC module. Otherwise, create one:</p>
+
+<p><strong>modules/vpc/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name prefix for VPC resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"cidr_block"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR block for the VPC"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"availability_zones"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"List of availability zones"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"public_subnet_cidrs"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR blocks for public subnets"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"private_subnet_cidrs"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR blocks for private subnets"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"enable_nat_gateway"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Whether to create a NAT gateway"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">bool</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="kc">false</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"tags"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Additional tags for all resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">map</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/vpc/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_vpc"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">cidr_block</span>           <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">cidr_block</span>
+  <span class="nx">enable_dns_hostnames</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">enable_dns_support</span>   <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-vpc"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_internet_gateway"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-igw"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">public_subnet_cidrs</span><span class="err">)</span>
+
+  <span class="nx">vpc_id</span>                  <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>              <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">public_subnet_cidrs</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">availability_zone</span>       <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">availability_zones</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">map_public_ip_on_launch</span> <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-public-${count.index + 1}"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">private_subnet_cidrs</span><span class="err">)</span>
+
+  <span class="nx">vpc_id</span>            <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>        <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">private_subnet_cidrs</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">availability_zone</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">availability_zones</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-private-${count.index + 1}"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/vpc/outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the VPC"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"public_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of public subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"private_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of private subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-3-create-the-security-group-module">Step 3: Create the Security Group Module</h2>
+
+<p><strong>modules/security-group/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name prefix for security groups"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"VPC ID where security groups are created"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"allowed_ssh_cidrs"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR blocks allowed SSH access"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"tags"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Additional tags"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">map</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/security-group/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_security_group"</span> <span class="s2">"web"</span> <span class="p">{</span>
+  <span class="nx">name_prefix</span> <span class="p">=</span> <span class="s2">"${var.name}-web-"</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Web server security group"</span>
+  <span class="nx">vpc_id</span>      <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">vpc_id</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">443</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">443</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"HTTPS"</span>
+  <span class="p">}</span>
+
+  <span class="nx">ingress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">80</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"tcp"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"HTTP"</span>
+  <span class="p">}</span>
+
+  <span class="nx">dynamic</span> <span class="s2">"ingress"</span> <span class="p">{</span>
+    <span class="nx">for_each</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">allowed_ssh_cidrs</span><span class="err">)</span> <span class="err">&gt;</span> <span class="mi">0</span> <span class="err">?</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="err">:</span> <span class="p">[]</span>
+    <span class="nx">content</span> <span class="p">{</span>
+      <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">22</span>
+      <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">22</span>
+      <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"tcp"</span>
+      <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">allowed_ssh_cidrs</span>
+      <span class="nx">description</span> <span class="p">=</span> <span class="s2">"SSH from allowed ranges"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="nx">egress</span> <span class="p">{</span>
+    <span class="nx">from_port</span>   <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">to_port</span>     <span class="p">=</span> <span class="mi">0</span>
+    <span class="nx">protocol</span>    <span class="p">=</span> <span class="s2">"-1"</span>
+    <span class="nx">cidr_blocks</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"0.0.0.0/0"</span><span class="p">]</span>
+    <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Allow all outbound"</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-web-sg"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/security-group/outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"web_security_group_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the web security group"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_security_group</span><span class="err">.</span><span class="nx">web</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-4-create-the-compute-module">Step 4: Create the Compute Module</h2>
+
+<p><strong>modules/compute/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name prefix for compute resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"instance_type"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"EC2 instance type"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"t3.micro"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"instance_count"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Number of instances to create"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">number</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="mi">1</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Subnet IDs for instances"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"security_group_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Security group IDs"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"tags"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Additional tags"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">map</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/compute/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">data</span> <span class="s2">"aws_ami"</span> <span class="s2">"amazon_linux"</span> <span class="p">{</span>
+  <span class="nx">most_recent</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">owners</span>      <span class="p">=</span> <span class="p">[</span><span class="s2">"amazon"</span><span class="p">]</span>
+
+  <span class="nx">filter</span> <span class="p">{</span>
+    <span class="nx">name</span>   <span class="p">=</span> <span class="s2">"name"</span>
+    <span class="nx">values</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"al2023-ami-*-x86_64"</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_instance"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">instance_count</span>
+
+  <span class="nx">ami</span>           <span class="p">=</span> <span class="nx">data</span><span class="err">.</span><span class="nx">aws_ami</span><span class="err">.</span><span class="nx">amazon_linux</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">instance_type</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">instance_type</span>
+  <span class="nx">subnet_id</span>     <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">subnet_ids</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span> <span class="err">%</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">subnet_ids</span><span class="err">)</span><span class="p">]</span>
+
+  <span class="nx">vpc_security_group_ids</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">security_group_ids</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-${count.index + 1}"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>modules/compute/outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"instance_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of created instances"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_instance</span><span class="err">.</span><span class="nx">this</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"private_ips"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Private IP addresses of instances"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_instance</span><span class="err">.</span><span class="nx">this</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">private_ip</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-5-create-environment-configurations">Step 5: Create Environment Configurations</h2>
+
+<p>Each environment uses the same modules but with different parameters.</p>
+
+<h3 id="shared-variables">Shared Variables</h3>
+
+<p>All environments share the same <code class="language-plaintext highlighter-rouge">variables.tf</code>:</p>
+
+<p><strong>environments/*/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"aws_region"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"AWS region"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"us-east-1"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"environment"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Environment name"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"project_name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Project name for resource tagging"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"multi-env-tutorial"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="shared-main-configuration">Shared Main Configuration</h3>
+
+<p><strong>environments/*/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
+  <span class="nx">required_version</span> <span class="p">=</span> <span class="s2">"&gt;= 1.0"</span>
+
+  <span class="nx">required_providers</span> <span class="p">{</span>
+    <span class="nx">aws</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">source</span>  <span class="p">=</span> <span class="s2">"hashicorp/aws"</span>
+      <span class="nx">version</span> <span class="p">=</span> <span class="s2">"~&gt; 5.0"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">locals</span> <span class="p">{</span>
+  <span class="nx">name</span> <span class="p">=</span> <span class="s2">"${var.project_name}-${var.environment}"</span>
+
+  <span class="nx">env_config</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">dev</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">vpc_cidr</span>             <span class="p">=</span> <span class="s2">"10.0.0.0/16"</span>
+      <span class="nx">azs</span>                  <span class="p">=</span> <span class="p">[</span><span class="s2">"us-east-1a"</span><span class="p">,</span> <span class="s2">"us-east-1b"</span><span class="p">]</span>
+      <span class="nx">public_subnet_cidrs</span>  <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.1.0/24"</span><span class="p">,</span> <span class="s2">"10.0.2.0/24"</span><span class="p">]</span>
+      <span class="nx">private_subnet_cidrs</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.10.0/24"</span><span class="p">,</span> <span class="s2">"10.0.11.0/24"</span><span class="p">]</span>
+      <span class="nx">enable_nat</span>           <span class="p">=</span> <span class="kc">false</span>
+      <span class="nx">instance_type</span>        <span class="p">=</span> <span class="s2">"t3.micro"</span>
+      <span class="nx">instance_count</span>       <span class="p">=</span> <span class="mi">1</span>
+      <span class="nx">allowed_ssh_cidrs</span>    <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.0.0/8"</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="nx">staging</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">vpc_cidr</span>             <span class="p">=</span> <span class="s2">"10.1.0.0/16"</span>
+      <span class="nx">azs</span>                  <span class="p">=</span> <span class="p">[</span><span class="s2">"us-east-1a"</span><span class="p">,</span> <span class="s2">"us-east-1b"</span><span class="p">]</span>
+      <span class="nx">public_subnet_cidrs</span>  <span class="p">=</span> <span class="p">[</span><span class="s2">"10.1.1.0/24"</span><span class="p">,</span> <span class="s2">"10.1.2.0/24"</span><span class="p">]</span>
+      <span class="nx">private_subnet_cidrs</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"10.1.10.0/24"</span><span class="p">,</span> <span class="s2">"10.1.11.0/24"</span><span class="p">]</span>
+      <span class="nx">enable_nat</span>           <span class="p">=</span> <span class="kc">true</span>
+      <span class="nx">instance_type</span>        <span class="p">=</span> <span class="s2">"t3.small"</span>
+      <span class="nx">instance_count</span>       <span class="p">=</span> <span class="mi">2</span>
+      <span class="nx">allowed_ssh_cidrs</span>    <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.0.0/8"</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="nx">prod</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">vpc_cidr</span>             <span class="p">=</span> <span class="s2">"10.2.0.0/16"</span>
+      <span class="nx">azs</span>                  <span class="p">=</span> <span class="p">[</span><span class="s2">"us-east-1a"</span><span class="p">,</span> <span class="s2">"us-east-1b"</span><span class="p">,</span> <span class="s2">"us-east-1c"</span><span class="p">]</span>
+      <span class="nx">public_subnet_cidrs</span>  <span class="p">=</span> <span class="p">[</span><span class="s2">"10.2.1.0/24"</span><span class="p">,</span> <span class="s2">"10.2.2.0/24"</span><span class="p">,</span> <span class="s2">"10.2.3.0/24"</span><span class="p">]</span>
+      <span class="nx">private_subnet_cidrs</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"10.2.10.0/24"</span><span class="p">,</span> <span class="s2">"10.2.11.0/24"</span><span class="p">,</span> <span class="s2">"10.2.12.0/24"</span><span class="p">]</span>
+      <span class="nx">enable_nat</span>           <span class="p">=</span> <span class="kc">true</span>
+      <span class="nx">instance_type</span>        <span class="p">=</span> <span class="s2">"t3.medium"</span>
+      <span class="nx">instance_count</span>       <span class="p">=</span> <span class="mi">3</span>
+      <span class="nx">allowed_ssh_cidrs</span>    <span class="p">=</span> <span class="p">[]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="nx">config</span> <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">env_config</span><span class="p">[</span><span class="nx">var</span><span class="err">.</span><span class="nx">environment</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">aws_region</span>
+
+  <span class="nx">default_tags</span> <span class="p">{</span>
+    <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">Project</span>     <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">project_name</span>
+      <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+      <span class="nx">ManagedBy</span>   <span class="p">=</span> <span class="s2">"Terraform"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"../../modules/vpc"</span>
+
+  <span class="nx">name</span>                 <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">name</span>
+  <span class="nx">cidr_block</span>           <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">vpc_cidr</span>
+  <span class="nx">availability_zones</span>   <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">azs</span>
+  <span class="nx">public_subnet_cidrs</span>  <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">public_subnet_cidrs</span>
+  <span class="nx">private_subnet_cidrs</span> <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">private_subnet_cidrs</span>
+  <span class="nx">enable_nat_gateway</span>   <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">enable_nat</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">module</span> <span class="s2">"security"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"../../modules/security-group"</span>
+
+  <span class="nx">name</span>              <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">name</span>
+  <span class="nx">vpc_id</span>            <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">vpc_id</span>
+  <span class="nx">allowed_ssh_cidrs</span> <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">allowed_ssh_cidrs</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">module</span> <span class="s2">"compute"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"../../modules/compute"</span>
+
+  <span class="nx">name</span>               <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">name</span>
+  <span class="nx">instance_type</span>      <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">instance_type</span>
+  <span class="nx">instance_count</span>     <span class="p">=</span> <span class="nx">local</span><span class="err">.</span><span class="nx">config</span><span class="err">.</span><span class="nx">instance_count</span>
+  <span class="nx">subnet_ids</span>         <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">private_subnet_ids</span>
+  <span class="nx">security_group_ids</span> <span class="p">=</span> <span class="p">[</span><span class="nx">module</span><span class="err">.</span><span class="nx">security</span><span class="err">.</span><span class="nx">web_security_group_id</span><span class="p">]</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="per-environment-tfvars">Per-Environment tfvars</h3>
+
+<p><strong>environments/dev/terraform.tfvars:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">environment</span> <span class="err">=</span> <span class="s2">"dev"</span>
+</code></pre></div></div>
+
+<p><strong>environments/staging/terraform.tfvars:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">environment</span> <span class="err">=</span> <span class="s2">"staging"</span>
+</code></pre></div></div>
+
+<p><strong>environments/prod/terraform.tfvars:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">environment</span> <span class="err">=</span> <span class="s2">"prod"</span>
+</code></pre></div></div>
+
+<h3 id="shared-outputs">Shared Outputs</h3>
+
+<p><strong>environments/*/outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"VPC ID"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">vpc_id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"instance_count"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Number of instances"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">module</span><span class="err">.</span><span class="nx">compute</span><span class="err">.</span><span class="nx">instance_ids</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"instance_private_ips"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Private IPs of instances"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">compute</span><span class="err">.</span><span class="nx">private_ips</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-6-validate-all-environments">Step 6: Validate All Environments</h2>
+
+<p>Use Terry-Form MCP to validate each environment. Ask your AI assistant:</p>
+
+<blockquote>
+  <p>“Initialize and validate all three environments: dev, staging, and prod under multi-env/environments/”</p>
+</blockquote>
+
+<p>The assistant will run for each environment:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/environments/dev"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/environments/staging"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"staging"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/environments/prod"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"prod"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="step-7-compare-plans-across-environments">Step 7: Compare Plans Across Environments</h2>
+
+<p>Generate plans for each environment to compare:</p>
+
+<blockquote>
+  <p>“Generate Terraform plans for dev, staging, and prod and summarize the differences”</p>
+</blockquote>
+
+<p>The assistant calls <code class="language-plaintext highlighter-rouge">terry</code> with <code class="language-plaintext highlighter-rouge">["init", "plan"]</code> for each environment.</p>
+
+<h3 id="expected-differences">Expected Differences</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Resource</th>
+      <th>Dev</th>
+      <th>Staging</th>
+      <th>Prod</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AZs</td>
+      <td>2</td>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>NAT Gateway</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Instance type</td>
+      <td>t3.micro</td>
+      <td>t3.small</td>
+      <td>t3.medium</td>
+    </tr>
+    <tr>
+      <td>Instance count</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>SSH access</td>
+      <td>Internal only</td>
+      <td>Internal only</td>
+      <td>None</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="step-8-security-scan-all-environments">Step 8: Security Scan All Environments</h2>
+
+<p>Run security scans across all environments:</p>
+
+<blockquote>
+  <p>“Run security scans on all three environments”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_security_scan"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/environments/dev"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"medium"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Repeat for staging and prod. Compare findings — production should have stricter security (no SSH access, NAT gateway for private subnet internet access).</p>
+
+<h2 id="step-9-analyze-shared-modules">Step 9: Analyze Shared Modules</h2>
+
+<p>Also analyze the shared modules for best practices:</p>
+
+<blockquote>
+  <p>“Analyze the VPC, security-group, and compute modules for best practices”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_analyze"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/modules/vpc"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Well-structured modules should pass with minimal warnings.</p>
+
+<h2 id="step-10-workspace-discovery">Step 10: Workspace Discovery</h2>
+
+<p>Use Terry-Form’s workspace tools to explore the structure:</p>
+
+<blockquote>
+  <p>“List all workspaces and show info about the multi-env project”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_workspace_list"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_workspace_info"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"multi-env/environments/prod"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="multi-environment-patterns">Multi-Environment Patterns</h2>
+
+<h3 id="pattern-1-environment-map-used-above">Pattern 1: Environment Map (Used Above)</h3>
+<p>Define all environment configs in a <code class="language-plaintext highlighter-rouge">locals</code> map. Simple, everything in one file.</p>
+
+<h3 id="pattern-2-separate-tfvars-files">Pattern 2: Separate tfvars Files</h3>
+<p>Same <code class="language-plaintext highlighter-rouge">main.tf</code> everywhere, different <code class="language-plaintext highlighter-rouge">terraform.tfvars</code> per environment. Better for large configs.</p>
+
+<h3 id="pattern-3-terragrunt">Pattern 3: Terragrunt</h3>
+<p>Use Terragrunt for DRY configuration across environments. Terry-Form MCP works with the generated Terraform files.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this tutorial, you learned how to:</p>
+
+<ul>
+  <li>Structure a multi-environment project with shared modules</li>
+  <li>Use a locals map for environment-specific configuration</li>
+  <li>Validate and plan all environments with Terry-Form MCP</li>
+  <li>Compare plans across dev, staging, and production</li>
+  <li>Run cross-environment security scans</li>
+  <li>Analyze shared modules for best practices</li>
+</ul>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<ul>
+  <li><a href="/terry-form-mcp/guides/ci-cd-integration/">CI/CD Integration Guide</a> — Automate multi-environment validation</li>
+  <li><a href="/terry-form-mcp/guides/best-practices/">Best Practices Guide</a> — Workspace organization tips</li>
+  <li><a href="/terry-form-mcp/guides/terraform-operations/">Terraform Operations Guide</a> — Deep dive into the terry tool</li>
+</ul>
+
+<hr />
+
+<div class="tutorial-nav">
+  <a href="/terry-form-mcp/tutorials/github-actions-pipeline/" class="btn">← GitHub Actions Pipeline</a>
+  <a href="/terry-form-mcp/tutorials/" class="btn btn-primary">Back to Tutorials</a>
+</div>
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

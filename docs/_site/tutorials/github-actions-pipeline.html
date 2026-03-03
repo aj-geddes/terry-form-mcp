@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>GitHub Actions Pipeline | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="GitHub Actions Pipeline" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Automate Terraform validation, security scanning, and plan comments on pull requests" />
+<meta property="og:description" content="Automate Terraform validation, security scanning, and plan comments on pull requests" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/tutorials/github-actions-pipeline" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/tutorials/github-actions-pipeline" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="GitHub Actions Pipeline" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:39:32-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Automate Terraform validation, security scanning, and plan comments on pull requests","headline":"GitHub Actions Pipeline","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/tutorials/github-actions-pipeline"},"url":"http://0.0.0.0:4000/terry-form-mcp/tutorials/github-actions-pipeline"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <article class="tutorial">
+  <header class="tutorial-header">
+    <h1>GitHub Actions Pipeline</h1>
+    
+    <p class="tutorial-description">Automate Terraform validation, security scanning, and plan comments on pull requests</p>
+    
+    <div class="tutorial-meta">
+      
+      <span class="difficulty-badge difficulty-intermediate">intermediate</span>
+      
+      
+      <span class="duration"><i class="fas fa-clock"></i> 30 minutes</span>
+      
+    </div>
+  </header>
+
+  
+  <div class="prereq-list">
+    <h4>Prerequisites</h4>
+    <ul>
+      
+      <li>Terry-Form MCP Docker image built</li>
+      
+      <li>A GitHub repository with Terraform configurations</li>
+      
+      <li>GitHub Actions enabled on the repository</li>
+      
+    </ul>
+  </div>
+  
+
+  
+  
+
+<div class="toc" id="toc"></div>
+
+  
+
+  <div class="tutorial-content">
+    <h1 id="github-actions-pipeline">GitHub Actions Pipeline</h1>
+
+<p>This tutorial shows you how to use Terry-Form MCP in GitHub Actions to automatically validate Terraform configurations, run security scans, and post plan output as PR comments.</p>
+
+<h2 id="what-youll-learn">What You’ll Learn</h2>
+
+<ul>
+  <li>How to run Terry-Form MCP in a CI pipeline</li>
+  <li>How to validate Terraform on every pull request</li>
+  <li>How to scan for security issues on push to main</li>
+  <li>How to post plan output as a PR comment</li>
+</ul>
+
+<h2 id="pipeline-architecture">Pipeline Architecture</h2>
+
+<pre><code class="language-mermaid">graph LR
+    A[Pull Request] --&gt; B[Validate Job]
+    A --&gt; C[Security Job]
+    B --&gt; D{Pass?}
+    C --&gt; E{Clean?}
+    D --&gt;|Yes| F[Post Plan Comment]
+    D --&gt;|No| G[Block Merge]
+    E --&gt;|Yes| H[Approve]
+    E --&gt;|No| I[Post Findings]
+</code></pre>
+
+<h2 id="step-1-repository-structure">Step 1: Repository Structure</h2>
+
+<p>Set up your repository:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>my-infrastructure/
+├── .github/
+│   └── workflows/
+│       └── terraform-ci.yaml
+├── Dockerfile              # or reference to terry-form-mcp image
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+└── README.md
+</code></pre></div></div>
+
+<h2 id="step-2-basic-validation-workflow">Step 2: Basic Validation Workflow</h2>
+
+<p>Create <code class="language-plaintext highlighter-rouge">.github/workflows/terraform-ci.yaml</code>:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">Terraform CI</span>
+
+<span class="na">on</span><span class="pi">:</span>
+  <span class="na">pull_request</span><span class="pi">:</span>
+    <span class="na">paths</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">terraform/**'</span>
+
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">validate</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Validate Terraform</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Checkout code</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">docker build -t terry-form-mcp \</span>
+            <span class="s">https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Initialize and Validate</span>
+        <span class="na">id</span><span class="pi">:</span> <span class="s">validate</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">RESULT=$(echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry","arguments":{"path":".","actions":["init","validate"]}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">terry-form-mcp:latest)</span>
+          <span class="s">echo "result&lt;&lt;EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "$RESULT" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Check validation result</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">echo '$' | \</span>
+            <span class="s">python3 -c "</span>
+          <span class="s">import sys, json</span>
+          <span class="s">data = json.load(sys.stdin)</span>
+          <span class="s"># Check for validation success in the response</span>
+          <span class="s">print(json.dumps(data, indent=2))</span>
+          <span class="s">"</span>
+</code></pre></div></div>
+
+<h2 id="step-3-add-plan-output-as-pr-comment">Step 3: Add Plan Output as PR Comment</h2>
+
+<p>Extend the workflow to generate a plan and post it as a comment:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">plan</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Terraform Plan</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+    <span class="na">if</span><span class="pi">:</span> <span class="s">github.event_name == 'pull_request'</span>
+
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Checkout code</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">docker build -t terry-form-mcp \</span>
+            <span class="s">https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Run Terraform Plan</span>
+        <span class="na">id</span><span class="pi">:</span> <span class="s">plan</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">RESULT=$(echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry","arguments":{"path":".","actions":["init","plan"]}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">-e AWS_ACCESS_KEY_ID=$ \</span>
+              <span class="s">-e AWS_SECRET_ACCESS_KEY=$ \</span>
+              <span class="s">-e AWS_DEFAULT_REGION=$ \</span>
+              <span class="s">terry-form-mcp:latest)</span>
+          <span class="s">echo "result&lt;&lt;EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "$RESULT" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Comment Plan on PR</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/github-script@v7</span>
+        <span class="na">if</span><span class="pi">:</span> <span class="s">github.event_name == 'pull_request'</span>
+        <span class="na">with</span><span class="pi">:</span>
+          <span class="na">script</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">const plan = `$`;</span>
+            <span class="s">const body = `## Terraform Plan</span>
+
+            <span class="s">\`\`\`json</span>
+            <span class="s">${plan.substring(0, 60000)}</span>
+            <span class="s">\`\`\`</span>
+
+            <span class="s">*Generated by Terry-Form MCP*`;</span>
+
+            <span class="s">// Find existing comment</span>
+            <span class="s">const { data: comments } = await github.rest.issues.listComments({</span>
+              <span class="s">issue_number: context.issue.number,</span>
+              <span class="s">owner: context.repo.owner,</span>
+              <span class="s">repo: context.repo.repo,</span>
+            <span class="s">});</span>
+            <span class="s">const existing = comments.find(c =&gt;</span>
+              <span class="s">c.body.includes('## Terraform Plan') &amp;&amp;</span>
+              <span class="s">c.body.includes('Terry-Form MCP')</span>
+            <span class="s">);</span>
+
+            <span class="s">if (existing) {</span>
+              <span class="s">await github.rest.issues.updateComment({</span>
+                <span class="s">owner: context.repo.owner,</span>
+                <span class="s">repo: context.repo.repo,</span>
+                <span class="s">comment_id: existing.id,</span>
+                <span class="s">body: body</span>
+              <span class="s">});</span>
+            <span class="s">} else {</span>
+              <span class="s">await github.rest.issues.createComment({</span>
+                <span class="s">issue_number: context.issue.number,</span>
+                <span class="s">owner: context.repo.owner,</span>
+                <span class="s">repo: context.repo.repo,</span>
+                <span class="s">body: body</span>
+              <span class="s">});</span>
+            <span class="s">}</span>
+</code></pre></div></div>
+
+<h2 id="step-4-add-security-scanning">Step 4: Add Security Scanning</h2>
+
+<p>Add a security scan job that runs on push to main:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">security</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Security Scan</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Checkout code</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">docker build -t terry-form-mcp \</span>
+            <span class="s">https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Run Security Scan</span>
+        <span class="na">id</span><span class="pi">:</span> <span class="s">security</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">RESULT=$(echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry_security_scan","arguments":{"path":".","severity":"medium"}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">terry-form-mcp:latest)</span>
+          <span class="s">echo "result&lt;&lt;EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "$RESULT" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Check for findings</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">echo '$' | \</span>
+            <span class="s">python3 -c "</span>
+          <span class="s">import sys, json</span>
+          <span class="s">data = json.load(sys.stdin)</span>
+          <span class="s">print(json.dumps(data, indent=2))</span>
+          <span class="s"># Fail if high severity findings exist</span>
+          <span class="s">"</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Run Best Practice Analysis</span>
+        <span class="na">id</span><span class="pi">:</span> <span class="s">analyze</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">RESULT=$(echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry_analyze","arguments":{"path":"."}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">terry-form-mcp:latest)</span>
+          <span class="s">echo "result&lt;&lt;EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "$RESULT" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+</code></pre></div></div>
+
+<h2 id="step-5-complete-workflow">Step 5: Complete Workflow</h2>
+
+<p>Here’s the complete workflow combining all three jobs:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">Terraform CI</span>
+
+<span class="na">on</span><span class="pi">:</span>
+  <span class="na">pull_request</span><span class="pi">:</span>
+    <span class="na">paths</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">terraform/**'</span>
+  <span class="na">push</span><span class="pi">:</span>
+    <span class="na">branches</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">main</span><span class="pi">]</span>
+    <span class="na">paths</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">terraform/**'</span>
+
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">validate</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Validate</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="s">docker build -t terry-form-mcp https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Validate</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry","arguments":{"path":".","actions":["init","fmt","validate"]}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">terry-form-mcp:latest</span>
+
+  <span class="na">security</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Security Scan</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="s">docker build -t terry-form-mcp https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Scan</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry_security_scan","arguments":{"path":".","severity":"medium"}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">terry-form-mcp:latest</span>
+
+  <span class="na">plan</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s">Plan</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+    <span class="na">needs</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">validate</span><span class="pi">,</span> <span class="nv">security</span><span class="pi">]</span>
+    <span class="na">if</span><span class="pi">:</span> <span class="s">github.event_name == 'pull_request'</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v4</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Build Terry-Form MCP</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="s">docker build -t terry-form-mcp https://github.com/aj-geddes/terry-form-mcp.git</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Plan</span>
+        <span class="na">id</span><span class="pi">:</span> <span class="s">plan</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">RESULT=$(echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry","arguments":{"path":".","actions":["init","plan"]}}}' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">-e AWS_ACCESS_KEY_ID=$ \</span>
+              <span class="s">-e AWS_SECRET_ACCESS_KEY=$ \</span>
+              <span class="s">-e AWS_DEFAULT_REGION=$ \</span>
+              <span class="s">terry-form-mcp:latest)</span>
+          <span class="s">echo "result&lt;&lt;EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "$RESULT" &gt;&gt; $GITHUB_OUTPUT</span>
+          <span class="s">echo "EOF" &gt;&gt; $GITHUB_OUTPUT</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Comment on PR</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/github-script@v7</span>
+        <span class="na">with</span><span class="pi">:</span>
+          <span class="na">script</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">const plan = `$`;</span>
+            <span class="s">await github.rest.issues.createComment({</span>
+              <span class="s">issue_number: context.issue.number,</span>
+              <span class="s">owner: context.repo.owner,</span>
+              <span class="s">repo: context.repo.repo,</span>
+              <span class="s">body: `## Terraform Plan\n\`\`\`json\n${plan.substring(0, 60000)}\n\`\`\`\n\n*Generated by Terry-Form MCP*`</span>
+            <span class="s">});</span>
+</code></pre></div></div>
+
+<h2 id="step-6-credential-management">Step 6: Credential Management</h2>
+
+<h3 id="using-oidc-recommended">Using OIDC (Recommended)</h3>
+
+<p>For AWS, use OIDC instead of static credentials:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Configure AWS Credentials</span>
+        <span class="na">uses</span><span class="pi">:</span> <span class="s">aws-actions/configure-aws-credentials@v4</span>
+        <span class="na">with</span><span class="pi">:</span>
+          <span class="na">role-to-assume</span><span class="pi">:</span> <span class="s">arn:aws:iam::123456789012:role/terraform-ci</span>
+          <span class="na">aws-region</span><span class="pi">:</span> <span class="s">us-east-1</span>
+
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">Plan with OIDC</span>
+        <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">echo '...' | \</span>
+            <span class="s">docker run -i --rm \</span>
+              <span class="s">-v $/terraform:/mnt/workspace/project \</span>
+              <span class="s">-e AWS_ACCESS_KEY_ID \</span>
+              <span class="s">-e AWS_SECRET_ACCESS_KEY \</span>
+              <span class="s">-e AWS_SESSION_TOKEN \</span>
+              <span class="s">-e AWS_DEFAULT_REGION \</span>
+              <span class="s">terry-form-mcp:latest</span>
+</code></pre></div></div>
+
+<h3 id="using-github-secrets">Using GitHub Secrets</h3>
+
+<p>Store credentials as repository secrets:</p>
+
+<ol>
+  <li>Go to <strong>Settings &gt; Secrets and variables &gt; Actions</strong></li>
+  <li>Add: <code class="language-plaintext highlighter-rouge">AWS_ACCESS_KEY_ID</code>, <code class="language-plaintext highlighter-rouge">AWS_SECRET_ACCESS_KEY</code>, <code class="language-plaintext highlighter-rouge">AWS_DEFAULT_REGION</code></li>
+  <li>Reference as <code class="language-plaintext highlighter-rouge">$</code></li>
+</ol>
+
+<div class="alert alert-warning">
+  <strong>Security</strong><br />
+  Terry-Form MCP forces <code>TF_INPUT=false</code> to prevent accidental credential prompts in CI. Credentials are never logged.
+</div>
+
+<h2 id="step-7-parse-results">Step 7: Parse Results</h2>
+
+<p>Check results programmatically in your workflow:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">RESULT</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="s1">'...'</span> | docker run <span class="nt">-i</span> <span class="nt">--rm</span> ... terry-form-mcp:latest<span class="si">)</span>
+
+<span class="c"># Extract success status</span>
+<span class="nv">SUCCESS</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"</span><span class="nv">$RESULT</span><span class="s2">"</span> | jq <span class="nt">-r</span> <span class="s1">'.[\"terry-results\"][-1].success'</span><span class="si">)</span>
+
+<span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$SUCCESS</span><span class="s2">"</span> <span class="o">!=</span> <span class="s2">"true"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+  </span><span class="nb">echo</span> <span class="s2">"::error::Terraform validation failed"</span>
+  <span class="nb">exit </span>1
+<span class="k">fi</span>
+</code></pre></div></div>
+
+<h2 id="pipeline-patterns">Pipeline Patterns</h2>
+
+<h3 id="gate-pattern">Gate Pattern</h3>
+<p>Validation and security must pass before plan runs:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">plan</span><span class="pi">:</span>
+  <span class="na">needs</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">validate</span><span class="pi">,</span> <span class="nv">security</span><span class="pi">]</span>
+</code></pre></div></div>
+
+<h3 id="matrix-pattern">Matrix Pattern</h3>
+<p>Validate multiple environments:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">strategy</span><span class="pi">:</span>
+  <span class="na">matrix</span><span class="pi">:</span>
+    <span class="na">environment</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">dev</span><span class="pi">,</span> <span class="nv">staging</span><span class="pi">,</span> <span class="nv">prod</span><span class="pi">]</span>
+<span class="na">steps</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+      <span class="s">echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"terry","arguments":{"path":"environments/$","actions":["init","validate"]}}}' | ...</span>
+</code></pre></div></div>
+
+<div class="alert alert-danger">
+  <strong>Important</strong><br />
+  Terry-Form MCP blocks <code>apply</code> and <code>destroy</code>. Use it only for validation and planning in CI. Actual infrastructure changes should go through your standard deployment process.
+</div>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this tutorial, you learned how to:</p>
+
+<ul>
+  <li>Run Terry-Form MCP in GitHub Actions</li>
+  <li>Validate Terraform configurations automatically on PRs</li>
+  <li>Run security scans on push to main</li>
+  <li>Post plan output as PR comments</li>
+  <li>Manage credentials securely with OIDC or GitHub secrets</li>
+  <li>Parse JSON results to gate pipeline stages</li>
+</ul>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<ul>
+  <li><a href="/terry-form-mcp/tutorials/multi-environment/">Multi-Environment Setup</a> — Manage dev/staging/prod with shared modules</li>
+  <li><a href="/terry-form-mcp/guides/ci-cd-integration/">CI/CD Integration Guide</a> — More CI patterns including GitLab CI</li>
+  <li><a href="/terry-form-mcp/guides/security/">Security Guide</a> — Comprehensive security reference</li>
+</ul>
+
+<hr />
+
+<div class="tutorial-nav">
+  <a href="/terry-form-mcp/tutorials/module-development/" class="btn">← Module Development</a>
+  <a href="/terry-form-mcp/tutorials/multi-environment/" class="btn btn-primary">Next: Multi-Environment →</a>
+</div>
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

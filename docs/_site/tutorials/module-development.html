@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Terraform Module Development | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Terraform Module Development" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Build, validate, and test reusable Terraform modules using LSP features" />
+<meta property="og:description" content="Build, validate, and test reusable Terraform modules using LSP features" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/tutorials/module-development" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/tutorials/module-development" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Terraform Module Development" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:38:44-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Build, validate, and test reusable Terraform modules using LSP features","headline":"Terraform Module Development","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/tutorials/module-development"},"url":"http://0.0.0.0:4000/terry-form-mcp/tutorials/module-development"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <article class="tutorial">
+  <header class="tutorial-header">
+    <h1>Terraform Module Development</h1>
+    
+    <p class="tutorial-description">Build, validate, and test reusable Terraform modules using LSP features</p>
+    
+    <div class="tutorial-meta">
+      
+      <span class="difficulty-badge difficulty-intermediate">intermediate</span>
+      
+      
+      <span class="duration"><i class="fas fa-clock"></i> 25 minutes</span>
+      
+    </div>
+  </header>
+
+  
+  <div class="prereq-list">
+    <h4>Prerequisites</h4>
+    <ul>
+      
+      <li>Terry-Form MCP installed and configured</li>
+      
+      <li>Completed the "Your First Project" tutorial</li>
+      
+      <li>Understanding of Terraform resource blocks</li>
+      
+    </ul>
+  </div>
+  
+
+  
+  
+
+<div class="toc" id="toc"></div>
+
+  
+
+  <div class="tutorial-content">
+    <h1 id="terraform-module-development">Terraform Module Development</h1>
+
+<p>This tutorial walks you through building a reusable Terraform module, validating it with Terry-Form MCP, and using LSP features for code intelligence during development.</p>
+
+<h2 id="what-youll-learn">What You’ll Learn</h2>
+
+<ul>
+  <li>How to structure a Terraform module</li>
+  <li>How to use LSP hover and completions for faster development</li>
+  <li>How to validate modules with <code class="language-plaintext highlighter-rouge">terry</code></li>
+  <li>How to test modules by calling them from a root configuration</li>
+</ul>
+
+<h2 id="module-architecture">Module Architecture</h2>
+
+<p>We’ll build a VPC module that creates a complete network setup:</p>
+
+<pre><code class="language-mermaid">graph TB
+    subgraph "Module: vpc"
+        A[VPC] --&gt; B[Internet Gateway]
+        A --&gt; C[Public Subnets]
+        A --&gt; D[Private Subnets]
+        C --&gt; E[Public Route Table]
+        D --&gt; F[Private Route Table]
+        B --&gt; E
+    end
+
+    subgraph "Root Configuration"
+        G[module "vpc"] --&gt; A
+        G --&gt; H[Variables passed in]
+        A --&gt; I[Outputs returned]
+    end
+</code></pre>
+
+<h2 id="step-1-create-the-module-structure">Step 1: Create the Module Structure</h2>
+
+<p>Set up your workspace:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>workspace/
+├── modules/
+│   └── vpc/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+└── environments/
+    └── dev/
+        ├── main.tf
+        └── variables.tf
+</code></pre></div></div>
+
+<h2 id="step-2-define-module-variables">Step 2: Define Module Variables</h2>
+
+<p>Start with the module’s interface — its input variables.</p>
+
+<p><strong>modules/vpc/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"name"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Name prefix for all VPC resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+
+  <span class="nx">validation</span> <span class="p">{</span>
+    <span class="nx">condition</span>     <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">name</span><span class="err">)</span> <span class="err">&gt;</span> <span class="mi">0</span> <span class="err">&amp;&amp;</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">name</span><span class="err">)</span> <span class="err">&lt;</span><span class="p">=</span> <span class="mi">32</span>
+    <span class="nx">error_message</span> <span class="p">=</span> <span class="s2">"Name must be between 1 and 32 characters."</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"cidr_block"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR block for the VPC"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"10.0.0.0/16"</span>
+
+  <span class="nx">validation</span> <span class="p">{</span>
+    <span class="nx">condition</span>     <span class="p">=</span> <span class="nx">can</span><span class="err">(</span><span class="nx">cidrhost</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">cidr_block</span><span class="err">,</span> <span class="mi">0</span><span class="err">))</span>
+    <span class="nx">error_message</span> <span class="p">=</span> <span class="s2">"Must be a valid CIDR block."</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"availability_zones"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"List of availability zones to use"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+
+  <span class="nx">validation</span> <span class="p">{</span>
+    <span class="nx">condition</span>     <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">availability_zones</span><span class="err">)</span> <span class="err">&gt;</span><span class="p">=</span> <span class="mi">2</span>
+    <span class="nx">error_message</span> <span class="p">=</span> <span class="s2">"At least 2 availability zones are required."</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"public_subnet_cidrs"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR blocks for public subnets (one per AZ)"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"private_subnet_cidrs"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR blocks for private subnets (one per AZ)"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">list</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"enable_nat_gateway"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Whether to create a NAT gateway for private subnets"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">bool</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"tags"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Additional tags for all resources"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">map</span><span class="err">(</span><span class="nx">string</span><span class="err">)</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="use-lsp-hover-for-documentation">Use LSP Hover for Documentation</h3>
+
+<p>While writing resource blocks, ask your assistant to check documentation:</p>
+
+<blockquote>
+  <p>“Can you hover over the aws_vpc resource type at line 1 of modules/vpc/main.tf to see its documentation?”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform_hover"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules/vpc/main.tf"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"character"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This returns provider documentation for the <code class="language-plaintext highlighter-rouge">aws_vpc</code> resource, including all available attributes.</p>
+
+<h2 id="step-3-create-module-resources">Step 3: Create Module Resources</h2>
+
+<p><strong>modules/vpc/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">resource</span> <span class="s2">"aws_vpc"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">cidr_block</span>           <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">cidr_block</span>
+  <span class="nx">enable_dns_hostnames</span> <span class="p">=</span> <span class="kc">true</span>
+  <span class="nx">enable_dns_support</span>   <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-vpc"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_internet_gateway"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-igw"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">public_subnet_cidrs</span><span class="err">)</span>
+
+  <span class="nx">vpc_id</span>                  <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>              <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">public_subnet_cidrs</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">availability_zone</span>       <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">availability_zones</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">map_public_ip_on_launch</span> <span class="p">=</span> <span class="kc">true</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-public-${count.index + 1}"</span>
+    <span class="nx">Type</span> <span class="p">=</span> <span class="s2">"public"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_subnet"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">private_subnet_cidrs</span><span class="err">)</span>
+
+  <span class="nx">vpc_id</span>            <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">cidr_block</span>        <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">private_subnet_cidrs</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+  <span class="nx">availability_zone</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">availability_zones</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-private-${count.index + 1}"</span>
+    <span class="nx">Type</span> <span class="p">=</span> <span class="s2">"private"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">route</span> <span class="p">{</span>
+    <span class="nx">cidr_block</span> <span class="p">=</span> <span class="s2">"0.0.0.0/0"</span>
+    <span class="nx">gateway_id</span> <span class="p">=</span> <span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+  <span class="p">}</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-public-rt"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">vpc_id</span> <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-private-rt"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table_association"</span> <span class="s2">"public"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="err">)</span>
+
+  <span class="nx">subnet_id</span>      <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">route_table_id</span> <span class="p">=</span> <span class="nx">aws_route_table</span><span class="err">.</span><span class="nx">public</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route_table_association"</span> <span class="s2">"private"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">length</span><span class="err">(</span><span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="err">)</span>
+
+  <span class="nx">subnet_id</span>      <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="p">[</span><span class="nx">count</span><span class="err">.</span><span class="nx">index</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">route_table_id</span> <span class="p">=</span> <span class="nx">aws_route_table</span><span class="err">.</span><span class="nx">private</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_eip"</span> <span class="s2">"nat"</span> <span class="p">{</span>
+  <span class="nx">count</span>  <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">enable_nat_gateway</span> <span class="err">?</span> <span class="mi">1</span> <span class="err">:</span> <span class="mi">0</span>
+  <span class="nx">domain</span> <span class="p">=</span> <span class="s2">"vpc"</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-nat-eip"</span>
+  <span class="p">}</span><span class="err">)</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_nat_gateway"</span> <span class="s2">"this"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">enable_nat_gateway</span> <span class="err">?</span> <span class="mi">1</span> <span class="err">:</span> <span class="mi">0</span>
+
+  <span class="nx">allocation_id</span> <span class="p">=</span> <span class="nx">aws_eip</span><span class="err">.</span><span class="nx">nat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">subnet_id</span>     <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="nx">merge</span><span class="err">(</span><span class="nx">var</span><span class="err">.</span><span class="nx">tags</span><span class="err">,</span> <span class="p">{</span>
+    <span class="nx">Name</span> <span class="p">=</span> <span class="s2">"${var.name}-nat"</span>
+  <span class="p">}</span><span class="err">)</span>
+
+  <span class="nx">depends_on</span> <span class="p">=</span> <span class="p">[</span><span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">this</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="nx">resource</span> <span class="s2">"aws_route"</span> <span class="s2">"private_nat"</span> <span class="p">{</span>
+  <span class="nx">count</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">enable_nat_gateway</span> <span class="err">?</span> <span class="mi">1</span> <span class="err">:</span> <span class="mi">0</span>
+
+  <span class="nx">route_table_id</span>         <span class="p">=</span> <span class="nx">aws_route_table</span><span class="err">.</span><span class="nx">private</span><span class="err">.</span><span class="nx">id</span>
+  <span class="nx">destination_cidr_block</span> <span class="p">=</span> <span class="s2">"0.0.0.0/0"</span>
+  <span class="nx">nat_gateway_id</span>         <span class="p">=</span> <span class="nx">aws_nat_gateway</span><span class="err">.</span><span class="nx">this</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-4-define-module-outputs">Step 4: Define Module Outputs</h2>
+
+<p><strong>modules/vpc/outputs.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">output</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the VPC"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"vpc_cidr_block"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"CIDR block of the VPC"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_vpc</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">cidr_block</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"public_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of public subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">public</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"private_subnet_ids"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"IDs of private subnets"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_subnet</span><span class="err">.</span><span class="nx">private</span><span class="p">[</span><span class="err">*</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"internet_gateway_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the Internet Gateway"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">aws_internet_gateway</span><span class="err">.</span><span class="nx">this</span><span class="err">.</span><span class="nx">id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"nat_gateway_id"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"ID of the NAT Gateway (null if disabled)"</span>
+  <span class="nx">value</span>       <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">enable_nat_gateway</span> <span class="err">?</span> <span class="nx">aws_nat_gateway</span><span class="err">.</span><span class="nx">this</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="err">.</span><span class="nx">id</span> <span class="err">:</span> <span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-5-use-lsp-completions">Step 5: Use LSP Completions</h2>
+
+<p>While editing, use LSP completions to discover available attributes:</p>
+
+<blockquote>
+  <p>“Get Terraform completions in modules/vpc/main.tf at line 3, character 2 to see what attributes aws_vpc supports”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terraform_complete"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules/vpc/main.tf"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"character"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This returns available attributes like <code class="language-plaintext highlighter-rouge">assign_generated_ipv6_cidr_block</code>, <code class="language-plaintext highlighter-rouge">enable_dns_hostnames</code>, <code class="language-plaintext highlighter-rouge">instance_tenancy</code>, and more.</p>
+
+<h2 id="step-6-validate-the-module">Step 6: Validate the Module</h2>
+
+<p>Initialize and validate the module in isolation:</p>
+
+<blockquote>
+  <p>“Initialize and validate the VPC module at modules/vpc”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules/vpc"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="alert alert-info">
+  <strong>Note</strong><br />
+  Validating a module directory directly checks HCL syntax and variable declarations, but won't catch errors that depend on how the module is called (like missing required variables).
+</div>
+
+<h2 id="step-7-call-the-module">Step 7: Call the Module</h2>
+
+<p>Create a root configuration that uses your module.</p>
+
+<p><strong>environments/dev/main.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">terraform</span> <span class="p">{</span>
+  <span class="nx">required_version</span> <span class="p">=</span> <span class="s2">"&gt;= 1.0"</span>
+
+  <span class="nx">required_providers</span> <span class="p">{</span>
+    <span class="nx">aws</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">source</span>  <span class="p">=</span> <span class="s2">"hashicorp/aws"</span>
+      <span class="nx">version</span> <span class="p">=</span> <span class="s2">"~&gt; 5.0"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">provider</span> <span class="s2">"aws"</span> <span class="p">{</span>
+  <span class="nx">region</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">aws_region</span>
+
+  <span class="nx">default_tags</span> <span class="p">{</span>
+    <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+      <span class="nx">Project</span>     <span class="p">=</span> <span class="s2">"module-tutorial"</span>
+      <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+      <span class="nx">ManagedBy</span>   <span class="p">=</span> <span class="s2">"Terraform"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">module</span> <span class="s2">"vpc"</span> <span class="p">{</span>
+  <span class="nx">source</span> <span class="p">=</span> <span class="s2">"../../modules/vpc"</span>
+
+  <span class="nx">name</span>               <span class="p">=</span> <span class="s2">"module-tutorial"</span>
+  <span class="nx">cidr_block</span>         <span class="p">=</span> <span class="s2">"10.0.0.0/16"</span>
+  <span class="nx">availability_zones</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"us-east-1a"</span><span class="p">,</span> <span class="s2">"us-east-1b"</span><span class="p">]</span>
+
+  <span class="nx">public_subnet_cidrs</span>  <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.1.0/24"</span><span class="p">,</span> <span class="s2">"10.0.2.0/24"</span><span class="p">]</span>
+  <span class="nx">private_subnet_cidrs</span> <span class="p">=</span> <span class="p">[</span><span class="s2">"10.0.10.0/24"</span><span class="p">,</span> <span class="s2">"10.0.11.0/24"</span><span class="p">]</span>
+
+  <span class="nx">enable_nat_gateway</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span> <span class="p">==</span> <span class="s2">"prod"</span>
+
+  <span class="nx">tags</span> <span class="p">=</span> <span class="p">{</span>
+    <span class="nx">Environment</span> <span class="p">=</span> <span class="nx">var</span><span class="err">.</span><span class="nx">environment</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"vpc_id"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">vpc_id</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"public_subnets"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">public_subnet_ids</span>
+<span class="p">}</span>
+
+<span class="nx">output</span> <span class="s2">"private_subnets"</span> <span class="p">{</span>
+  <span class="nx">value</span> <span class="p">=</span> <span class="nx">module</span><span class="err">.</span><span class="nx">vpc</span><span class="err">.</span><span class="nx">private_subnet_ids</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>environments/dev/variables.tf:</strong></p>
+<div class="language-hcl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">variable</span> <span class="s2">"aws_region"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"AWS region"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"us-east-1"</span>
+<span class="p">}</span>
+
+<span class="nx">variable</span> <span class="s2">"environment"</span> <span class="p">{</span>
+  <span class="nx">description</span> <span class="p">=</span> <span class="s2">"Environment name"</span>
+  <span class="nx">type</span>        <span class="p">=</span> <span class="nx">string</span>
+  <span class="nx">default</span>     <span class="p">=</span> <span class="s2">"dev"</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="step-8-validate-the-full-configuration">Step 8: Validate the Full Configuration</h2>
+
+<p>Now validate the root configuration with the module:</p>
+
+<blockquote>
+  <p>“Initialize and plan my dev environment at environments/dev”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/dev"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The plan will show all the resources the module creates — VPC, subnets, route tables, and internet gateway. Since <code class="language-plaintext highlighter-rouge">environment</code> is <code class="language-plaintext highlighter-rouge">"dev"</code>, the NAT gateway will be skipped.</p>
+
+<h2 id="step-9-analyze-the-module">Step 9: Analyze the Module</h2>
+
+<p>Run the analysis tools on your module:</p>
+
+<blockquote>
+  <p>“Analyze the VPC module for best practices”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_analyze"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules/vpc"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>A well-structured module should pass with zero or minimal warnings because every variable has a description, resources use variables (not hardcoded values), and tags are applied via <code class="language-plaintext highlighter-rouge">merge()</code>.</p>
+
+<h2 id="step-10-format-the-code">Step 10: Format the Code</h2>
+
+<p>Ensure consistent formatting:</p>
+
+<blockquote>
+  <p>“Format the VPC module and the dev environment”</p>
+</blockquote>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules/vpc"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/dev"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="module-best-practices">Module Best Practices</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Practice</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>All variables have descriptions</td>
+      <td><code class="language-plaintext highlighter-rouge">description = "CIDR block for the VPC"</code></td>
+    </tr>
+    <tr>
+      <td>Use validation blocks</td>
+      <td><code class="language-plaintext highlighter-rouge">validation { condition = ... }</code></td>
+    </tr>
+    <tr>
+      <td>Use <code class="language-plaintext highlighter-rouge">merge()</code> for tags</td>
+      <td><code class="language-plaintext highlighter-rouge">tags = merge(var.tags, { Name = "..." })</code></td>
+    </tr>
+    <tr>
+      <td>Name resources <code class="language-plaintext highlighter-rouge">this</code> for single instances</td>
+      <td><code class="language-plaintext highlighter-rouge">resource "aws_vpc" "this"</code></td>
+    </tr>
+    <tr>
+      <td>Provide sensible defaults</td>
+      <td><code class="language-plaintext highlighter-rouge">default = "10.0.0.0/16"</code></td>
+    </tr>
+    <tr>
+      <td>Document every output</td>
+      <td><code class="language-plaintext highlighter-rouge">description = "ID of the VPC"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this tutorial, you learned how to:</p>
+
+<ul>
+  <li>Structure a reusable Terraform module with variables, resources, and outputs</li>
+  <li>Use LSP hover and completions for provider documentation</li>
+  <li>Validate modules both in isolation and as part of a root configuration</li>
+  <li>Apply best practices: descriptions, validation blocks, tag merging</li>
+</ul>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<ul>
+  <li><a href="/terry-form-mcp/tutorials/github-actions-pipeline/">GitHub Actions Pipeline</a> — Automate validation in CI/CD</li>
+  <li><a href="/terry-form-mcp/tutorials/multi-environment/">Multi-Environment Setup</a> — Use modules across dev/staging/prod</li>
+  <li><a href="/terry-form-mcp/guides/lsp-integration/">LSP Integration Guide</a> — Full LSP reference</li>
+</ul>
+
+<hr />
+
+<div class="tutorial-nav">
+  <a href="/terry-form-mcp/tutorials/security-scanning/" class="btn">← Security Scanning</a>
+  <a href="/terry-form-mcp/tutorials/github-actions-pipeline/" class="btn btn-primary">Next: GitHub Actions →</a>
+</div>
+
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

@@ -3,18 +3,7 @@ layout: default
 ---
 
 <div class="guide-container">
-  <aside class="guide-sidebar">
-    <h4>Guides</h4>
-    <nav class="guide-nav">
-      {% assign sorted_guides = site.guides | sort: 'order' %}
-      {% for guide in sorted_guides %}
-        <a href="{{ guide.url | relative_url }}"
-           class="guide-nav-item {% if page.url == guide.url %}active{% endif %}">
-          {{ guide.title }}
-        </a>
-      {% endfor %}
-    </nav>
-  </aside>
+  {% include sidebar.html collection="guides" title="Guides" %}
 
   <article class="guide-content">
     <header class="guide-header">
@@ -26,11 +15,14 @@ layout: default
         {% if page.last_modified_at %}
         <span class="last-modified">Updated: {{ page.last_modified_at | date: "%B %d, %Y" }}</span>
         {% endif %}
+        <a href="{{ site.data.project.repo_url }}/edit/main/docs/{{ page.path }}" class="edit-link" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-edit"></i> Edit on GitHub
+        </a>
       </div>
     </header>
 
     {% if page.toc %}
-    <div class="toc" id="toc"></div>
+    {% include toc.html %}
     {% endif %}
 
     <div class="guide-body">
@@ -59,7 +51,7 @@ layout: default
       <div class="guide-feedback">
         <h4>Was this guide helpful?</h4>
         <p>
-          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20{{ page.title | url_encode }}"
+          <a href="{{ site.data.project.repo_url }}/issues/new?title=Guide%20Feedback:%20{{ page.title | url_encode }}"
              class="feedback-link" target="_blank" rel="noopener noreferrer">
             <i class="fas fa-comment"></i> Provide feedback
           </a>

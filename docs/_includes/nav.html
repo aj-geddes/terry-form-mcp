@@ -1,0 +1,30 @@
+<nav class="main-nav">
+  <div class="nav-container">
+    <a href="{{ site.baseurl }}/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v{{ site.data.project.version }}</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      {% for item in site.navigation %}
+      <a href="{% if item.external %}{{ item.url }}{% else %}{{ site.baseurl }}{{ item.url }}{% endif %}"
+         class="nav-link {% if page.url == item.url %}active{% endif %}"
+         {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+        {{ item.title }}
+        {% if item.external %}<i class="fab fa-github"></i>{% endif %}
+      </a>
+      {% endfor %}
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>

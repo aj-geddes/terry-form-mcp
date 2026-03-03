@@ -1,73 +1,218 @@
-<h1 id="architecture-overview">Architecture Overview</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<p>Terry-Form MCP is designed with security, scalability, and extensibility at its core. This document provides a comprehensive overview of the system architecture.</p>
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Architecture Overview | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Architecture Overview" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="High-level architecture of Terry-Form MCP" />
+<meta property="og:description" content="High-level architecture of Terry-Form MCP" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/architecture/overview" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/architecture/overview" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Architecture Overview" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-10-06T05:36:30-05:00","datePublished":"2026-03-03T07:01:42-06:00","description":"High-level architecture of Terry-Form MCP","headline":"Architecture Overview","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/architecture/overview"},"url":"http://0.0.0.0:4000/terry-form-mcp/architecture/overview"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <h1 id="architecture-overview">Architecture Overview</h1>
+
+<p>Terry-Form MCP is designed with security, modularity, and async execution at its core. This document provides a comprehensive overview of the system architecture.</p>
 
 <h2 id="system-architecture">System Architecture</h2>
 
 <pre><code class="language-mermaid">graph TB
     subgraph "Client Layer"
-        A[AI Assistant&lt;br/&gt;Claude/ChatGPT]
-        B[Web Browser&lt;br/&gt;Dashboard]
-        C[CLI Tools]
+        A[AI Assistant&lt;br/&gt;Claude]
         D[CI/CD Systems]
     end
-    
+
     subgraph "Terry-Form MCP Core"
-        E[MCP Protocol Handler]
-        F[Web API Server]
+        E[FastMCP Server]
         G[Security Layer]
-        H[Request Router]
-        
+
         subgraph "Execution Engine"
             I[Terraform Executor]
             J[Command Validator]
-            K[State Manager]
         end
-        
+
         subgraph "Integration Layer"
-            L[GitHub App Handler]
-            M[Cloud Provider APIs]
-            N[Terraform Cloud Client]
+            L[GitHub Handler]
+            N[TF Cloud Client]
         end
-        
+
         subgraph "Intelligence Layer"
-            O[Module Analyzer]
+            O[Analyzer]
             P[Security Scanner]
-            Q[Best Practice Engine]
         end
     end
-    
+
     subgraph "External Services"
         R[GitHub Repositories]
         S[Terraform Cloud]
-        T[AWS/Azure/GCP]
-        U[Container Registry]
+        T[Cloud Providers]
     end
-    
-    A --&gt;|MCP Protocol| E
-    B --&gt;|HTTP/WebSocket| F
-    C --&gt;|MCP Protocol| E
-    D --&gt;|API/MCP| E
-    
+
+    A --&gt;|MCP stdio| E
+    D --&gt;|MCP stdio| E
+
     E --&gt; G
-    F --&gt; G
-    G --&gt; H
-    
-    H --&gt; I
-    H --&gt; L
-    H --&gt; O
-    
+
+    G --&gt; I
+    G --&gt; L
+    G --&gt; O
+
     I --&gt; J
-    I --&gt; K
     J --&gt; I
-    
+
     L --&gt; R
-    M --&gt; T
     N --&gt; S
-    
+    I --&gt; T
+
     O --&gt; P
-    O --&gt; Q
-    
+
     style G fill:#ff9999
     style J fill:#ff9999
 </code></pre>
@@ -76,15 +221,15 @@
 
 <h3 id="1-protocol-layer">1. Protocol Layer</h3>
 
-<p>The protocol layer handles communication between clients and the Terry-Form server.</p>
+<p>The protocol layer handles MCP stdio communication between AI assistants and the Terry-Form server. All 25 tools are registered via <code class="language-plaintext highlighter-rouge">@mcp.tool()</code> decorators on the FastMCP server.</p>
 
 <pre><code class="language-mermaid">sequenceDiagram
     participant Client as AI Assistant
-    participant MCP as MCP Handler
+    participant MCP as FastMCP Server
     participant Security as Security Layer
     participant Executor as Terraform Executor
-    
-    Client-&gt;&gt;MCP: Tool Request
+
+    Client-&gt;&gt;MCP: MCP Tool Request (stdio)
     MCP-&gt;&gt;Security: Validate Request
     Security-&gt;&gt;Security: Check Permissions
     Security-&gt;&gt;Security: Sanitize Input
@@ -92,12 +237,12 @@
     MCP-&gt;&gt;Executor: Execute Command
     Executor-&gt;&gt;Executor: Run Terraform
     Executor--&gt;&gt;MCP: Result
-    MCP--&gt;&gt;Client: Response
+    MCP--&gt;&gt;Client: MCP Response (stdio)
 </code></pre>
 
 <h3 id="2-security-architecture">2. Security Architecture</h3>
 
-<p>Security is implemented in multiple layers:</p>
+<p>Security is implemented in multiple layers, enforced by <code class="language-plaintext highlighter-rouge">mcp_request_validator.py</code>:</p>
 
 <pre><code class="language-mermaid">graph LR
     subgraph "Security Layers"
@@ -105,10 +250,10 @@
         B[Path Traversal Protection]
         C[Command Injection Prevention]
         D[Action Whitelisting]
-        E[Resource Isolation]
-        F[Audit Logging]
+        E[Workspace Isolation]
+        F[Rate Limiting]
     end
-    
+
     A --&gt; B
     B --&gt; C
     C --&gt; D
@@ -119,11 +264,12 @@
 <p><strong>Key Security Features:</strong></p>
 
 <ul>
-  <li><strong>Input Validation</strong>: All inputs are validated against strict schemas</li>
-  <li><strong>Path Protection</strong>: Prevents access outside designated workspace</li>
+  <li><strong>Input Validation</strong>: All inputs validated against strict JSON schemas</li>
+  <li><strong>Path Protection</strong>: Prevents access outside <code class="language-plaintext highlighter-rouge">/mnt/workspace</code></li>
   <li><strong>Command Safety</strong>: Uses <code class="language-plaintext highlighter-rouge">shell=False</code> and <code class="language-plaintext highlighter-rouge">shlex.quote()</code> for subprocess execution</li>
-  <li><strong>Action Control</strong>: Whitelist of allowed Terraform actions</li>
-  <li><strong>Isolation</strong>: Docker containers with limited capabilities</li>
+  <li><strong>Action Control</strong>: Only <code class="language-plaintext highlighter-rouge">init</code>, <code class="language-plaintext highlighter-rouge">validate</code>, <code class="language-plaintext highlighter-rouge">fmt</code>, and <code class="language-plaintext highlighter-rouge">plan</code> are allowed – <code class="language-plaintext highlighter-rouge">apply</code> and <code class="language-plaintext highlighter-rouge">destroy</code> are permanently blocked</li>
+  <li><strong>Isolation</strong>: Docker container running as non-root user <code class="language-plaintext highlighter-rouge">terraform</code> (UID 1001)</li>
+  <li><strong>Rate Limiting</strong>: 20 req/min for Terraform, 30 req/min for GitHub, 100 req/min default</li>
 </ul>
 
 <h3 id="3-execution-engine">3. Execution Engine</h3>
@@ -144,23 +290,35 @@
     Error --&gt; Idle: Return Error
 </code></pre>
 
+<p><strong>Forced Environment Variables:</strong></p>
+
+<p>All Terraform subprocess calls include these environment variables to ensure safe automated execution:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">TF_IN_AUTOMATION=true</code></li>
+  <li><code class="language-plaintext highlighter-rouge">TF_INPUT=false</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CHECKPOINT_DISABLE=true</code></li>
+</ul>
+
 <h3 id="4-data-flow">4. Data Flow</h3>
 
 <pre><code class="language-mermaid">graph TD
     subgraph "Request Flow"
-        A[Client Request] --&gt; B{Request Type}
+        A[MCP Tool Request] --&gt; B{Request Type}
         B --&gt;|Terraform Op| C[Terraform Handler]
         B --&gt;|GitHub Op| D[GitHub Handler]
-        B --&gt;|Cloud Op| E[Cloud Handler]
-        
+        B --&gt;|TF Cloud Op| E[Cloud Handler]
+        B --&gt;|LSP Op| X[LSP Client]
+
         C --&gt; F[Validation]
         D --&gt; F
         E --&gt; F
-        
+        X --&gt; F
+
         F --&gt; G{Valid?}
         G --&gt;|Yes| H[Execute]
         G --&gt;|No| I[Reject]
-        
+
         H --&gt; J[Process Result]
         J --&gt; K[Format Response]
         K --&gt; L[Return to Client]
@@ -172,307 +330,171 @@
 
 <h3 id="docker-deployment">Docker Deployment</h3>
 
+<p>The container is built on <code class="language-plaintext highlighter-rouge">hashicorp/terraform:1.12</code> (Alpine-based) and runs as non-root user <code class="language-plaintext highlighter-rouge">terraform</code> (UID 1001). Communication uses MCP stdio – there are no exposed ports.</p>
+
 <pre><code class="language-mermaid">graph TB
     subgraph "Docker Container"
-        A[Terry-Form MCP]
-        B[Python Runtime]
-        C[Terraform Binary]
-        D[Security Tools]
+        A[FastMCP Server]
+        B[Python 3.10+]
+        C[Terraform 1.12]
+        D[terraform-ls 0.38.5]
         E[Git Client]
     end
-    
+
     subgraph "Volume Mounts"
         F[/mnt/workspace]
-        G[/app/config]
-        H[/var/log]
     end
-    
-    subgraph "Network"
-        I[Port 3000: MCP]
-        J[Port 8001: Web]
-    end
-    
+
     A --&gt; F
-    A --&gt; G
-    A --&gt; H
-    A --&gt; I
-    A --&gt; J
 </code></pre>
 
-<h3 id="kubernetes-architecture">Kubernetes Architecture</h3>
+<p><strong>Running the container:</strong></p>
 
-<pre><code class="language-mermaid">graph TB
-    subgraph "Kubernetes Cluster"
-        subgraph "Terry-Form Namespace"
-            A[Deployment]
-            B[Service]
-            C[ConfigMap]
-            D[Secret]
-            E[PVC]
-            F[HPA]
-            G[NetworkPolicy]
-        end
-        
-        subgraph "Ingress"
-            H[Ingress Controller]
-            I[TLS Termination]
-        end
-        
-        subgraph "Monitoring"
-            J[Prometheus]
-            K[Grafana]
-            L[Loki]
-        end
-    end
-    
-    H --&gt; B
-    A --&gt; E
-    A --&gt; C
-    A --&gt; D
-    F --&gt; A
-    G --&gt; A
-    
-    A --&gt; J
-    A --&gt; L
-</code></pre>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span><span class="s2">:/mnt/workspace"</span> <span class="se">\</span>
+  terry-form-mcp:latest
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">-i</code> flag enables stdin for MCP stdio communication. The workspace volume mount at <code class="language-plaintext highlighter-rouge">/mnt/workspace</code> provides access to Terraform configuration files.</p>
 
 <h2 id="integration-architecture">Integration Architecture</h2>
 
 <h3 id="github-app-integration">GitHub App Integration</h3>
 
 <pre><code class="language-mermaid">sequenceDiagram
-    participant User
+    participant User as AI Assistant
     participant TerryForm as Terry-Form
     participant GitHub
-    participant Workspace
-    
+    participant Workspace as /mnt/workspace
+
     User-&gt;&gt;TerryForm: Clone Repository
     TerryForm-&gt;&gt;GitHub: Authenticate (JWT)
     GitHub--&gt;&gt;TerryForm: Installation Token
     TerryForm-&gt;&gt;GitHub: Clone Repo
     GitHub--&gt;&gt;TerryForm: Repository Data
-    TerryForm-&gt;&gt;Workspace: Store Files
+    TerryForm-&gt;&gt;Workspace: Store Terraform Files
     TerryForm--&gt;&gt;User: Success
 </code></pre>
 
-<h3 id="multi-cloud-support">Multi-Cloud Support</h3>
+<h3 id="terraform-cloud-integration">Terraform Cloud Integration</h3>
 
-<pre><code class="language-mermaid">graph LR
-    subgraph "Terry-Form MCP"
-        A[Cloud Abstraction Layer]
-    end
-    
-    subgraph "Cloud Providers"
-        B[AWS Provider]
-        C[Azure Provider]
-        D[GCP Provider]
-        E[Terraform Cloud]
-    end
-    
-    A --&gt; B
-    A --&gt; C
-    A --&gt; D
-    A --&gt; E
-    
-    B --&gt; F[AWS APIs]
-    C --&gt; G[Azure APIs]
-    D --&gt; H[GCP APIs]
-    E --&gt; I[TFC APIs]
-</code></pre>
+<p>Terry-Form MCP includes 4 Terraform Cloud tools for managing workspaces and runs through the TFC API.</p>
 
-<h2 id="scalability-considerations">Scalability Considerations</h2>
+<h3 id="lsp-intelligence">LSP Intelligence</h3>
 
-<h3 id="horizontal-scaling">Horizontal Scaling</h3>
-
-<pre><code class="language-mermaid">graph TB
-    subgraph "Load Balancer"
-        A[HAProxy/Nginx]
-    end
-    
-    subgraph "Terry-Form Instances"
-        B[Instance 1]
-        C[Instance 2]
-        D[Instance 3]
-    end
-    
-    subgraph "Shared Storage"
-        E[State Storage]
-        F[Workspace Storage]
-    end
-    
-    subgraph "Cache Layer"
-        G[Redis Cache]
-    end
-    
-    A --&gt; B
-    A --&gt; C
-    A --&gt; D
-    
-    B --&gt; E
-    B --&gt; F
-    B --&gt; G
-    
-    C --&gt; E
-    C --&gt; F
-    C --&gt; G
-    
-    D --&gt; E
-    D --&gt; F
-    D --&gt; G
-</code></pre>
-
-<h3 id="performance-optimization">Performance Optimization</h3>
+<p>The terraform-ls integration provides 5 tools for code intelligence:</p>
 
 <ul>
-  <li><strong>Caching</strong>: Module analysis results cached</li>
-  <li><strong>Connection Pooling</strong>: Reuse cloud provider connections</li>
-  <li><strong>Async Operations</strong>: Non-blocking I/O for better concurrency</li>
-  <li><strong>Resource Limits</strong>: CPU/Memory limits per operation</li>
+  <li>Hover information for resources and attributes</li>
+  <li>Auto-completions for Terraform configuration</li>
+  <li>Diagnostics and error detection</li>
+  <li>Code formatting</li>
+  <li>Document symbols</li>
 </ul>
 
-<h2 id="security-architecture-details">Security Architecture Details</h2>
+<p>The LSP client wraps <code class="language-plaintext highlighter-rouge">terraform-ls 0.38.5</code> as an async subprocess. The first call may take 1-2 seconds for LSP initialization.</p>
 
-<h3 id="defense-in-depth">Defense in Depth</h3>
+<h2 id="tool-categories">Tool Categories</h2>
 
-<pre><code class="language-mermaid">graph TD
-    subgraph "Layer 1: Network"
-        A[TLS Encryption]
-        B[Firewall Rules]
-        C[DDoS Protection]
-    end
-    
-    subgraph "Layer 2: Application"
-        D[Authentication]
-        E[Authorization]
-        F[Input Validation]
-    end
-    
-    subgraph "Layer 3: Execution"
-        G[Sandboxing]
-        H[Resource Limits]
-        I[Audit Logging]
-    end
-    
-    subgraph "Layer 4: Data"
-        J[Encryption at Rest]
-        K[Secret Management]
-        L[Access Control]
-    end
-    
-    A --&gt; D
-    B --&gt; D
-    C --&gt; D
-    D --&gt; G
-    E --&gt; G
-    F --&gt; G
-    G --&gt; J
-    H --&gt; J
-    I --&gt; J
-</code></pre>
+<p>Terry-Form MCP exposes 25 tools organized into categories:</p>
 
-<h2 id="monitoring-and-observability">Monitoring and Observability</h2>
-
-<h3 id="metrics-collection">Metrics Collection</h3>
-
-<pre><code class="language-mermaid">graph LR
-    subgraph "Terry-Form MCP"
-        A[Application Metrics]
-        B[System Metrics]
-        C[Custom Metrics]
-    end
-    
-    subgraph "Collection"
-        D[Prometheus Exporter]
-        E[StatsD Client]
-    end
-    
-    subgraph "Storage"
-        F[Prometheus]
-        G[InfluxDB]
-    end
-    
-    subgraph "Visualization"
-        H[Grafana]
-        I[Custom Dashboards]
-    end
-    
-    A --&gt; D
-    B --&gt; D
-    C --&gt; E
-    
-    D --&gt; F
-    E --&gt; G
-    
-    F --&gt; H
-    G --&gt; H
-    H --&gt; I
-</code></pre>
-
-<h2 id="high-availability-setup">High Availability Setup</h2>
-
-<pre><code class="language-mermaid">graph TB
-    subgraph "Region 1"
-        A1[Terry-Form Primary]
-        B1[Database Primary]
-        C1[Cache Primary]
-    end
-    
-    subgraph "Region 2"
-        A2[Terry-Form Secondary]
-        B2[Database Replica]
-        C2[Cache Replica]
-    end
-    
-    subgraph "Global"
-        D[Global Load Balancer]
-        E[Shared Object Storage]
-    end
-    
-    D --&gt; A1
-    D --&gt; A2
-    
-    A1 --&gt; B1
-    A1 --&gt; C1
-    A1 --&gt; E
-    
-    A2 --&gt; B2
-    A2 --&gt; C2
-    A2 --&gt; E
-    
-    B1 -.-&gt;|Replication| B2
-    C1 -.-&gt;|Replication| C2
-</code></pre>
-
-<h2 id="development-architecture">Development Architecture</h2>
-
-<h3 id="local-development-setup">Local Development Setup</h3>
-
-<pre><code class="language-mermaid">graph TD
-    subgraph "Developer Machine"
-        A[IDE/Editor]
-        B[Terry-Form Dev Server]
-        C[Local Terraform]
-        D[Docker Desktop]
-    end
-    
-    subgraph "Test Environment"
-        E[Test Workspace]
-        F[Mock Cloud APIs]
-        G[Test State Storage]
-    end
-    
-    A --&gt; B
-    B --&gt; C
-    B --&gt; E
-    E --&gt; F
-    E --&gt; G
-    
-    D --&gt; B
-</code></pre>
+<table>
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th>Count</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Core Terraform</td>
+      <td>4</td>
+      <td>init, validate, fmt, plan</td>
+    </tr>
+    <tr>
+      <td>LSP Intelligence</td>
+      <td>5</td>
+      <td>Hover, completions, diagnostics, formatting, symbols</td>
+    </tr>
+    <tr>
+      <td>Diagnostics</td>
+      <td>6</td>
+      <td>LSP diagnostics, file analysis, workspace inspection</td>
+    </tr>
+    <tr>
+      <td>Security</td>
+      <td>2</td>
+      <td>Security scanning, best practice recommendations</td>
+    </tr>
+    <tr>
+      <td>GitHub</td>
+      <td>4</td>
+      <td>Repository cloning, file extraction</td>
+    </tr>
+    <tr>
+      <td>Terraform Cloud</td>
+      <td>4</td>
+      <td>Workspace and run management</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="next-steps">Next Steps</h2>
 
 <ul>
-  <li>Return to <a href="/terry-form-mcp/architecture/">Architecture Index</a> for overview</li>
-  <li>Explore <a href="/terry-form-mcp/guides/security">Security Guide</a> for security best practices</li>
+  <li>Return to <a href="/terry-form-mcp/architecture/">Architecture Index</a> for an overview</li>
+  <li>Explore the <a href="/terry-form-mcp/api/">API Reference</a> for detailed tool documentation</li>
 </ul>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

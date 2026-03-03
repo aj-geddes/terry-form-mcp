@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'docs/**'
-      - '.github/workflows/jekyll-gh-pages.yml'
+      - '.github/workflows/docs-builder.yaml'
   pull_request:
     branches: [ main ]
     paths:

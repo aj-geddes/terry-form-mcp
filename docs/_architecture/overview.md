@@ -6,75 +6,61 @@ order: 1
 
 # Architecture Overview
 
-Terry-Form MCP is designed with security, scalability, and extensibility at its core. This document provides a comprehensive overview of the system architecture.
+Terry-Form MCP is designed with security, modularity, and async execution at its core. This document provides a comprehensive overview of the system architecture.
 
 ## System Architecture
 
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        A[AI Assistant<br/>Claude/ChatGPT]
-        B[Web Browser<br/>Dashboard]
-        C[CLI Tools]
+        A[AI Assistant<br/>Claude]
         D[CI/CD Systems]
     end
-    
+
     subgraph "Terry-Form MCP Core"
-        E[MCP Protocol Handler]
-        F[Web API Server]
+        E[FastMCP Server]
         G[Security Layer]
-        H[Request Router]
-        
+
         subgraph "Execution Engine"
             I[Terraform Executor]
             J[Command Validator]
-            K[State Manager]
         end
-        
+
         subgraph "Integration Layer"
-            L[GitHub App Handler]
-            M[Cloud Provider APIs]
-            N[Terraform Cloud Client]
+            L[GitHub Handler]
+            N[TF Cloud Client]
         end
-        
+
         subgraph "Intelligence Layer"
-            O[Module Analyzer]
+            O[Analyzer]
             P[Security Scanner]
-            Q[Best Practice Engine]
         end
     end
-    
+
     subgraph "External Services"
         R[GitHub Repositories]
         S[Terraform Cloud]
-        T[AWS/Azure/GCP]
-        U[Container Registry]
+        T[Cloud Providers]
     end
-    
-    A -->|MCP Protocol| E
-    B -->|HTTP/WebSocket| F
-    C -->|MCP Protocol| E
-    D -->|API/MCP| E
-    
+
+    A -->|MCP stdio| E
+    D -->|MCP stdio| E
+
     E --> G
-    F --> G
-    G --> H
-    
-    H --> I
-    H --> L
-    H --> O
-    
+
+    G --> I
+    G --> L
+    G --> O
+
     I --> J
-    I --> K
     J --> I
-    
+
     L --> R
-    M --> T
     N --> S
-    
+    I --> T
+
     O --> P
-    O --> Q
-    
+
     style G fill:#ff9999
     style J fill:#ff9999
 ```
@@ -83,16 +69,16 @@ graph TB
 
 ### 1. Protocol Layer
 
-The protocol layer handles communication between clients and the Terry-Form server.
+The protocol layer handles MCP stdio communication between AI assistants and the Terry-Form server. All {{ site.data.project.tool_count }} tools are registered via `@mcp.tool()` decorators on the FastMCP server.
 
 ```mermaid
 sequenceDiagram
     participant Client as AI Assistant
-    participant MCP as MCP Handler
+    participant MCP as FastMCP Server
     participant Security as Security Layer
     participant Executor as Terraform Executor
-    
-    Client->>MCP: Tool Request
+
+    Client->>MCP: MCP Tool Request (stdio)
     MCP->>Security: Validate Request
     Security->>Security: Check Permissions
     Security->>Security: Sanitize Input
@@ -100,12 +86,12 @@ sequenceDiagram
     MCP->>Executor: Execute Command
     Executor->>Executor: Run Terraform
     Executor-->>MCP: Result
-    MCP-->>Client: Response
+    MCP-->>Client: MCP Response (stdio)
 ```
 
 ### 2. Security Architecture
 
-Security is implemented in multiple layers:
+Security is implemented in multiple layers, enforced by `mcp_request_validator.py`:
 
 ```mermaid
 graph LR
@@ -114,10 +100,10 @@ graph LR
         B[Path Traversal Protection]
         C[Command Injection Prevention]
         D[Action Whitelisting]
-        E[Resource Isolation]
-        F[Audit Logging]
+        E[Workspace Isolation]
+        F[Rate Limiting]
     end
-    
+
     A --> B
     B --> C
     C --> D
@@ -127,11 +113,12 @@ graph LR
 
 **Key Security Features:**
 
-- **Input Validation**: All inputs are validated against strict schemas
-- **Path Protection**: Prevents access outside designated workspace
+- **Input Validation**: All inputs validated against strict JSON schemas
+- **Path Protection**: Prevents access outside `/mnt/workspace`
 - **Command Safety**: Uses `shell=False` and `shlex.quote()` for subprocess execution
-- **Action Control**: Whitelist of allowed Terraform actions
-- **Isolation**: Docker containers with limited capabilities
+- **Action Control**: Only `init`, `validate`, `fmt`, and `plan` are allowed -- `apply` and `destroy` are permanently blocked
+- **Isolation**: Docker container running as non-root user `{{ site.data.project.container_user }}` (UID {{ site.data.project.container_uid }})
+- **Rate Limiting**: {{ site.data.project.rate_limits.terraform }} req/min for Terraform, {{ site.data.project.rate_limits.github }} req/min for GitHub, {{ site.data.project.rate_limits.default }} req/min default
 
 ### 3. Execution Engine
 
@@ -152,24 +139,34 @@ stateDiagram-v2
     Error --> Idle: Return Error
 ```
 
+**Forced Environment Variables:**
+
+All Terraform subprocess calls include these environment variables to ensure safe automated execution:
+
+- `TF_IN_AUTOMATION=true`
+- `TF_INPUT=false`
+- `CHECKPOINT_DISABLE=true`
+
 ### 4. Data Flow
 
 ```mermaid
 graph TD
     subgraph "Request Flow"
-        A[Client Request] --> B{Request Type}
+        A[MCP Tool Request] --> B{Request Type}
         B -->|Terraform Op| C[Terraform Handler]
         B -->|GitHub Op| D[GitHub Handler]
-        B -->|Cloud Op| E[Cloud Handler]
-        
+        B -->|TF Cloud Op| E[Cloud Handler]
+        B -->|LSP Op| X[LSP Client]
+
         C --> F[Validation]
         D --> F
         E --> F
-        
+        X --> F
+
         F --> G{Valid?}
         G -->|Yes| H[Execute]
         G -->|No| I[Reject]
-        
+
         H --> J[Process Result]
         J --> K[Format Response]
         K --> L[Return to Client]
@@ -181,71 +178,34 @@ graph TD
 
 ### Docker Deployment
 
+The container is built on `{{ site.data.project.base_image }}` (Alpine-based) and runs as non-root user `{{ site.data.project.container_user }}` (UID {{ site.data.project.container_uid }}). Communication uses MCP stdio -- there are no exposed ports.
+
 ```mermaid
 graph TB
     subgraph "Docker Container"
-        A[Terry-Form MCP]
-        B[Python Runtime]
-        C[Terraform Binary]
-        D[Security Tools]
+        A[FastMCP Server]
+        B[Python {{ site.data.project.python }}]
+        C[Terraform {{ site.data.project.terraform }}]
+        D[terraform-ls {{ site.data.project.terraform_ls }}]
         E[Git Client]
     end
-    
+
     subgraph "Volume Mounts"
         F[/mnt/workspace]
-        G[/app/config]
-        H[/var/log]
     end
-    
-    subgraph "Network"
-        I[Port 3000: MCP]
-        J[Port 8001: Web]
-    end
-    
+
     A --> F
-    A --> G
-    A --> H
-    A --> I
-    A --> J
 ```
 
-### Kubernetes Architecture
+**Running the container:**
 
-```mermaid
-graph TB
-    subgraph "Kubernetes Cluster"
-        subgraph "Terry-Form Namespace"
-            A[Deployment]
-            B[Service]
-            C[ConfigMap]
-            D[Secret]
-            E[PVC]
-            F[HPA]
-            G[NetworkPolicy]
-        end
-        
-        subgraph "Ingress"
-            H[Ingress Controller]
-            I[TLS Termination]
-        end
-        
-        subgraph "Monitoring"
-            J[Prometheus]
-            K[Grafana]
-            L[Loki]
-        end
-    end
-    
-    H --> B
-    A --> E
-    A --> C
-    A --> D
-    F --> A
-    G --> A
-    
-    A --> J
-    A --> L
+```bash
+docker run -i --rm \
+  -v "$(pwd):/mnt/workspace" \
+  terry-form-mcp:latest
 ```
+
+The `-i` flag enables stdin for MCP stdio communication. The workspace volume mount at `/mnt/workspace` provides access to Terraform configuration files.
 
 ## Integration Architecture
 
@@ -253,240 +213,50 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant User as AI Assistant
     participant TerryForm as Terry-Form
     participant GitHub
-    participant Workspace
-    
+    participant Workspace as /mnt/workspace
+
     User->>TerryForm: Clone Repository
     TerryForm->>GitHub: Authenticate (JWT)
     GitHub-->>TerryForm: Installation Token
     TerryForm->>GitHub: Clone Repo
     GitHub-->>TerryForm: Repository Data
-    TerryForm->>Workspace: Store Files
+    TerryForm->>Workspace: Store Terraform Files
     TerryForm-->>User: Success
 ```
 
-### Multi-Cloud Support
+### Terraform Cloud Integration
 
-```mermaid
-graph LR
-    subgraph "Terry-Form MCP"
-        A[Cloud Abstraction Layer]
-    end
-    
-    subgraph "Cloud Providers"
-        B[AWS Provider]
-        C[Azure Provider]
-        D[GCP Provider]
-        E[Terraform Cloud]
-    end
-    
-    A --> B
-    A --> C
-    A --> D
-    A --> E
-    
-    B --> F[AWS APIs]
-    C --> G[Azure APIs]
-    D --> H[GCP APIs]
-    E --> I[TFC APIs]
-```
+Terry-Form MCP includes {{ site.data.project.tools.terraform_cloud }} Terraform Cloud tools for managing workspaces and runs through the TFC API.
 
-## Scalability Considerations
+### LSP Intelligence
 
-### Horizontal Scaling
+The terraform-ls integration provides {{ site.data.project.tools.lsp }} tools for code intelligence:
 
-```mermaid
-graph TB
-    subgraph "Load Balancer"
-        A[HAProxy/Nginx]
-    end
-    
-    subgraph "Terry-Form Instances"
-        B[Instance 1]
-        C[Instance 2]
-        D[Instance 3]
-    end
-    
-    subgraph "Shared Storage"
-        E[State Storage]
-        F[Workspace Storage]
-    end
-    
-    subgraph "Cache Layer"
-        G[Redis Cache]
-    end
-    
-    A --> B
-    A --> C
-    A --> D
-    
-    B --> E
-    B --> F
-    B --> G
-    
-    C --> E
-    C --> F
-    C --> G
-    
-    D --> E
-    D --> F
-    D --> G
-```
+- Hover information for resources and attributes
+- Auto-completions for Terraform configuration
+- Diagnostics and error detection
+- Code formatting
+- Document symbols
 
-### Performance Optimization
+The LSP client wraps `terraform-ls {{ site.data.project.terraform_ls }}` as an async subprocess. The first call may take 1-2 seconds for LSP initialization.
 
-- **Caching**: Module analysis results cached
-- **Connection Pooling**: Reuse cloud provider connections
-- **Async Operations**: Non-blocking I/O for better concurrency
-- **Resource Limits**: CPU/Memory limits per operation
+## Tool Categories
 
-## Security Architecture Details
+Terry-Form MCP exposes {{ site.data.project.tool_count }} tools organized into categories:
 
-### Defense in Depth
-
-```mermaid
-graph TD
-    subgraph "Layer 1: Network"
-        A[TLS Encryption]
-        B[Firewall Rules]
-        C[DDoS Protection]
-    end
-    
-    subgraph "Layer 2: Application"
-        D[Authentication]
-        E[Authorization]
-        F[Input Validation]
-    end
-    
-    subgraph "Layer 3: Execution"
-        G[Sandboxing]
-        H[Resource Limits]
-        I[Audit Logging]
-    end
-    
-    subgraph "Layer 4: Data"
-        J[Encryption at Rest]
-        K[Secret Management]
-        L[Access Control]
-    end
-    
-    A --> D
-    B --> D
-    C --> D
-    D --> G
-    E --> G
-    F --> G
-    G --> J
-    H --> J
-    I --> J
-```
-
-## Monitoring and Observability
-
-### Metrics Collection
-
-```mermaid
-graph LR
-    subgraph "Terry-Form MCP"
-        A[Application Metrics]
-        B[System Metrics]
-        C[Custom Metrics]
-    end
-    
-    subgraph "Collection"
-        D[Prometheus Exporter]
-        E[StatsD Client]
-    end
-    
-    subgraph "Storage"
-        F[Prometheus]
-        G[InfluxDB]
-    end
-    
-    subgraph "Visualization"
-        H[Grafana]
-        I[Custom Dashboards]
-    end
-    
-    A --> D
-    B --> D
-    C --> E
-    
-    D --> F
-    E --> G
-    
-    F --> H
-    G --> H
-    H --> I
-```
-
-## High Availability Setup
-
-```mermaid
-graph TB
-    subgraph "Region 1"
-        A1[Terry-Form Primary]
-        B1[Database Primary]
-        C1[Cache Primary]
-    end
-    
-    subgraph "Region 2"
-        A2[Terry-Form Secondary]
-        B2[Database Replica]
-        C2[Cache Replica]
-    end
-    
-    subgraph "Global"
-        D[Global Load Balancer]
-        E[Shared Object Storage]
-    end
-    
-    D --> A1
-    D --> A2
-    
-    A1 --> B1
-    A1 --> C1
-    A1 --> E
-    
-    A2 --> B2
-    A2 --> C2
-    A2 --> E
-    
-    B1 -.->|Replication| B2
-    C1 -.->|Replication| C2
-```
-
-## Development Architecture
-
-### Local Development Setup
-
-```mermaid
-graph TD
-    subgraph "Developer Machine"
-        A[IDE/Editor]
-        B[Terry-Form Dev Server]
-        C[Local Terraform]
-        D[Docker Desktop]
-    end
-    
-    subgraph "Test Environment"
-        E[Test Workspace]
-        F[Mock Cloud APIs]
-        G[Test State Storage]
-    end
-    
-    A --> B
-    B --> C
-    B --> E
-    E --> F
-    E --> G
-    
-    D --> B
-```
+| Category | Count | Description |
+|----------|-------|-------------|
+| Core Terraform | {{ site.data.project.tools.core }} | init, validate, fmt, plan |
+| LSP Intelligence | {{ site.data.project.tools.lsp }} | Hover, completions, diagnostics, formatting, symbols |
+| Diagnostics | {{ site.data.project.tools.diagnostics }} | LSP diagnostics, file analysis, workspace inspection |
+| Security | {{ site.data.project.tools.security }} | Security scanning, best practice recommendations |
+| GitHub | {{ site.data.project.tools.github }} | Repository cloning, file extraction |
+| Terraform Cloud | {{ site.data.project.tools.terraform_cloud }} | Workspace and run management |
 
 ## Next Steps
 
-- Return to [Architecture Index]({{ site.baseurl }}/architecture/) for overview
-- Explore [Security Guide]({{ site.baseurl }}/guides/security) for security best practices
+- Return to [Architecture Index]({{ site.baseurl }}/architecture/) for an overview
+- Explore the [API Reference]({{ site.baseurl }}/api/) for detailed tool documentation

@@ -1,0 +1,44 @@
+{% comment %}
+  Auto-generated breadcrumbs with Schema.org BreadcrumbList markup.
+  Usage: {% include breadcrumbs.html %}
+{% endcomment %}
+
+{% assign crumbs = page.url | split: '/' %}
+{% if crumbs.size > 1 %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "{{ site.url }}{{ site.baseurl }}/"
+      }{% assign position = 2 %}{% assign path = "" %}{% for crumb in crumbs %}{% if crumb != "" %}{% assign path = path | append: "/" | append: crumb %},
+      {
+        "@type": "ListItem",
+        "position": {{ position }},
+        "name": "{{ crumb | replace: '-', ' ' | capitalize }}",
+        "item": "{{ site.url }}{{ site.baseurl }}{{ path }}"
+      }{% assign position = position | plus: 1 %}{% endif %}{% endfor %}
+    ]
+  }
+  </script>
+  <ol>
+    <li><a href="{{ site.baseurl }}/">Home</a></li>
+    {% assign path = "" %}
+    {% for crumb in crumbs %}
+      {% if crumb != "" %}
+        {% assign path = path | append: "/" | append: crumb %}
+        {% if forloop.last %}
+          <li aria-current="page">{{ page.title | default: crumb | replace: '-', ' ' | capitalize }}</li>
+        {% else %}
+          <li><a href="{{ site.baseurl }}{{ path }}">{{ crumb | replace: '-', ' ' | capitalize }}</a></li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

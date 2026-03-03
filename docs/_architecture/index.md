@@ -6,18 +6,17 @@ description: Technical architecture documentation for Terry-Form MCP
 
 # Architecture Documentation
 
-Explore the technical architecture of Terry-Form MCP.
+Explore the technical architecture of {{ site.data.project.docs_url | split: '/' | last | replace: '-', ' ' | capitalize }}.
 
 ```mermaid
 graph TB
     subgraph External
         A[AI Assistants]
-        B[Web Clients]
         C[CI/CD Systems]
     end
 
     subgraph "Terry-Form MCP"
-        D[Protocol Layer]
+        D[FastMCP Server]
         E[Security Layer]
         F[Execution Engine]
         G[Integration Layer]
@@ -29,9 +28,8 @@ graph TB
         J[Git Repositories]
     end
 
-    A --> D
-    B --> D
-    C --> D
+    A -->|MCP stdio| D
+    C -->|MCP stdio| D
     D --> E
     E --> F
     E --> G
@@ -42,305 +40,109 @@ graph TB
 
 ## Architecture Documents
 
-<div class="arch-grid">
+<div class="features-grid">
 {% for doc in site.architecture %}
-  <div class="arch-card">
-    <div class="arch-icon">{{ doc.icon | default: "📄" }}</div>
+{% unless doc.url == page.url %}
+  <div class="feature-card">
     <h3><a href="{{ doc.url | relative_url }}">{{ doc.title }}</a></h3>
     <p>{{ doc.description }}</p>
     {% if doc.topics %}
-    <div class="arch-topics">
+    <div class="mt-4">
       {% for topic in doc.topics %}
-      <span class="topic-badge">{{ topic }}</span>
+      <span class="version-badge">{{ topic }}</span>
       {% endfor %}
     </div>
     {% endif %}
   </div>
+{% endunless %}
 {% endfor %}
 </div>
 
 ## Key Architectural Principles
 
-### 🔒 Security First
-Every component is designed with security as the primary concern. Defense in depth with multiple security layers.
+<div class="features-grid">
+  <div class="glass-card">
+    <h3>Security First</h3>
+    <p>Every component is designed with security as the primary concern. Defense in depth with multiple validation layers, path traversal protection, command injection prevention, and action whitelisting. Destructive operations (<code>apply</code>, <code>destroy</code>) are permanently blocked.</p>
+  </div>
 
-### 📦 Modular Design
-Components are loosely coupled and can be deployed independently. Easy to extend and maintain.
+  <div class="glass-card">
+    <h3>Modular Design</h3>
+    <p>Components are loosely coupled with clear responsibilities. The core Terraform executor, LSP client, GitHub handler, and security validator are independent modules registered through a single FastMCP entry point.</p>
+  </div>
 
-### 🚀 High Performance
-Asynchronous operations, connection pooling, and intelligent caching for optimal performance.
-
-### 🔄 Scalability
-Horizontal scaling support with stateless components and shared state management.
-
-### 🛡️ Fault Tolerance
-Graceful error handling, circuit breakers, and automatic recovery mechanisms.
-
-### 📊 Observable
-Comprehensive logging, metrics, and tracing for full system visibility.
+  <div class="glass-card">
+    <h3>Async Throughout</h3>
+    <p>The server uses <code>asyncio</code> with FastMCP. All {{ site.data.project.tool_count }} tool handlers are async, enabling non-blocking I/O for Terraform subprocess execution, LSP communication, and external API calls.</p>
+  </div>
+</div>
 
 ## Component Overview
 
-<div class="component-grid">
-  <div class="component">
+<div class="features-grid">
+  <div class="feature-card">
     <h3>Protocol Layer</h3>
-    <p>Handles MCP and HTTP communications</p>
+    <p>Handles MCP stdio communication between AI assistants and the server</p>
     <ul>
-      <li>Request validation</li>
-      <li>Response formatting</li>
-      <li>Protocol translation</li>
+      <li>MCP stdio transport</li>
+      <li>Tool registration via <code>@mcp.tool()</code></li>
+      <li>Request/response formatting</li>
     </ul>
   </div>
-  
-  <div class="component">
+
+  <div class="feature-card">
     <h3>Security Layer</h3>
-    <p>Enforces security policies</p>
+    <p>Enforces security policies across all operations</p>
     <ul>
-      <li>Authentication</li>
-      <li>Authorization</li>
-      <li>Input sanitization</li>
+      <li>Input validation and sanitization</li>
+      <li>Path traversal protection</li>
+      <li>Rate limiting ({{ site.data.project.rate_limits.terraform }}/{{ site.data.project.rate_limits.github }}/{{ site.data.project.rate_limits.default }} req/min)</li>
     </ul>
   </div>
-  
-  <div class="component">
+
+  <div class="feature-card">
     <h3>Execution Engine</h3>
-    <p>Manages Terraform operations</p>
+    <p>Manages Terraform operations safely within Docker</p>
     <ul>
-      <li>Command execution</li>
-      <li>State management</li>
-      <li>Resource isolation</li>
+      <li>Terraform subprocess execution</li>
+      <li>Workspace isolation at <code>/mnt/workspace</code></li>
+      <li>Command whitelisting (init, validate, fmt, plan only)</li>
     </ul>
   </div>
-  
-  <div class="component">
+
+  <div class="feature-card">
     <h3>Integration Layer</h3>
-    <p>External service connections</p>
+    <p>Connects to external services</p>
     <ul>
-      <li>GitHub API</li>
-      <li>Cloud providers</li>
-      <li>Terraform Cloud</li>
+      <li>GitHub API and App authentication</li>
+      <li>Terraform Cloud workspaces and runs</li>
+      <li>terraform-ls for LSP intelligence</li>
     </ul>
   </div>
 </div>
 
-## Deployment Architectures
+## Deployment Architecture
 
 ### Single Instance
-Best for development and small teams.
+
+Run as a Docker container connected to AI assistants via MCP stdio.
 
 ```mermaid
 graph LR
-    A[Client] --> B[Terry-Form MCP]
-    B --> C[Local Workspace]
-    B --> D[Docker Volume]
-```
-
-### High Availability
-For production environments.
-
-```mermaid
-graph TB
-    subgraph "Load Balancer"
-        LB[HAProxy/ALB]
-    end
-    
-    subgraph "Application Tier"
-        A1[Instance 1]
-        A2[Instance 2]
-        A3[Instance 3]
-    end
-    
-    subgraph "Data Tier"
-        DB[(PostgreSQL)]
-        S3[Object Storage]
-        R[Redis Cache]
-    end
-    
-    LB --> A1
-    LB --> A2
-    LB --> A3
-    
-    A1 --> DB
-    A1 --> S3
-    A1 --> R
-    
-    A2 --> DB
-    A2 --> S3
-    A2 --> R
-    
-    A3 --> DB
-    A3 --> S3
-    A3 --> R
-```
-
-### Kubernetes Native
-Cloud-native deployment.
-
-```mermaid
-graph TB
-    subgraph "Kubernetes Cluster"
-        I[Ingress]
-        
-        subgraph "Terry-Form Namespace"
-            D[Deployment]
-            S[Service]
-            C[ConfigMap]
-            SC[Secret]
-            PVC[PersistentVolume]
-        end
-        
-        subgraph "Monitoring"
-            P[Prometheus]
-            G[Grafana]
-        end
-    end
-    
-    I --> S
-    S --> D
-    D --> C
-    D --> SC
-    D --> PVC
-    D --> P
-```
-
-## Data Flow
-
-### Request Processing
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant P as Protocol Handler
-    participant S as Security Layer
-    participant E as Executor
-    participant T as Terraform
-    
-    C->>P: MCP Request
-    P->>S: Validate Request
-    S->>S: Check Permissions
-    S->>E: Authorized Request
-    E->>T: Execute Command
-    T-->>E: Command Output
-    E-->>S: Result
-    S-->>P: Sanitized Result
-    P-->>C: MCP Response
+    A[AI Assistant] -->|MCP stdio| B[Docker Container]
+    B --> C[/mnt/workspace]
 ```
 
 ## Technology Stack
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| Runtime | Python 3.9+ | Core application |
-| Protocol | FastMCP | MCP implementation |
-| Web Framework | aiohttp | Async HTTP server |
-| Security | JWT, OAuth | Authentication |
-| Container | Docker | Packaging |
-| Orchestration | Kubernetes | Production deployment |
-| IaC | Terraform | Infrastructure management |
-| Monitoring | Prometheus/Grafana | Observability |
-
-## Performance Characteristics
-
-- **Request Latency**: < 100ms (p99)
-- **Terraform Operations**: Depends on infrastructure size
-- **Concurrent Operations**: 100+ per instance
-- **Memory Usage**: ~512MB base
-- **CPU Usage**: 0.5-2 cores typical
+| Runtime | Python {{ site.data.project.python }} | Core application |
+| Protocol | FastMCP {{ site.data.project.fastmcp }} | MCP server implementation |
+| IaC | Terraform {{ site.data.project.terraform }} | Infrastructure management |
+| LSP | terraform-ls {{ site.data.project.terraform_ls }} | Code intelligence |
+| Container | Docker ({{ site.data.project.base_image }}) | Packaging and isolation |
 
 ## Next Steps
 
 - Review the [Architecture Overview]({{ site.baseurl }}/architecture/overview) for detailed component descriptions
-- Additional architecture documents coming soon
-
-<style>
-.architecture-overview {
-  margin: 2rem 0;
-  padding: 2rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-}
-
-.arch-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.arch-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
-  transition: transform 0.2s;
-}
-
-.arch-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.arch-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.arch-topics {
-  margin-top: 1rem;
-}
-
-.topic-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  background: #e3f2fd;
-  color: #1565c0;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  margin-right: 0.5rem;
-}
-
-.component-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem 0;
-}
-
-.component {
-  background: #f0f7ff;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border-left: 4px solid #2196F3;
-}
-
-.component h3 {
-  margin-top: 0;
-  color: #1976D2;
-}
-
-.component ul {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .architecture-overview {
-    background: #2a2a2a;
-  }
-  
-  .arch-card {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-  
-  .topic-badge {
-    background: #1e3a5f;
-    color: #90caf9;
-  }
-  
-  .component {
-    background: #1a1a2e;
-    border-left-color: #90caf9;
-  }
-}
-</style>

@@ -1,0 +1,29 @@
+# Terry-Form MCP - Single source of truth for version numbers
+# Referenced across all documentation pages via {{ site.data.project.* }}
+
+version: "3.1.0"
+terraform: "1.12"
+terraform_ls: "0.38.5"
+python: "3.10+"
+fastmcp: "3.0+"
+base_image: "hashicorp/terraform:1.12"
+container_user: "terraform"
+container_uid: 1001
+
+tool_count: 25
+tools:
+  core: 4
+  lsp: 5
+  diagnostics: 6
+  security: 2
+  github: 4
+  terraform_cloud: 4
+
+rate_limits:
+  terraform: 20
+  github: 30
+  tf_cloud: 100
+  default: 100
+
+repo_url: "https://github.com/aj-geddes/terry-form-mcp"
+docs_url: "https://aj-geddes.github.io/terry-form-mcp"

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Troubleshooting | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Troubleshooting" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues" />
+<meta property="og:description" content="Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Troubleshooting" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:34:04-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues","headline":"Troubleshooting","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting"},"url":"http://0.0.0.0:4000/terry-form-mcp/guides/troubleshooting"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <div class="guide-container">
+  
+
+<aside class="guide-sidebar">
+  <h4>Guides</h4>
+  <nav class="guide-nav">
+    
+    
+      
+    
+      
+      <a href="/terry-form-mcp/guides/security"
+         class="guide-nav-item ">
+        Security Guide
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/configuration"
+         class="guide-nav-item ">
+        Configuration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/docker-deployment"
+         class="guide-nav-item ">
+        Docker Deployment
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-operations"
+         class="guide-nav-item ">
+        Terraform Operations
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/lsp-integration"
+         class="guide-nav-item ">
+        LSP Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/github-integration"
+         class="guide-nav-item ">
+        GitHub Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-cloud"
+         class="guide-nav-item ">
+        Terraform Cloud
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/ci-cd-integration"
+         class="guide-nav-item ">
+        CI/CD Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/troubleshooting"
+         class="guide-nav-item active">
+        Troubleshooting
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/best-practices"
+         class="guide-nav-item ">
+        Best Practices
+      </a>
+      
+    
+  </nav>
+</aside>
+
+
+  <article class="guide-content">
+    <header class="guide-header">
+      <h1>Troubleshooting</h1>
+      
+      <p class="guide-description">Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues</p>
+      
+      <div class="guide-meta">
+        
+        <span class="last-modified">Updated: March 03, 2026</span>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp/edit/main/docs/_guides/troubleshooting.md" class="edit-link" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-edit"></i> Edit on GitHub
+        </a>
+      </div>
+    </header>
+
+    
+    
+
+<div class="toc" id="toc"></div>
+
+    
+
+    <div class="guide-body">
+      <h1 id="troubleshooting-guide">Troubleshooting Guide</h1>
+
+<p>Solutions for common issues with Terry-Form MCP.</p>
+
+<h2 id="docker-issues">Docker Issues</h2>
+
+<h3 id="image-wont-build">Image Won’t Build</h3>
+
+<p><strong>Symptom</strong>: <code class="language-plaintext highlighter-rouge">docker build</code> fails.</p>
+
+<p><strong>Solutions</strong>:</p>
+<ol>
+  <li>Check Docker is running: <code class="language-plaintext highlighter-rouge">docker info</code></li>
+  <li>Ensure sufficient disk space: <code class="language-plaintext highlighter-rouge">docker system df</code></li>
+  <li>Build with verbose output: <code class="language-plaintext highlighter-rouge">docker build --progress=plain -t terry-form-mcp .</code></li>
+  <li>Clear Docker cache: <code class="language-plaintext highlighter-rouge">docker builder prune</code></li>
+</ol>
+
+<h3 id="container-exits-immediately">Container Exits Immediately</h3>
+
+<p><strong>Symptom</strong>: Container starts and immediately stops.</p>
+
+<p><strong>Cause</strong>: Terry-Form MCP expects stdin input via MCP protocol.</p>
+
+<p><strong>Solution</strong>: Always use the <code class="language-plaintext highlighter-rouge">-i</code> flag:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="nt">-v</span> ./workspace:/mnt/workspace terry-form-mcp:latest
+</code></pre></div></div>
+
+<p>Do NOT use <code class="language-plaintext highlighter-rouge">-d</code> (detached mode) — this is a stdio-based server, not an HTTP daemon.</p>
+
+<h3 id="permission-denied-on-workspace">Permission Denied on Workspace</h3>
+
+<p><strong>Symptom</strong>: Terraform operations fail with permission errors.</p>
+
+<p><strong>Cause</strong>: Container runs as UID 1001.</p>
+
+<p><strong>Solutions</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Make workspace accessible</span>
+<span class="nb">chmod</span> <span class="nt">-R</span> 755 /path/to/workspace
+
+<span class="c"># Or match container UID</span>
+<span class="nb">chown</span> <span class="nt">-R</span> 1001:1001 /path/to/workspace
+</code></pre></div></div>
+
+<h3 id="volume-mount-not-working">Volume Mount Not Working</h3>
+
+<p><strong>Symptom</strong>: Workspace is empty inside container.</p>
+
+<p><strong>Solutions</strong>:</p>
+<ul>
+  <li>Use absolute paths: <code class="language-plaintext highlighter-rouge">-v /home/user/workspace:/mnt/workspace</code></li>
+  <li>On Windows, use forward slashes: <code class="language-plaintext highlighter-rouge">-v C:/Users/user/workspace:/mnt/workspace</code></li>
+  <li>Check Docker Desktop file sharing settings (macOS/Windows)</li>
+</ul>
+
+<h2 id="mcp-connection-issues">MCP Connection Issues</h2>
+
+<h3 id="client-cant-connect">Client Can’t Connect</h3>
+
+<p><strong>Symptom</strong>: AI assistant says it can’t reach Terry-Form MCP.</p>
+
+<p><strong>Checklist</strong>:</p>
+<ol>
+  <li>Verify image exists: <code class="language-plaintext highlighter-rouge">docker images | grep terry-form-mcp</code></li>
+  <li>Test manually: <code class="language-plaintext highlighter-rouge">echo '{}' | docker run -i --rm terry-form-mcp:latest python3 -c "print('OK')"</code></li>
+  <li>Check MCP client config JSON syntax</li>
+  <li>Restart your AI assistant after config changes</li>
+</ol>
+
+<h3 id="tools-not-appearing">Tools Not Appearing</h3>
+
+<p><strong>Symptom</strong>: AI assistant doesn’t see Terry-Form tools.</p>
+
+<p><strong>Solutions</strong>:</p>
+<ol>
+  <li>Verify the server starts: <code class="language-plaintext highlighter-rouge">docker run -i --rm terry-form-mcp:latest python3 server_enhanced_with_lsp.py</code> (should wait for stdin)</li>
+  <li>Check for Python errors in startup</li>
+  <li>Ensure the image is built with the latest code</li>
+  <li>Restart your MCP client</li>
+</ol>
+
+<h3 id="timeout-errors">Timeout Errors</h3>
+
+<p><strong>Symptom</strong>: Tool calls time out.</p>
+
+<p><strong>Causes and solutions</strong>:</p>
+<ul>
+  <li>Large Terraform workspaces: Increase client timeout</li>
+  <li>First LSP call: Initial terraform-ls startup takes 1-2 seconds</li>
+  <li>Network issues: Check Docker network configuration</li>
+  <li>Resource limits: Increase <code class="language-plaintext highlighter-rouge">--memory</code> and <code class="language-plaintext highlighter-rouge">--cpus</code> limits</li>
+</ul>
+
+<h2 id="terraform-issues">Terraform Issues</h2>
+
+<h3 id="not-initialized">“Not Initialized”</h3>
+
+<p><strong>Symptom</strong>: <code class="language-plaintext highlighter-rouge">validate</code> or <code class="language-plaintext highlighter-rouge">plan</code> fails with “not initialized”.</p>
+
+<p><strong>Solution</strong>: Run <code class="language-plaintext highlighter-rouge">init</code> first:</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="provider-download-fails">Provider Download Fails</h3>
+
+<p><strong>Symptom</strong>: <code class="language-plaintext highlighter-rouge">init</code> fails to download providers.</p>
+
+<p><strong>Causes</strong>:</p>
+<ul>
+  <li>No internet access from container</li>
+  <li>Provider registry is down</li>
+  <li>Network proxy not configured</li>
+</ul>
+
+<p><strong>Solutions</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Check DNS resolution</span>
+docker run <span class="nt">--rm</span> terry-form-mcp:latest nslookup registry.terraform.io
+
+<span class="c"># Use a proxy</span>
+docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">HTTP_PROXY</span><span class="o">=</span>http://proxy:8080 <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">HTTPS_PROXY</span><span class="o">=</span>http://proxy:8080 <span class="se">\</span>
+  <span class="nt">-v</span> ./workspace:/mnt/workspace <span class="se">\</span>
+  terry-form-mcp:latest
+</code></pre></div></div>
+
+<h3 id="action-blocked-error">“Action Blocked” Error</h3>
+
+<p><strong>Symptom</strong>: Tool returns “action blocked” error.</p>
+
+<p><strong>Cause</strong>: <code class="language-plaintext highlighter-rouge">apply</code>, <code class="language-plaintext highlighter-rouge">destroy</code>, <code class="language-plaintext highlighter-rouge">import</code>, <code class="language-plaintext highlighter-rouge">taint</code>, and <code class="language-plaintext highlighter-rouge">untaint</code> are permanently blocked.</p>
+
+<p><strong>Solution</strong>: These actions cannot be enabled. Use Terry-Form MCP for planning and validation only. Run <code class="language-plaintext highlighter-rouge">apply</code>/<code class="language-plaintext highlighter-rouge">destroy</code> through your standard Terraform workflow.</p>
+
+<h3 id="path-traversal-error">Path Traversal Error</h3>
+
+<p><strong>Symptom</strong>: “Path traversal detected” error.</p>
+
+<p><strong>Cause</strong>: The path parameter tries to access files outside <code class="language-plaintext highlighter-rouge">/mnt/workspace</code>.</p>
+
+<p><strong>Solution</strong>: Use relative paths within the workspace:</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Wrong</span><span class="w">
+</span><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/etc/secrets"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"../../../etc/passwd"</span><span class="p">}</span><span class="w">
+
+</span><span class="err">//</span><span class="w"> </span><span class="err">Correct</span><span class="w">
+</span><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/dev"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="lsp-issues">LSP Issues</h2>
+
+<h3 id="lsp-not-working">LSP Not Working</h3>
+
+<p><strong>Symptom</strong>: <code class="language-plaintext highlighter-rouge">terraform_hover</code>, <code class="language-plaintext highlighter-rouge">terraform_complete</code>, etc. return errors.</p>
+
+<p><strong>Diagnostic steps</strong>:</p>
+<ol>
+  <li>Check terraform-ls: <code class="language-plaintext highlighter-rouge">terry_environment_check</code></li>
+  <li>Debug LSP: <code class="language-plaintext highlighter-rouge">terry_lsp_debug</code></li>
+  <li>Initialize manually: <code class="language-plaintext highlighter-rouge">terry_lsp_init</code> with workspace path</li>
+  <li>Verify .tf files exist: <code class="language-plaintext highlighter-rouge">terry_file_check</code></li>
+</ol>
+
+<h3 id="slow-lsp-responses">Slow LSP Responses</h3>
+
+<p><strong>Cause</strong>: First call initializes terraform-ls (1-2 second startup).</p>
+
+<p><strong>Solutions</strong>:</p>
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">terry_lsp_init</code> proactively to warm up</li>
+  <li>Ensure workspace is initialized (<code class="language-plaintext highlighter-rouge">init</code>) before using LSP tools</li>
+  <li>Reduce workspace size if possible</li>
+</ul>
+
+<h3 id="no-completions-available">No Completions Available</h3>
+
+<p><strong>Causes</strong>:</p>
+<ul>
+  <li>Workspace not initialized (no provider schemas downloaded)</li>
+  <li>Invalid cursor position (line/character are 0-based)</li>
+  <li>File doesn’t exist</li>
+</ul>
+
+<p><strong>Solution</strong>: Run <code class="language-plaintext highlighter-rouge">init</code> first, then verify with <code class="language-plaintext highlighter-rouge">terry_file_check</code>.</p>
+
+<h2 id="github-issues">GitHub Issues</h2>
+
+<h3 id="private-key-not-found">“Private Key Not Found”</h3>
+
+<p><strong>Solution</strong>: Check the file is mounted correctly:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> /path/to/key.pem:/keys/github-app.pem:ro <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">GITHUB_APP_PRIVATE_KEY_PATH</span><span class="o">=</span>/keys/github-app.pem <span class="se">\</span>
+  ...
+</code></pre></div></div>
+
+<h3 id="failed-to-get-installation-token">“Failed to Get Installation Token”</h3>
+
+<p><strong>Checklist</strong>:</p>
+<ol>
+  <li>Verify <code class="language-plaintext highlighter-rouge">GITHUB_APP_ID</code> is correct</li>
+  <li>Verify <code class="language-plaintext highlighter-rouge">GITHUB_APP_INSTALLATION_ID</code> is correct</li>
+  <li>Check the app is still installed on the target account</li>
+  <li>Ensure the private key matches the app (not rotated)</li>
+</ol>
+
+<h3 id="repository-not-accessible">“Repository Not Accessible”</h3>
+
+<p><strong>Solution</strong>: Check the GitHub App has access to the repository:</p>
+<ol>
+  <li>Go to GitHub App settings &gt; Install App</li>
+  <li>Verify the repository is in the selected list</li>
+  <li>Check the app has “Contents: Read” permission</li>
+</ol>
+
+<h2 id="terraform-cloud-issues">Terraform Cloud Issues</h2>
+
+<h3 id="token-not-set">“Token Not Set”</h3>
+
+<p><strong>Solution</strong>: Set the <code class="language-plaintext highlighter-rouge">TF_CLOUD_TOKEN</code> environment variable:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">TF_CLOUD_TOKEN</span><span class="o">=</span><span class="s2">"your-token"</span> <span class="se">\</span>
+  ...
+</code></pre></div></div>
+
+<h3 id="organization-not-found">“Organization Not Found”</h3>
+
+<p><strong>Solution</strong>: Verify the organization name matches exactly (case-sensitive) and your token has access.</p>
+
+<h2 id="debug-logging">Debug Logging</h2>
+
+<p>Enable verbose logging for any issue:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-i</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG <span class="se">\</span>
+  <span class="nt">-v</span> ./workspace:/mnt/workspace <span class="se">\</span>
+  terry-form-mcp:latest
+</code></pre></div></div>
+
+<p>This shows detailed information about:</p>
+<ul>
+  <li>Tool invocations and parameters</li>
+  <li>Terraform command execution</li>
+  <li>LSP client communication</li>
+  <li>GitHub API calls</li>
+  <li>Rate limit status</li>
+</ul>
+
+    </div>
+
+    <footer class="guide-footer">
+      <div class="guide-navigation">
+        
+        
+        
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+            <a href="/terry-form-mcp/guides/ci-cd-integration" class="prev-guide">
+              <i class="fas fa-arrow-left"></i> CI/CD Integration
+            </a>
+          
+          
+        
+          
+          
+        
+          
+          
+            <a href="/terry-form-mcp/guides/best-practices" class="next-guide">
+              Best Practices <i class="fas fa-arrow-right"></i>
+            </a>
+          
+        
+      </div>
+
+      <div class="guide-feedback">
+        <h4>Was this guide helpful?</h4>
+        <p>
+          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20Troubleshooting"
+             class="feedback-link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-comment"></i> Provide feedback
+          </a>
+        </p>
+      </div>
+    </footer>
+  </article>
+</div>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

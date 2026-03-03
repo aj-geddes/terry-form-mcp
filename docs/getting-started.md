@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Getting Started
-description: Quick start guide for Terry-Form MCP
+description: Quick start guide for Terry-Form MCP v3.1.0
 toc: true
 ---
 
@@ -11,14 +11,13 @@ Welcome to Terry-Form MCP! This guide will help you get up and running quickly.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
+Before you begin, ensure you have:
 
-- **Docker** (recommended) or Python 3.9+
-- **Terraform** (if running locally)
-- An AI assistant that supports MCP (Claude, etc.)
+- **Docker** (recommended) or Python {{ site.data.project.python }}
+- An AI assistant that supports MCP (Claude Desktop, etc.)
 - A workspace directory for your Terraform configurations
 
-## Installation Options
+## Installation
 
 ### Option 1: Docker (Recommended)
 
@@ -26,19 +25,15 @@ Docker provides the easiest and most secure way to run Terry-Form MCP.
 
 ```bash
 # Clone the repository
-git clone https://github.com/aj-geddes/terry-form-mcp.git
+git clone {{ site.data.project.repo_url }}.git
 cd terry-form-mcp
 
 # Build the image
 ./build.sh
 
-# Run the server (MCP uses stdio, not HTTP)
-docker run -it --rm \
-  -v "$(pwd)":/mnt/workspace \
-  terry-form-mcp:latest
+# Verify the build (8 checks)
+./verify.sh
 ```
-
-**Note**: This server uses stdio transport for MCP protocol, not HTTP. It should be invoked by your MCP client (e.g., Claude Desktop), not run as a daemon.
 
 ### Option 2: Local Development
 
@@ -46,10 +41,10 @@ For development or testing:
 
 ```bash
 # Clone the repository
-git clone https://github.com/aj-geddes/terry-form-mcp.git
+git clone {{ site.data.project.repo_url }}.git
 cd terry-form-mcp
 
-# Install dependencies
+# Install dependencies (requires Python {{ site.data.project.python }})
 pip install -r requirements.txt
 
 # Run the server directly
@@ -58,7 +53,7 @@ python3 server_enhanced_with_lsp.py
 
 ## Configuration
 
-### 1. AI Assistant Configuration
+### MCP Client Configuration
 
 Configure your AI assistant to use Terry-Form MCP. For Claude Desktop, edit your `claude_desktop_config.json`:
 
@@ -68,11 +63,8 @@ Configure your AI assistant to use Terry-Form MCP. For Claude Desktop, edit your
     "terry-form": {
       "command": "docker",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-v",
-        "/path/to/workspace:/mnt/workspace",
+        "run", "-i", "--rm",
+        "-v", "/path/to/workspace:/mnt/workspace",
         "terry-form-mcp:latest"
       ]
     }
@@ -80,36 +72,42 @@ Configure your AI assistant to use Terry-Form MCP. For Claude Desktop, edit your
 }
 ```
 
-### 2. Environment Variables
+<div class="alert alert-info">
+<strong>Note</strong><br>
+Terry-Form MCP uses stdio transport for the MCP protocol. The Docker container runs interactively (<code>-i</code>) and is invoked by your MCP client — it is not a daemon or HTTP server.
+</div>
 
-Key environment variables:
+### Environment Variables
+
+Optional environment variables for extended features:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `WORKSPACE_ROOT` | Root directory for Terraform files | Yes |
-| `TERRAFORM_CLOUD_TOKEN` | Terraform Cloud API token | No |
 | `GITHUB_APP_ID` | GitHub App ID for repo integration | No |
-| `GITHUB_APP_PRIVATE_KEY` | GitHub App private key | No |
+| `GITHUB_APP_INSTALLATION_ID` | GitHub App installation ID | No |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App private key (PEM) | No |
+| `TF_CLOUD_TOKEN` | Terraform Cloud API token | No |
 | `LOG_LEVEL` | Logging level (INFO, DEBUG) | No |
 
-### 3. Security Configuration
+### Forced Environment Variables
+
+These are always set inside the container and cannot be overridden:
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `TF_IN_AUTOMATION` | `true` | Suppresses interactive prompts |
+| `TF_INPUT` | `false` | Prevents input requests |
+| `CHECKPOINT_DISABLE` | `true` | Disables Terraform update checks |
+
+### Security Configuration
 
 Terry-Form MCP includes several security features by default:
 
-```yaml
-# Security settings (built-in)
-security:
-  allowed_actions:
-    - init
-    - validate
-    - plan
-    - fmt
-  blocked_actions:
-    - apply
-    - destroy
-  path_validation: strict
-  input_sanitization: enabled
-```
+- **Allowed actions**: `init`, `validate`, `plan`, `fmt`, `show`, `graph`, `providers`, `version`
+- **Blocked actions**: `apply`, `destroy`, `import`, `taint`, `untaint`
+- **Path validation**: All paths restricted to `/mnt/workspace`
+- **Input sanitization**: Dangerous characters blocked in variable values
+- **Rate limiting**: {{ site.data.project.rate_limits.terraform }} req/min (Terraform), {{ site.data.project.rate_limits.github }} req/min (GitHub)
 
 ## Your First Terraform Operation
 
@@ -142,9 +140,9 @@ Can you help me validate and plan my Terraform configuration in the workspace di
 ```
 
 The assistant will use Terry-Form MCP to:
-1. Initialize the Terraform workspace
-2. Validate the configuration
-3. Generate an execution plan
+1. Initialize the Terraform workspace (`terry` with `actions: ["init"]`)
+2. Validate the configuration (`terry` with `actions: ["validate"]`)
+3. Generate an execution plan (`terry` with `actions: ["plan"]`)
 4. Provide feedback and recommendations
 
 ### 3. Example Response
@@ -179,12 +177,14 @@ The assistant will use Terry-Form MCP to:
 
 ### Managing Multiple Environments
 
-```bash
-# Development environment
-terry path: "environments/dev" actions: ["plan"] vars: {"env": "development"}
+Ask your AI assistant to plan different environments:
 
-# Production environment  
-terry path: "environments/prod" actions: ["plan"] vars: {"env": "production"}
+```
+Plan my Terraform configuration at "environments/dev" with variable env="development"
+```
+
+```
+Plan my Terraform configuration at "environments/prod" with variable env="production"
 ```
 
 ### Working with Modules
@@ -193,8 +193,8 @@ terry path: "environments/prod" actions: ["plan"] vars: {"env": "production"}
 # workspace/modules/vpc/main.tf
 module "vpc" {
   source = "./modules/vpc"
-  
-  cidr_block = var.vpc_cidr
+
+  cidr_block  = var.vpc_cidr
   environment = var.environment
 }
 ```
@@ -203,30 +203,11 @@ module "vpc" {
 
 If you've configured GitHub App integration:
 
-```bash
-# Clone and analyze a repository
-github_clone_repo owner: "myorg" repo: "infrastructure"
-
-# List Terraform files
-github_list_terraform_files owner: "myorg" repo: "infrastructure"
+```
+Clone the repository myorg/infrastructure from GitHub and list its Terraform files
 ```
 
-## Web Dashboard
-
-Access the web dashboard at `http://localhost:3000` to:
-
-- Monitor Terraform operations in real-time
-- View workspace status
-- Check system health
-- Review operation history
-
-```mermaid
-graph LR
-    A[Browser] -->|HTTP| B[Web Dashboard]
-    B --> C[Terry-Form Server]
-    C --> D[Terraform Operations]
-    C --> E[Workspace Files]
-```
+The assistant will use `github_clone_repo` followed by `github_list_terraform_files`.
 
 ## Troubleshooting
 
@@ -234,58 +215,55 @@ graph LR
 
 <div class="alert alert-info">
 <strong>Permission Denied</strong><br>
-Ensure the workspace directory has proper permissions:
+Ensure the workspace directory has proper permissions. The container runs as UID {{ site.data.project.container_uid }}:
 <code>chmod -R 755 /path/to/workspace</code>
 </div>
 
 <div class="alert alert-warning">
 <strong>Terraform Not Found</strong><br>
-If using Docker, Terraform is included. For local setup:
-<code>brew install terraform</code> or <code>apt-get install terraform</code>
+If using Docker, Terraform {{ site.data.project.terraform }} is included in the image. For local setup, install Terraform separately.
 </div>
 
 <div class="alert alert-danger">
 <strong>MCP Connection Failed</strong><br>
-Check that Docker is running and the container started successfully:
-<code>docker logs terry-form</code>
+Ensure Docker is running and the image is built. Test with:
+<code>docker run -i --rm terry-form-mcp:latest python3 -c "print('OK')"</code>
 </div>
 
 ### Debug Mode
 
-Enable debug logging for troubleshooting:
+Enable debug logging:
 
 ```bash
-docker run -d \
+docker run -i --rm \
   -e LOG_LEVEL=DEBUG \
   -v /path/to/workspace:/mnt/workspace \
-  aj-geddes/terry-form-mcp:latest
+  terry-form-mcp:latest
 ```
 
 ## Best Practices
 
 1. **Use Version Control**: Always version control your Terraform configurations
-2. **Plan Before Apply**: Review plans carefully before applying changes
-3. **Use Workspaces**: Separate environments using Terraform workspaces
-4. **Secure Secrets**: Use environment variables or secret management tools
-5. **Regular Backups**: Backup your state files regularly
+2. **Plan Before Apply**: Review plans carefully (apply is blocked by design)
+3. **Use Workspaces**: Separate environments using directory structure
+4. **Secure Secrets**: Pass cloud credentials via environment variables
+5. **Regular Updates**: Keep the Docker image updated for security patches
 
 ## Next Steps
 
-Now that you have Terry-Form MCP running:
-
-- 📖 Read the [Architecture Overview]({{ site.baseurl }}/architecture/)
-- 🔒 Review the [Security Guide]({{ site.baseurl }}/guides/security)
-- 📚 Explore [Available Tutorials]({{ site.baseurl }}/tutorials/)
+- Read the [Architecture Overview]({{ site.baseurl }}/architecture/)
+- Review the [Security Guide]({{ site.baseurl }}/guides/security)
+- Try the [First Project Tutorial]({{ site.baseurl }}/tutorials/first-project)
+- Explore the [API Reference]({{ site.baseurl }}/api/mcp-tools)
 
 ## Getting Help
 
-- 💬 [GitHub Discussions](https://github.com/aj-geddes/terry-form-mcp/discussions)
-- 🐛 [Report Issues](https://github.com/aj-geddes/terry-form-mcp/issues)
-- 📧 [Email Support](mailto:support@terry-form.io)
+- [GitHub Discussions]({{ site.data.project.repo_url }}/discussions)
+- [Report Issues]({{ site.data.project.repo_url }}/issues)
 
 ---
 
 <div class="alert alert-success">
-<strong>🎉 Congratulations!</strong><br>
+<strong>Congratulations!</strong><br>
 You've successfully set up Terry-Form MCP. Start exploring its features and automate your infrastructure with confidence!
 </div>

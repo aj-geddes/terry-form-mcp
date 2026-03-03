@@ -3,12 +3,18 @@ layout: default
 ---
 
 <article class="page">
+  {% include breadcrumbs.html %}
+
   <header class="page-header">
     <h1>{{ page.title }}</h1>
     {% if page.description %}
     <p class="page-description">{{ page.description }}</p>
     {% endif %}
   </header>
+
+  {% if page.toc %}
+  {% include toc.html %}
+  {% endif %}
 
   <div class="page-content">
     {{ content }}

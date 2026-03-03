@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Terraform Operations | Terry-Form MCP</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Terraform Operations" />
+<meta name="author" content="AJ Geddes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Deep dive into the terry tool — all actions, blocked operations, sequential workflows, and workspace management" />
+<meta property="og:description" content="Deep dive into the terry tool — all actions, blocked operations, sequential workflows, and workspace management" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/guides/terraform-operations" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/guides/terraform-operations" />
+<meta property="og:site_name" content="Terry-Form MCP" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Terraform Operations" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2026-03-03T06:31:57-06:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Deep dive into the terry tool — all actions, blocked operations, sequential workflows, and workspace management","headline":"Terraform Operations","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/guides/terraform-operations"},"url":"http://0.0.0.0:4000/terry-form-mcp/guides/terraform-operations"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
+  
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
+    });
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
+</head>
+
+<body>
+  <nav class="main-nav">
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
+      </a>
+      
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
+      
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
+        
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
+        
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
+        
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
+        
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main class="main-content">
+    <div class="guide-container">
+  
+
+<aside class="guide-sidebar">
+  <h4>Guides</h4>
+  <nav class="guide-nav">
+    
+    
+      
+    
+      
+      <a href="/terry-form-mcp/guides/security"
+         class="guide-nav-item ">
+        Security Guide
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/configuration"
+         class="guide-nav-item ">
+        Configuration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/docker-deployment"
+         class="guide-nav-item ">
+        Docker Deployment
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-operations"
+         class="guide-nav-item active">
+        Terraform Operations
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/lsp-integration"
+         class="guide-nav-item ">
+        LSP Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/github-integration"
+         class="guide-nav-item ">
+        GitHub Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/terraform-cloud"
+         class="guide-nav-item ">
+        Terraform Cloud
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/ci-cd-integration"
+         class="guide-nav-item ">
+        CI/CD Integration
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/troubleshooting"
+         class="guide-nav-item ">
+        Troubleshooting
+      </a>
+      
+    
+      
+      <a href="/terry-form-mcp/guides/best-practices"
+         class="guide-nav-item ">
+        Best Practices
+      </a>
+      
+    
+  </nav>
+</aside>
+
+
+  <article class="guide-content">
+    <header class="guide-header">
+      <h1>Terraform Operations</h1>
+      
+      <p class="guide-description">Deep dive into the terry tool — all actions, blocked operations, sequential workflows, and workspace management</p>
+      
+      <div class="guide-meta">
+        
+        <span class="last-modified">Updated: March 03, 2026</span>
+        
+        <a href="https://github.com/aj-geddes/terry-form-mcp/edit/main/docs/_guides/terraform-operations.md" class="edit-link" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-edit"></i> Edit on GitHub
+        </a>
+      </div>
+    </header>
+
+    
+    
+
+<div class="toc" id="toc"></div>
+
+    
+
+    <div class="guide-body">
+      <h1 id="terraform-operations-guide">Terraform Operations Guide</h1>
+
+<p>The <code class="language-plaintext highlighter-rouge">terry</code> tool is the core of Terry-Form MCP. This guide covers every supported action, how to chain operations, and workspace management.</p>
+
+<h2 id="the-terry-tool">The <code class="language-plaintext highlighter-rouge">terry</code> Tool</h2>
+
+<h3 id="parameters">Parameters</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Type</th>
+      <th>Required</th>
+      <th>Default</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">path</code></td>
+      <td>string</td>
+      <td>Yes</td>
+      <td>—</td>
+      <td>Workspace path relative to <code class="language-plaintext highlighter-rouge">/mnt/workspace</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">actions</code></td>
+      <td>string[]</td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">["plan"]</code></td>
+      <td>Terraform actions to execute sequentially</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">vars</code></td>
+      <td>object</td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">{}</code></td>
+      <td>Terraform variables to pass</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="example-usage">Example Usage</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"environments/dev"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"development"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-east-1"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="supported-actions">Supported Actions</h2>
+
+<h3 id="init--initialize-workspace"><code class="language-plaintext highlighter-rouge">init</code> — Initialize Workspace</h3>
+
+<p>Downloads providers and sets up the backend.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Output</strong>: Provider download progress, initialization status.</p>
+
+<h3 id="validate--validate-configuration"><code class="language-plaintext highlighter-rouge">validate</code> — Validate Configuration</h3>
+
+<p>Checks HCL syntax and configuration validity.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"validate"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Output</strong>: Success message or detailed validation errors with file and line numbers.</p>
+
+<h3 id="plan--generate-execution-plan"><code class="language-plaintext highlighter-rouge">plan</code> — Generate Execution Plan</h3>
+
+<p>Shows what Terraform would do without making changes.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"plan"</span><span class="p">],</span><span class="w"> </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"env"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">}}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Output</strong>: Plan summary with resource additions, changes, and destructions.</p>
+
+<h3 id="fmt--format-files"><code class="language-plaintext highlighter-rouge">fmt</code> — Format Files</h3>
+
+<p>Rewrites Terraform files to canonical format.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Output</strong>: List of formatted files.</p>
+
+<h3 id="show--show-state"><code class="language-plaintext highlighter-rouge">show</code> — Show State</h3>
+
+<p>Displays the current state of managed resources.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"show"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="graph--dependency-graph"><code class="language-plaintext highlighter-rouge">graph</code> — Dependency Graph</h3>
+
+<p>Generates a DOT-format dependency graph.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="providers--list-providers"><code class="language-plaintext highlighter-rouge">providers</code> — List Providers</h3>
+
+<p>Shows required and installed providers.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"providers"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="version--terraform-version"><code class="language-plaintext highlighter-rouge">version</code> — Terraform Version</h3>
+
+<p>Returns the Terraform version.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w"> </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"version"</span><span class="p">]}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="blocked-actions">Blocked Actions</h2>
+
+<p>The following actions are <strong>permanently blocked</strong> and cannot be enabled:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Action</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">apply</code></td>
+      <td>Modifies real infrastructure</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">destroy</code></td>
+      <td>Deletes real infrastructure</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">import</code></td>
+      <td>Modifies state file</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">taint</code></td>
+      <td>Modifies state file</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">untaint</code></td>
+      <td>Modifies state file</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="alert alert-info">
+<strong>By Design</strong><br />
+Blocking destructive operations is a core safety feature. Terry-Form MCP is designed for planning and analysis — actual infrastructure changes should be made through your CI/CD pipeline or manual Terraform runs with proper approvals.
+</div>
+
+<h2 id="sequential-workflows">Sequential Workflows</h2>
+
+<p>Actions are executed in the order specified. If any action fails, subsequent actions are skipped.</p>
+
+<h3 id="standard-workflow">Standard Workflow</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Returns results for each action:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"terry-results"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"init"</span><span class="p">,</span><span class="w"> </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"exit_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w"> </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"exit_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"plan"</span><span class="p">,</span><span class="w"> </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"exit_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nl">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="format-and-validate">Format and Validate</h3>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"fmt"</span><span class="p">,</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="full-analysis-pipeline">Full Analysis Pipeline</h3>
+
+<p>Combine <code class="language-plaintext highlighter-rouge">terry</code> with analysis tools for comprehensive review:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">terry</code> with <code class="language-plaintext highlighter-rouge">["init", "validate", "plan"]</code></li>
+  <li><code class="language-plaintext highlighter-rouge">terry_analyze</code> for best practices</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_security_scan</code> for vulnerabilities</li>
+  <li><code class="language-plaintext highlighter-rouge">terry_recommendations</code> for improvements</li>
+</ol>
+
+<h2 id="workspace-management">Workspace Management</h2>
+
+<h3 id="discovering-workspaces">Discovering Workspaces</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">terry_workspace_list</code> to find all workspaces:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_workspace_list"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Returns:</p>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"workspaces"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"project-a"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"initialized"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"has_state"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"providers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"aws"</span><span class="p">],</span><span class="w">
+      </span><span class="nl">"modules"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"last_modified"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-01-15T10:30:00Z"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="creating-workspaces">Creating Workspaces</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">terry_workspace_setup</code> to scaffold a new workspace:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_workspace_setup"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"new-project"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"project_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"My New Project"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Creates <code class="language-plaintext highlighter-rouge">main.tf</code>, <code class="language-plaintext highlighter-rouge">variables.tf</code>, and <code class="language-plaintext highlighter-rouge">outputs.tf</code> with boilerplate.</p>
+
+<h3 id="inspecting-workspaces">Inspecting Workspaces</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">terry_workspace_info</code> for detailed workspace analysis:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_workspace_info"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Returns file listings, initialization status, and LSP readiness.</p>
+
+<h3 id="checking-files">Checking Files</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">terry_file_check</code> to validate individual files:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_file_check"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nl">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project/main.tf"</span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="passing-variables">Passing Variables</h2>
+
+<p>Variables are passed as key-value pairs. They map to Terraform’s <code class="language-plaintext highlighter-rouge">-var</code> flag:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-project"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"actions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"plan"</span><span class="p">],</span><span class="w">
+  </span><span class="nl">"vars"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"instance_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"enable_monitoring"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="alert alert-warning">
+<strong>Variable Safety</strong><br />
+Variable values are sanitized to prevent injection attacks. Special characters that could be used for command injection are blocked.
+</div>
+
+<h2 id="environment-check">Environment Check</h2>
+
+<p>Use <code class="language-plaintext highlighter-rouge">terry_environment_check</code> to verify the container environment:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"terry_environment_check"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Returns Terraform availability, terraform-ls status, container info, and workspace mount status.</p>
+
+<h2 id="error-handling">Error Handling</h2>
+
+<p>When an action fails, the response includes:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validate"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"exit_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"stderr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Error: Invalid resource type..."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Common error scenarios:</p>
+<ul>
+  <li><strong>Path not found</strong>: The workspace path doesn’t exist in <code class="language-plaintext highlighter-rouge">/mnt/workspace</code></li>
+  <li><strong>Not initialized</strong>: Run <code class="language-plaintext highlighter-rouge">init</code> before other actions</li>
+  <li><strong>Validation errors</strong>: HCL syntax or configuration problems</li>
+  <li><strong>Provider errors</strong>: Missing or incompatible providers</li>
+</ul>
+
+    </div>
+
+    <footer class="guide-footer">
+      <div class="guide-navigation">
+        
+        
+        
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+            <a href="/terry-form-mcp/guides/docker-deployment" class="prev-guide">
+              <i class="fas fa-arrow-left"></i> Docker Deployment
+            </a>
+          
+          
+        
+          
+          
+        
+          
+          
+            <a href="/terry-form-mcp/guides/lsp-integration" class="next-guide">
+              LSP Integration <i class="fas fa-arrow-right"></i>
+            </a>
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+          
+          
+        
+      </div>
+
+      <div class="guide-feedback">
+        <h4>Was this guide helpful?</h4>
+        <p>
+          <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new?title=Guide%20Feedback:%20Terraform+Operations"
+             class="feedback-link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-comment"></i> Provide feedback
+          </a>
+        </p>
+      </div>
+    </footer>
+  </article>
+</div>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
+
+  <script src="/terry-form-mcp/assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{% comment %}
+  Reusable sidebar for guides and API sections.
+  Usage: {% include sidebar.html collection="guides" title="Guides" %}
+{% endcomment %}
+
+<aside class="guide-sidebar">
+  <h4>{{ include.title | default: "Navigation" }}</h4>
+  <nav class="guide-nav">
+    {% assign items = site[include.collection] | sort: 'order' %}
+    {% for item in items %}
+      {% unless item.url contains '/index' %}
+      <a href="{{ item.url | relative_url }}"
+         class="guide-nav-item {% if page.url == item.url %}active{% endif %}">
+        {{ item.title }}
+      </a>
+      {% endunless %}
+    {% endfor %}
+  </nav>
+</aside>

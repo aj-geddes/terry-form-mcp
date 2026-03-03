@@ -10,7 +10,7 @@ layout: default
     {% endif %}
     <div class="tutorial-meta">
       {% if page.difficulty %}
-      <span class="difficulty-badge">{{ page.difficulty }}</span>
+      <span class="difficulty-badge difficulty-{{ page.difficulty }}">{{ page.difficulty }}</span>
       {% endif %}
       {% if page.duration %}
       <span class="duration"><i class="fas fa-clock"></i> {{ page.duration }}</span>
@@ -18,8 +18,19 @@ layout: default
     </div>
   </header>
 
+  {% if page.prerequisites %}
+  <div class="prereq-list">
+    <h4>Prerequisites</h4>
+    <ul>
+      {% for prereq in page.prerequisites %}
+      <li>{{ prereq }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   {% if page.toc %}
-  <div class="toc" id="toc"></div>
+  {% include toc.html %}
   {% endif %}
 
   <div class="tutorial-content">

@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  
-  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
 <title>Guides | Terry-Form MCP</title>
 <meta name="generator" content="Jekyll v3.9.5" />
 <meta property="og:title" content="Guides" />
@@ -13,208 +13,340 @@
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive guides for Terry-Form MCP" />
 <meta property="og:description" content="Comprehensive guides for Terry-Form MCP" />
-<link rel="canonical" href="http://localhost:4000/terry-form-mcp/guides/index" />
-<meta property="og:url" content="http://localhost:4000/terry-form-mcp/guides/index" />
+<link rel="canonical" href="http://0.0.0.0:4000/terry-form-mcp/guides/index" />
+<meta property="og:url" content="http://0.0.0.0:4000/terry-form-mcp/guides/index" />
 <meta property="og:site_name" content="Terry-Form MCP" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2025-10-06T05:22:44-05:00" />
+<meta property="article:published_time" content="2026-03-03T07:01:42-06:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Guides" />
-<meta name="twitter:site" content="@terryform" />
-<meta name="twitter:creator" content="@AJ Geddes" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-10-05T19:55:00-05:00","datePublished":"2025-10-06T05:22:44-05:00","description":"Comprehensive guides for Terry-Form MCP","headline":"Guides","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/terry-form-mcp/guides/index"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"http://localhost:4000/terry-form-mcp/assets/images/terry-form-logo.png"},"name":"AJ Geddes"},"url":"http://localhost:4000/terry-form-mcp/guides/index"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"AJ Geddes"},"dateModified":"2025-10-06T05:36:30-05:00","datePublished":"2026-03-03T07:01:42-06:00","description":"Comprehensive guides for Terry-Form MCP","headline":"Guides","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/terry-form-mcp/guides/index"},"url":"http://0.0.0.0:4000/terry-form-mcp/guides/index"}</script>
 <!-- End Jekyll SEO tag -->
 
+
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+<link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Terry-Form MCP",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows (Docker)",
+  "softwareVersion": "3.1.0",
+  "description": "Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management",
+  "url": "https://aj-geddes.github.io/terry-form-mcp",
+  "codeRepository": "https://github.com/aj-geddes/terry-form-mcp",
+  "programmingLanguage": "Python",
+  "author": {
+    "@type": "Person",
+    "name": "AJ Geddes"
+  }
+}
+</script>
+
   
-  <link rel="stylesheet" href="/terry-form-mcp/assets/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-  
-  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/terry-form-mcp/feed.xml" title="Terry-Form MCP" />
-  
-  <!-- Mermaid for diagrams -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>
-    // Convert code.language-mermaid blocks to div.mermaid for rendering
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('code.language-mermaid').forEach(function(block) {
-        const pre = block.parentElement;
-        const div = document.createElement('div');
-        div.className = 'mermaid';
-        div.textContent = block.textContent;
-        pre.parentElement.replaceChild(div, pre);
-      });
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-      });
-      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('code.language-mermaid').forEach(function(block) {
+      const pre = block.parentElement;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = block.textContent;
+      pre.parentElement.replaceChild(div, pre);
     });
-  </script>
+
+    const isDark = document.documentElement.classList.contains('dark-theme') ||
+      (!document.documentElement.classList.contains('light-theme') &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose'
+    });
+  });
+</script>
+
 </head>
 
 <body>
   <nav class="main-nav">
-    <div class="nav-container">
-      <a href="/terry-form-mcp/" class="nav-logo">
-        <img src="/terry-form-mcp/assets/images/terry-form-logo.png" alt="Terry-Form MCP">
-        <span>Terry-Form MCP</span>
+  <div class="nav-container">
+    <a href="/terry-form-mcp/" class="nav-logo">
+      <span>Terry-Form MCP</span>
+      <span class="version-badge">v3.1.0</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-menu">
+      
+      <a href="/terry-form-mcp/"
+         class="nav-link "
+         >
+        Home
+        
       </a>
       
-      <button class="nav-toggle" aria-label="Toggle navigation">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <a href="/terry-form-mcp/getting-started"
+         class="nav-link "
+         >
+        Getting Started
+        
+      </a>
       
-      <div class="nav-menu">
+      <a href="/terry-form-mcp/guides/"
+         class="nav-link "
+         >
+        Guides
         
-        <a href="/terry-form-mcp/" 
-           class="nav-link "
-           >
-          Home
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/api/"
+         class="nav-link "
+         >
+        API Reference
         
-        <a href="/terry-form-mcp/getting-started" 
-           class="nav-link "
-           >
-          Getting Started
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/architecture/"
+         class="nav-link "
+         >
+        Architecture
         
-        <a href="/terry-form-mcp/guides/" 
-           class="nav-link "
-           >
-          Guides
-          
-        </a>
+      </a>
+      
+      <a href="/terry-form-mcp/tutorials/"
+         class="nav-link "
+         >
+        Tutorials
         
-        <a href="/terry-form-mcp/api/" 
-           class="nav-link "
-           >
-          API Reference
-          
-        </a>
-        
-        <a href="/terry-form-mcp/architecture/" 
-           class="nav-link "
-           >
-          Architecture
-          
-        </a>
-        
-        <a href="/terry-form-mcp/tutorials/" 
-           class="nav-link "
-           >
-          Tutorials
-          
-        </a>
-        
-        <a href="https://github.com/aj-geddes/terry-form-mcp" 
-           class="nav-link "
-           target="_blank" rel="noopener">
-          GitHub
-          <i class="fab fa-github"></i>
-        </a>
-        
-      </div>
+      </a>
+      
+      <a href="https://github.com/aj-geddes/terry-form-mcp"
+         class="nav-link "
+         target="_blank" rel="noopener noreferrer">
+        GitHub
+        <i class="fab fa-github"></i>
+      </a>
+      
+
+      <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+        <i class="fas fa-sun theme-icon-light"></i>
+        <i class="fas fa-moon theme-icon-dark"></i>
+      </button>
     </div>
-  </nav>
+  </div>
+</nav>
+
 
   <main class="main-content">
     <article class="page">
+  
+
+
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "http://0.0.0.0:4000/terry-form-mcp/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Guides",
+        "item": "http://0.0.0.0:4000/terry-form-mcp/guides"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Index",
+        "item": "http://0.0.0.0:4000/terry-form-mcp/guides/index"
+      }
+    ]
+  }
+  </script>
+  <ol>
+    <li><a href="/terry-form-mcp/">Home</a></li>
+    
+    
+      
+    
+      
+        
+        
+          <li><a href="/terry-form-mcp/guides">Guides</a></li>
+        
+      
+    
+      
+        
+        
+          <li aria-current="page">Guides</li>
+        
+      
+    
+  </ol>
+</nav>
+
+
+
   <header class="page-header">
     <h1>Guides</h1>
+    
+    <p class="page-description">Comprehensive guides for Terry-Form MCP</p>
+    
   </header>
+
+  
+  
+
+<div class="toc" id="toc"></div>
+
+  
 
   <div class="page-content">
     <p>Explore our comprehensive guides to master Terry-Form MCP.</p>
 
-<div class="guide-grid">
+<div class="features-grid">
+
 
   
 
   
-  <div class="guide-card">
+  <div class="feature-card">
     <h3><a href="/terry-form-mcp/guides/security">Security Guide</a></h3>
     <p>Comprehensive security guide for Terry-Form MCP</p>
-    <div class="guide-meta">
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
       
-      <span class="read-time">5 min read</span>
+      5 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/configuration">Configuration</a></h3>
+    <p>Environment variables, MCP client config, Docker options, and rate limits</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      5 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/docker-deployment">Docker Deployment</a></h3>
+    <p>Build, run, verify, and secure the Terry-Form MCP Docker container</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      4 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/terraform-operations">Terraform Operations</a></h3>
+    <p>Deep dive into the terry tool — all actions, blocked operations, sequential workflows, and workspace management</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      4 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/lsp-integration">LSP Integration</a></h3>
+    <p>Using terraform-ls for hover docs, completions, diagnostics, and formatting</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      4 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/github-integration">GitHub Integration</a></h3>
+    <p>GitHub App authentication and all 4 GitHub tools for repository management</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      5 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/terraform-cloud">Terraform Cloud</a></h3>
+    <p>All 4 Terraform Cloud tools for workspace monitoring and state output retrieval</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      2 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/ci-cd-integration">CI/CD Integration</a></h3>
+    <p>Using Terry-Form MCP in GitHub Actions and other CI/CD pipelines</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      5 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></h3>
+    <p>Solutions for common Docker, MCP, Terraform, LSP, GitHub, and Terraform Cloud issues</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      5 min read
+    </div>
+  </div>
+  
+
+  
+  <div class="feature-card">
+    <h3><a href="/terry-form-mcp/guides/best-practices">Best Practices</a></h3>
+    <p>Workspace organization, file structure, recommended workflows, and AI assistant tips</p>
+    <div style="margin-top: var(--space-4); font-size: 0.875rem; color: var(--color-text-muted);">
+      
+      6 min read
     </div>
   </div>
   
 
 </div>
-
-<h2 id="available-guides">Available Guides</h2>
-
-<p>Currently available:</p>
-
-<h3 id="-security-guide">🔒 <a href="/terry-form-mcp/guides/security">Security Guide</a></h3>
-<p>Learn about Terry-Form MCP’s security features, best practices, and how to configure security settings for production environments.</p>
-
-<hr />
-
-<h2 id="coming-soon">Coming Soon</h2>
-
-<p>Additional guides are planned for future releases. Check back soon or <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new">contribute your own guide</a>!</p>
-
-<style>
-.guide-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.guide-card {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.guide-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.guide-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-}
-
-.guide-card a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.guide-card a:hover {
-  color: #2196F3;
-}
-
-.guide-meta {
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: #6c757d;
-}
-
-.read-time::before {
-  content: "📖 ";
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-card {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-}
-</style>
-
 
   </div>
 </article>
@@ -222,59 +354,51 @@
   </main>
 
   <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-section">
-        <h4>Terry-Form MCP</h4>
-        <p>Enterprise-grade Terraform automation through Model Context Protocol</p>
-        <div class="social-links">
-          <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub">
-            <i class="fab fa-github"></i>
-          </a>
-          <a href="https://twitter.com/terryform" aria-label="Twitter">
-            <i class="fab fa-twitter"></i>
-          </a>
-        </div>
+  <div class="footer-container">
+    <div class="footer-section">
+      <h4>Terry-Form MCP</h4>
+      <p>Secure Terraform automation through Model Context Protocol</p>
+      <div class="social-links">
+        <a href="https://github.com/aj-geddes/terry-form-mcp" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github"></i>
+        </a>
       </div>
-      
-      <div class="footer-section">
-        <h4>Documentation</h4>
-        <ul>
-          <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
-          <li><a href="/terry-form-mcp/guides/">Guides</a></li>
-          <li><a href="/terry-form-mcp/api/">API Reference</a></li>
-          <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
-        </ul>
-      </div>
-      
-      <div class="footer-section">
-        <h4>Community</h4>
-        <ul>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions">Discussions</a></li>
-          <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues">Issues</a></li>
-        </ul>
-      </div>
+    </div>
 
-      <div class="footer-section">
-        <h4>Resources</h4>
-        <ul>
-          <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
-          <li><a href="/terry-form-mcp/guides/security">Security</a></li>
-        </ul>
-      </div>
+    <div class="footer-section">
+      <h4>Documentation</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/getting-started">Getting Started</a></li>
+        <li><a href="/terry-form-mcp/guides/">Guides</a></li>
+        <li><a href="/terry-form-mcp/api/">API Reference</a></li>
+        <li><a href="/terry-form-mcp/tutorials/">Tutorials</a></li>
+      </ul>
     </div>
-    
-    <div class="footer-bottom">
-      <p>&copy; 2025 Terry-Form MCP. Built with ❤️ by <a href="https://github.com/aj-geddes">AJ Geddes</a></p>
+
+    <div class="footer-section">
+      <h4>Community</h4>
+      <ul>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+        <li><a href="https://github.com/aj-geddes/terry-form-mcp/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+      </ul>
     </div>
-  </footer>
+
+    <div class="footer-section">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="/terry-form-mcp/architecture/">Architecture</a></li>
+        <li><a href="/terry-form-mcp/guides/security">Security</a></li>
+        <li><a href="/terry-form-mcp/guides/troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 Terry-Form MCP. Built by <a href="https://github.com/aj-geddes" target="_blank" rel="noopener noreferrer">AJ Geddes</a></p>
+  </div>
+</footer>
+
 
   <script src="/terry-form-mcp/assets/js/main.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
 </body>
 </html>

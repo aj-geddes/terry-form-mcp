@@ -1,281 +1,225 @@
-// Main JavaScript for Terry-Form MCP Documentation
+/**
+ * Terry-Form MCP Documentation - Main JavaScript
+ * Handles theme toggle, navigation, code copying, TOC, tabs, and scroll spy
+ */
 
-// Mobile navigation toggle
-document.addEventListener('DOMContentLoaded', function() {
-  const navToggle = document.querySelector('.nav-toggle');
-  const navMenu = document.querySelector('.nav-menu');
-  
-  if (navToggle && navMenu) {
-    navToggle.addEventListener('click', function() {
-      navMenu.classList.toggle('active');
-      navToggle.classList.toggle('active');
-    });
-  }
-  
-  // Close mobile menu when clicking outside
-  document.addEventListener('click', function(event) {
-    if (!event.target.closest('.nav-container')) {
-      navMenu?.classList.remove('active');
-      navToggle?.classList.remove('active');
+(function() {
+  'use strict';
+
+  // Theme toggle with localStorage persistence
+  function initThemeToggle() {
+    const toggle = document.querySelector('.theme-toggle');
+    if (!toggle) return;
+
+    const saved = localStorage.getItem('terry-theme');
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.remove('light-theme');
+    } else if (saved === 'light') {
+      document.documentElement.classList.add('light-theme');
+      document.documentElement.classList.remove('dark-theme');
     }
-  });
-});
 
-// Smooth scroll for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    e.preventDefault();
-    const target = document.querySelector(this.getAttribute('href'));
-    if (target) {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  });
-});
+    toggle.addEventListener('click', function() {
+      const isDark = document.documentElement.classList.contains('dark-theme');
+      const isLight = document.documentElement.classList.contains('light-theme');
 
-// Copy code button for code blocks
-document.addEventListener('DOMContentLoaded', function() {
-  const codeBlocks = document.querySelectorAll('pre code');
-  
-  codeBlocks.forEach(block => {
-    const pre = block.parentElement;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'code-wrapper';
-    pre.parentNode.insertBefore(wrapper, pre);
-    wrapper.appendChild(pre);
-    
-    const button = document.createElement('button');
-    button.className = 'copy-button';
-    button.innerHTML = '<i class="fas fa-copy"></i> Copy';
-    wrapper.appendChild(button);
-    
-    button.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(block.textContent);
-        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
-        button.classList.add('copied');
-        
-        setTimeout(() => {
-          button.innerHTML = '<i class="fas fa-copy"></i> Copy';
-          button.classList.remove('copied');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
+      if (isDark) {
+        document.documentElement.classList.remove('dark-theme');
+        document.documentElement.classList.add('light-theme');
+        localStorage.setItem('terry-theme', 'light');
+      } else if (isLight) {
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+        localStorage.setItem('terry-theme', 'dark');
+      } else {
+        // No explicit class - check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          document.documentElement.classList.add('light-theme');
+          localStorage.setItem('terry-theme', 'light');
+        } else {
+          document.documentElement.classList.add('dark-theme');
+          localStorage.setItem('terry-theme', 'dark');
+        }
       }
     });
-  });
-});
-
-// Table of Contents generation
-document.addEventListener('DOMContentLoaded', function() {
-  const tocContainer = document.querySelector('.toc');
-  if (!tocContainer) return;
-  
-  const headings = document.querySelectorAll('h2, h3, h4');
-  if (headings.length === 0) return;
-  
-  const toc = document.createElement('nav');
-  toc.className = 'table-of-contents';
-  
-  const tocTitle = document.createElement('h4');
-  tocTitle.textContent = 'On this page';
-  toc.appendChild(tocTitle);
-  
-  const tocList = document.createElement('ul');
-  
-  headings.forEach(heading => {
-    const id = heading.id || heading.textContent.toLowerCase().replace(/\s+/g, '-');
-    heading.id = id;
-    
-    const li = document.createElement('li');
-    li.className = `toc-${heading.tagName.toLowerCase()}`;
-    
-    const a = document.createElement('a');
-    a.href = `#${id}`;
-    a.textContent = heading.textContent;
-    
-    li.appendChild(a);
-    tocList.appendChild(li);
-  });
-  
-  toc.appendChild(tocList);
-  tocContainer.appendChild(toc);
-});
-
-// Search functionality (basic implementation)
-document.addEventListener('DOMContentLoaded', function() {
-  const searchInput = document.querySelector('.search-input');
-  const searchResults = document.querySelector('.search-results');
-  
-  if (!searchInput || !searchResults) return;
-  
-  let searchIndex = [];
-  
-  // Load search index
-  fetch('/search.json')
-    .then(response => response.json())
-    .then(data => {
-      searchIndex = data;
-    })
-    .catch(err => console.error('Failed to load search index:', err));
-  
-  // Debounce function
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
   }
-  
-  // Search function
-  function performSearch(query) {
-    if (query.length < 3) {
-      searchResults.innerHTML = '';
-      searchResults.classList.remove('active');
-      return;
-    }
-    
-    const results = searchIndex.filter(item => {
-      const searchText = `${item.title} ${item.content}`.toLowerCase();
-      return searchText.includes(query.toLowerCase());
+
+  // Mobile navigation toggle
+  function initMobileNav() {
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navToggle || !navMenu) return;
+
+    navToggle.addEventListener('click', function() {
+      const isExpanded = navMenu.classList.toggle('active');
+      navToggle.classList.toggle('active');
+      navToggle.setAttribute('aria-expanded', isExpanded);
     });
-    
-    if (results.length === 0) {
-      searchResults.innerHTML = '<p class="no-results">No results found</p>';
-    } else {
-      searchResults.innerHTML = results.slice(0, 10).map(result => `
-        <a href="${result.url}" class="search-result">
-          <h5>${result.title}</h5>
-          <p>${result.excerpt}</p>
-        </a>
-      `).join('');
-    }
-    
-    searchResults.classList.add('active');
-  }
-  
-  // Debounced search
-  const debouncedSearch = debounce(performSearch, 300);
-  
-  searchInput.addEventListener('input', (e) => {
-    debouncedSearch(e.target.value);
-  });
-  
-  // Close search results when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-container')) {
-      searchResults.classList.remove('active');
-    }
-  });
-});
 
-// Dark mode toggle
-document.addEventListener('DOMContentLoaded', function() {
-  const darkModeToggle = document.querySelector('.dark-mode-toggle');
-  if (!darkModeToggle) return;
-  
-  const currentTheme = localStorage.getItem('theme') || 'auto';
-  
-  if (currentTheme === 'dark') {
-    document.documentElement.classList.add('dark-mode');
-  } else if (currentTheme === 'light') {
-    document.documentElement.classList.remove('dark-mode');
-  }
-  
-  darkModeToggle.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.toggle('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  });
-});
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.nav-container')) {
+        navMenu.classList.remove('active');
+        navToggle.classList.remove('active');
+        navToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
 
-// Add copy button styles
-const style = document.createElement('style');
-style.textContent = `
-  .code-wrapper {
-    position: relative;
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape' && navMenu.classList.contains('active')) {
+        navMenu.classList.remove('active');
+        navToggle.classList.remove('active');
+        navToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
-  
-  .copy-button {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
+
+  // Smooth scroll for anchor links
+  function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        const target = document.querySelector(targetId);
+        if (target) {
+          e.preventDefault();
+          const navHeight = document.querySelector('.main-nav')?.offsetHeight || 0;
+          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight - 20;
+          window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+          history.pushState(null, null, targetId);
+        }
+      });
+    });
   }
-  
-  .code-wrapper:hover .copy-button {
-    opacity: 1;
+
+  // Copy code button for code blocks
+  function initCodeCopy() {
+    document.querySelectorAll('pre code').forEach(block => {
+      const pre = block.parentElement;
+      if (pre.querySelector('.code-copy-btn')) return;
+
+      const button = document.createElement('button');
+      button.className = 'code-copy-btn';
+      button.innerHTML = 'Copy';
+      button.setAttribute('aria-label', 'Copy code to clipboard');
+      pre.appendChild(button);
+
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(block.textContent);
+          button.innerHTML = 'Copied!';
+          button.classList.add('copied');
+          setTimeout(() => { button.innerHTML = 'Copy'; button.classList.remove('copied'); }, 2000);
+        } catch (err) {
+          const textArea = document.createElement('textarea');
+          textArea.value = block.textContent;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-9999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            button.innerHTML = 'Copied!';
+            button.classList.add('copied');
+            setTimeout(() => { button.innerHTML = 'Copy'; button.classList.remove('copied'); }, 2000);
+          } catch (e) { /* silent fail */ }
+          document.body.removeChild(textArea);
+        }
+      });
+    });
   }
-  
-  .copy-button:hover {
-    background: #1976D2;
+
+  // Table of Contents generation
+  function initTableOfContents() {
+    const tocContainer = document.querySelector('.toc');
+    if (!tocContainer) return;
+
+    const contentArea = document.querySelector('.guide-body, .tutorial-content, .api-content, .page-content, .main-content');
+    if (!contentArea) return;
+
+    const headings = contentArea.querySelectorAll('h2, h3');
+    if (headings.length === 0) { tocContainer.style.display = 'none'; return; }
+
+    const tocList = document.createElement('ul');
+    headings.forEach((heading, index) => {
+      if (!heading.id) {
+        heading.id = heading.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + index;
+      }
+      const li = document.createElement('li');
+      li.className = 'toc-' + heading.tagName.toLowerCase();
+      const a = document.createElement('a');
+      a.href = '#' + heading.id;
+      a.textContent = heading.textContent;
+      li.appendChild(a);
+      tocList.appendChild(li);
+    });
+    tocContainer.appendChild(tocList);
   }
-  
-  .copy-button.copied {
-    background: #4CAF50;
+
+  // IntersectionObserver-based TOC scroll spy
+  function initTocScrollSpy() {
+    const tocLinks = document.querySelectorAll('.toc a');
+    if (tocLinks.length === 0) return;
+
+    const headingMap = new Map();
+    tocLinks.forEach(link => {
+      const id = link.getAttribute('href').slice(1);
+      const heading = document.getElementById(id);
+      if (heading) headingMap.set(heading, link);
+    });
+
+    if (headingMap.size === 0) return;
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(l => l.classList.remove('active'));
+          const link = headingMap.get(entry.target);
+          if (link) link.classList.add('active');
+        }
+      });
+    }, {
+      rootMargin: '-80px 0px -70% 0px',
+      threshold: 0
+    });
+
+    headingMap.forEach((link, heading) => observer.observe(heading));
   }
-  
-  .table-of-contents {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 2rem;
+
+  // Tab component
+  function initTabs() {
+    document.querySelectorAll('.tab-group').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      const panels = group.querySelectorAll('.tab-panel');
+
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.dataset.tab;
+          buttons.forEach(b => b.classList.remove('active'));
+          panels.forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          const panel = group.querySelector('[data-tab-panel="' + target + '"]');
+          if (panel) panel.classList.add('active');
+        });
+      });
+    });
   }
-  
-  .table-of-contents h4 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
+
+  // Initialize
+  function init() {
+    initThemeToggle();
+    initMobileNav();
+    initSmoothScroll();
+    initCodeCopy();
+    initTableOfContents();
+    initTocScrollSpy();
+    initTabs();
   }
-  
-  .table-of-contents ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
-  
-  .table-of-contents li {
-    margin: 0.25rem 0;
-  }
-  
-  .toc-h3 {
-    padding-left: 1rem;
-  }
-  
-  .toc-h4 {
-    padding-left: 2rem;
-  }
-  
-  .table-of-contents a {
-    color: #333;
-    text-decoration: none;
-  }
-  
-  .table-of-contents a:hover {
-    color: #2196F3;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    .table-of-contents {
-      background: #2a2a2a;
-    }
-    
-    .table-of-contents a {
-      color: #e0e0e0;
-    }
-  }
-`;
-document.head.appendChild(style);
+})();

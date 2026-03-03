@@ -1,0 +1,10 @@
+{% comment %}
+  Reusable callout/alert component.
+  Usage: {% include alert.html type="info" title="Note" content="Important information here." %}
+  Types: info, warning, danger, success, tip
+{% endcomment %}
+
+<div class="alert alert-{{ include.type | default: 'info' }}">
+  {% if include.title %}<strong>{{ include.title }}</strong><br>{% endif %}
+  {{ include.content }}
+</div>

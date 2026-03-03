@@ -1,8 +1,7 @@
 # Terry-Form MCP Documentation
 title: Terry-Form MCP
-description: Enterprise-grade Terraform automation through Model Context Protocol - Secure, intelligent infrastructure management
+description: Secure Terraform automation through Model Context Protocol - AI-powered infrastructure management
 author: AJ Geddes
-email: contact@terry-form.io
 url: "https://aj-geddes.github.io"
 baseurl: "/terry-form-mcp"
 
@@ -17,6 +16,9 @@ kramdown:
       line_numbers: false
     block:
       line_numbers: false
+
+sass:
+  style: compressed
 
 # Plugins
 plugins:
@@ -92,11 +94,7 @@ navigation:
     url: https://github.com/aj-geddes/terry-form-mcp
     external: true
 
-# SEO
-twitter:
-  username: terryform
-  card: summary_large_image
-
+# Social
 social:
   name: Terry-Form MCP
   links:
@@ -115,6 +113,7 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - .github/workflows/
+  - .claude/
   - README.md
   - BROKEN-LINKS-REPORT.md
   - VERIFIED-SITEMAP.md

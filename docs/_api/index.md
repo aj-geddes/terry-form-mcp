@@ -6,31 +6,19 @@ description: Complete API reference for Terry-Form MCP
 
 # API Reference
 
-Complete reference documentation for Terry-Form MCP APIs and tools.
+Complete reference documentation for the {{ site.data.project.tool_count }} tools available through {{ site.title }}.
 
 ## MCP Protocol Tools
 
-<div class="api-section">
 {% for api in site.api %}
-  {% if api.category == "mcp" or api.category == nil %}
-  <div class="api-card">
-    <h3><a href="{{ api.url | relative_url }}">{{ api.title }}</a></h3>
-    <p>{{ api.description }}</p>
-    {% if api.tools %}
-    <div class="api-tools">
-      {% for tool in api.tools %}
-      <span class="tool-badge">{{ tool }}</span>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
+{% if api.title != page.title %}
+- [{{ api.title }}]({{ api.url | relative_url }}) -- {{ api.description }}
+{% endif %}
 {% endfor %}
-</div>
 
 ## Quick Reference
 
-### Core Terraform Tools
+### Core Terraform Tools ({{ site.data.project.tools.core }})
 
 | Tool | Description | Primary Use |
 |------|-------------|-------------|
@@ -38,15 +26,28 @@ Complete reference documentation for Terry-Form MCP APIs and tools.
 | `terry_workspace_list` | List available workspaces | Discovery |
 | `terry_version` | Get Terraform version info | Compatibility check |
 
-### GitHub Integration
+### Workspace and Diagnostics ({{ site.data.project.tools.diagnostics }})
 
 | Tool | Description | Primary Use |
 |------|-------------|-------------|
-| `github_clone_repo` | Clone/update repositories | Repository management |
-| `github_list_terraform_files` | List .tf files in repo | Code discovery |
-| `github_get_terraform_config` | Analyze Terraform configs | Code analysis |
+| `terry_environment_check` | Check environment and dependencies | Health check |
+| `terry_workspace_setup` | Create a structured workspace | Project scaffolding |
+| `terry_workspace_info` | Get workspace details | Workspace inspection |
+| `terry_file_check` | Validate file syntax and structure | File validation |
+| `terry_lsp_init` | Initialize LSP client for a workspace | LSP setup |
+| `terry_lsp_debug` | Get LSP debugging information | Troubleshooting |
 
-### Intelligence Tools
+### LSP Intelligence ({{ site.data.project.tools.lsp }})
+
+| Tool | Description | Primary Use |
+|------|-------------|-------------|
+| `terraform_validate_lsp` | Validate Terraform via LSP | Deep validation |
+| `terraform_hover` | Get hover info at a position | Documentation lookup |
+| `terraform_complete` | Get completion suggestions | Code assistance |
+| `terraform_format_lsp` | Format a Terraform document | Code formatting |
+| `terraform_lsp_status` | Get LSP server status | Status check |
+
+### Analysis and Recommendations ({{ site.data.project.tools.security }})
 
 | Tool | Description | Primary Use |
 |------|-------------|-------------|
@@ -54,9 +55,27 @@ Complete reference documentation for Terry-Form MCP APIs and tools.
 | `terry_security_scan` | Security vulnerability scan | Security audit |
 | `terry_recommendations` | Get improvement suggestions | Optimization |
 
+### GitHub Integration ({{ site.data.project.tools.github }})
+
+| Tool | Description | Primary Use |
+|------|-------------|-------------|
+| `github_clone_repo` | Clone or update repositories | Repository management |
+| `github_list_terraform_files` | List .tf files in a repository | Code discovery |
+| `github_get_terraform_config` | Analyze Terraform configs | Code analysis |
+| `github_prepare_workspace` | Prepare workspace from GitHub | Pipeline setup |
+
+### Terraform Cloud ({{ site.data.project.tools.terraform_cloud }})
+
+| Tool | Description | Primary Use |
+|------|-------------|-------------|
+| `tf_cloud_list_workspaces` | List Terraform Cloud workspaces | Workspace discovery |
+| `tf_cloud_get_workspace` | Get workspace details | Workspace inspection |
+| `tf_cloud_list_runs` | List runs for a workspace | Run history |
+| `tf_cloud_get_state_outputs` | Get state outputs | Output retrieval |
+
 ## Response Formats
 
-All Terry-Form MCP tools follow consistent response patterns:
+All {{ site.title }} tools follow consistent response patterns.
 
 ### Success Response
 
@@ -91,217 +110,93 @@ All Terry-Form MCP tools follow consistent response patterns:
 
 ### MCP Protocol
 
-MCP protocol handles authentication at the transport level. No additional authentication required for tool calls.
+{{ site.title }} communicates over the MCP protocol using **stdio transport**. No additional authentication is required for tool calls -- the MCP host manages the connection to the server process directly.
 
-### Web API
-
-For direct HTTP API access:
-
-```bash
-curl -H "X-API-Key: your-api-key" \
-     https://terry-form.example.com/api/v1/workspaces
+```json
+{
+  "mcpServers": {
+    "terry-form": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "./workspace:/mnt/workspace",
+        "terry-form-mcp:latest"
+      ]
+    }
+  }
+}
 ```
 
 ### GitHub App
 
-Configure GitHub App credentials:
+To use GitHub integration tools, configure the following environment variables:
 
-```yaml
-GITHUB_APP_ID: "123456"
-GITHUB_APP_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----..."
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GITHUB_APP_ID` | GitHub App ID | Yes |
+| `GITHUB_APP_PRIVATE_KEY` | RSA private key for JWT signing | Yes |
+| `GITHUB_INSTALLATION_ID` | Installation ID for the target org | Yes |
+
+### Terraform Cloud
+
+To use Terraform Cloud tools, set the `TF_CLOUD_TOKEN` environment variable with a valid Terraform Cloud API token.
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `TF_CLOUD_TOKEN` | Terraform Cloud API token | Yes |
 
 ## Rate Limits
 
-| Endpoint Type | Limit | Window |
-|--------------|-------|--------|
-| General | 100 requests | 1 minute |
-| Terraform Operations | 20 requests | 1 minute |
-| GitHub Operations | 30 requests | 1 minute |
-| Analysis Tools | 10 requests | 1 minute |
+{{ site.title }} enforces internal rate limits to protect against excessive resource usage. These limits are applied within the server process and are not exposed as HTTP headers.
 
-## Tool Categories
+| Category | Limit | Window |
+|----------|-------|--------|
+| Terraform Operations | {{ site.data.project.rate_limits.terraform }} requests | 1 minute |
+| GitHub Operations | {{ site.data.project.rate_limits.github }} requests | 1 minute |
+| Terraform Cloud | {{ site.data.project.rate_limits.tf_cloud }} requests | 1 minute |
+| Default (all others) | {{ site.data.project.rate_limits.default }} requests | 1 minute |
 
-<div class="tool-categories">
-  <div class="category">
-    <h3>🔧 Infrastructure Management</h3>
-    <ul>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry">terry</a> - Core Terraform operations</li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry_workspace_list">Workspace management</a></li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry_version">Version information</a></li>
-    </ul>
-  </div>
-  
-  <div class="category">
-    <h3>🔗 Integrations</h3>
-    <ul>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#github-integration-tools">GitHub Tools</a></li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terraform-cloud-tools">Terraform Cloud</a></li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#lsp-tools">LSP Integration</a></li>
-    </ul>
-  </div>
-  
-  <div class="category">
-    <h3>📊 Intelligence</h3>
-    <ul>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry_analyze">Configuration analysis</a></li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry_security_scan">Security scanning</a></li>
-      <li><a href="{{ site.baseurl }}/api/mcp-tools#terry_recommendations">Recommendations</a></li>
-    </ul>
-  </div>
-</div>
+When a rate limit is exceeded, the tool returns an error response with a `RATE_LIMIT_EXCEEDED` code indicating the category and remaining cooldown time.
 
 ## Common Patterns
 
 ### Sequential Operations
 
-```javascript
-// Initialize, validate, and plan
-const result = await mcp.call("terry", {
-  path: "production",
-  actions: ["init", "validate", "plan"],
-  vars: { environment: "prod" }
-});
-```
-
-### Error Handling
-
-```javascript
-try {
-  const result = await mcp.call("terry", { path: "invalid/path" });
-} catch (error) {
-  if (error.code === "PATH_TRAVERSAL") {
-    console.error("Invalid path specified");
+```json
+{
+  "tool": "terry",
+  "arguments": {
+    "path": "production",
+    "actions": ["init", "validate", "plan"],
+    "vars": { "environment": "prod" }
   }
 }
 ```
 
 ### Workspace Discovery
 
-```javascript
-// List all workspaces
-const workspaces = await mcp.call("terry_workspace_list");
-
-// Filter initialized workspaces
-const initialized = workspaces.workspaces.filter(w => w.initialized);
+```json
+{
+  "tool": "terry_workspace_list",
+  "arguments": {}
+}
 ```
 
-## API Versioning
+### GitHub to Terraform Pipeline
 
-Terry-Form MCP follows semantic versioning for its API:
+1. Clone the repository with `github_clone_repo`
+2. Prepare the workspace with `github_prepare_workspace`
+3. Run Terraform operations with `terry`
 
-- **v1** - Current stable version
-- **v2** - Future version (planned)
+### Security Validation Pipeline
 
-Version is included in HTTP API paths:
-```
-/api/v1/workspaces
-/api/v1/operations
-```
-
-## SDK Support
-
-### Python SDK
-
-```python
-from terry_form_mcp import Client
-
-client = Client(api_key="your-key")
-result = client.terry(
-    path="production",
-    actions=["plan"],
-    vars={"environment": "prod"}
-)
-```
-
-### JavaScript SDK
-
-```javascript
-import { TerryFormClient } from '@terry-form/mcp-client';
-
-const client = new TerryFormClient({ apiKey: 'your-key' });
-const result = await client.terry({
-  path: 'production',
-  actions: ['plan'],
-  vars: { environment: 'prod' }
-});
-```
+1. Analyze configuration with `terry_analyze`
+2. Run security scan with `terry_security_scan`
+3. Get recommendations with `terry_recommendations`
+4. If passing, proceed with `terry` plan
 
 ## Need Help?
 
-- 📖 [Getting Started Guide]({{ site.baseurl }}/getting-started)
-- 💬 [Community Forum](https://github.com/aj-geddes/terry-form-mcp/discussions)
-- 🐛 [Report an Issue](https://github.com/aj-geddes/terry-form-mcp/issues)
-
-<style>
-.api-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.api-card {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
-}
-
-.api-tools {
-  margin-top: 1rem;
-}
-
-.tool-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  background: #e3f2fd;
-  color: #1565c0;
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.tool-categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.category {
-  background: #f0f7ff;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-}
-
-.category h3 {
-  margin-top: 0;
-}
-
-.category ul {
-  list-style: none;
-  padding: 0;
-}
-
-.category li {
-  margin: 0.5rem 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .api-card {
-    background: #2a2a2a;
-    border-color: #444;
-  }
-  
-  .tool-badge {
-    background: #1e3a5f;
-    color: #90caf9;
-  }
-  
-  .category {
-    background: #1a1a2e;
-  }
-}
-</style>
+- [Getting Started Guide]({{ site.baseurl }}/getting-started)
+- [Community Discussions]({{ site.data.project.repo_url }}/discussions)
+- [Report an Issue]({{ site.data.project.repo_url }}/issues)

@@ -6,43 +6,41 @@ order: 1
 
 # Security Guide
 
-Terry-Form MCP is built with security as a core principle. This guide covers security features, best practices, and configuration options.
+Terry-Form MCP is built with security as a core principle. This guide covers the security features, best practices, and configuration options.
 
 ## Security Architecture
 
 ```mermaid
 graph TB
     subgraph "Security Layers"
-        A[Input Validation Layer]
-        B[Authentication Layer]
-        C[Authorization Layer]
+        A[Input Validation]
+        B[Path Traversal Protection]
+        C[Action Whitelisting]
         D[Execution Sandbox]
-        E[Audit Layer]
+        E[Rate Limiting]
     end
-    
-    subgraph "Protection Mechanisms"
-        F[Path Traversal Protection]
-        G[Command Injection Prevention]
-        H[Resource Isolation]
-        I[Rate Limiting]
-        J[Encryption]
+
+    subgraph "Enforcement"
+        F[mcp_request_validator.py]
+        G[terry-form-mcp.py]
+        H[Docker Container]
     end
-    
+
     A --> F
-    B --> G
-    C --> H
-    D --> I
-    E --> J
+    B --> F
+    C --> G
+    D --> H
+    E --> F
 ```
 
 ## Built-in Security Features
 
 ### 1. Input Validation
 
-All inputs are validated using strict schemas:
+All inputs are validated by `mcp_request_validator.py` using strict schemas:
 
 ```python
-# Example validation schema
+# Validation enforced on every tool call via @validate_request decorator
 {
     "path": {
         "type": "string",
@@ -52,51 +50,50 @@ All inputs are validated using strict schemas:
     "actions": {
         "type": "array",
         "items": {
-            "enum": ["init", "validate", "plan", "fmt"]
+            "enum": ["init", "validate", "plan", "fmt", "show", "graph", "providers", "version"]
         }
     }
 }
 ```
 
+Dangerous characters in variable values are blocked to prevent injection attacks.
+
 ### 2. Path Traversal Protection
 
-Terry-Form prevents access outside the designated workspace:
+Terry-Form prevents access outside the designated workspace (`/mnt/workspace`):
 
 ```python
 def validate_path(path: str) -> bool:
-    # Resolve to absolute path
     abs_path = Path(workspace_root) / path
     real_path = abs_path.resolve()
-    
-    # Ensure path is within workspace
+
     try:
         real_path.relative_to(workspace_root)
         return True
     except ValueError:
-        return False
+        return False  # Path traversal detected
 ```
+
+Attempts to use `../`, symbolic links, or absolute paths outside the workspace are rejected.
 
 ### 3. Command Injection Prevention
 
 All subprocess executions use secure patterns:
 
 ```python
-# Secure command execution
+# Secure command execution - never uses shell=True
 subprocess.run(
     ["terraform", action, *args],
-    shell=False,  # Never use shell=True
+    shell=False,
     cwd=workspace_path,
-    capture_output=True
+    capture_output=True,
+    env=safe_env
 )
-
-# Variable escaping
-import shlex
-safe_value = shlex.quote(str(value))
 ```
 
 ### 4. Action Whitelisting
 
-Only safe Terraform actions are allowed by default:
+Only safe Terraform actions are allowed. Destructive operations are permanently blocked:
 
 ```yaml
 allowed_actions:
@@ -109,14 +106,36 @@ allowed_actions:
   - providers
   - version
 
-blocked_actions:
-  - apply      # Requires explicit override
-  - destroy    # Requires explicit override
-  - import     # Can modify state
-  - taint      # Can modify state
+blocked_actions:  # Cannot be overridden
+  - apply
+  - destroy
+  - import
+  - taint
+  - untaint
 ```
 
-## Authentication & Authorization
+### 5. Forced Environment Variables
+
+These are always set inside the container and cannot be overridden:
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `TF_IN_AUTOMATION` | `true` | Suppresses interactive prompts |
+| `TF_INPUT` | `false` | Prevents Terraform from asking for input |
+| `CHECKPOINT_DISABLE` | `true` | Disables Terraform update checks |
+
+### 6. Rate Limiting
+
+Internal rate limiting protects against abuse:
+
+| Operation Type | Limit | Window |
+|---------------|-------|--------|
+| Terraform operations | {{ site.data.project.rate_limits.terraform }} requests | 1 minute |
+| GitHub operations | {{ site.data.project.rate_limits.github }} requests | 1 minute |
+| Terraform Cloud | {{ site.data.project.rate_limits.tf_cloud }} requests | 1 minute |
+| Default | {{ site.data.project.rate_limits.default }} requests | 1 minute |
+
+## Authentication
 
 ### GitHub App Authentication
 
@@ -125,341 +144,141 @@ sequenceDiagram
     participant Client
     participant TerryForm
     participant GitHub
-    
-    Client->>TerryForm: Request with App ID
-    TerryForm->>TerryForm: Generate JWT
-    TerryForm->>GitHub: Exchange JWT for Token
-    GitHub-->>TerryForm: Installation Token
-    TerryForm->>GitHub: API Request
-    GitHub-->>TerryForm: Response
-    TerryForm-->>Client: Result
+
+    Client->>TerryForm: github_clone_repo
+    TerryForm->>TerryForm: Generate JWT from private key
+    TerryForm->>GitHub: Exchange JWT for installation token
+    GitHub-->>TerryForm: Short-lived token (1 hour)
+    TerryForm->>GitHub: Clone repo with token
+    GitHub-->>TerryForm: Repository data
+    TerryForm-->>Client: Success + workspace path
 ```
 
-Configuration:
+Required environment variables:
 
-```yaml
-github:
-  app_id: ${GITHUB_APP_ID}
-  private_key_path: /secrets/github-app.pem
-  webhook_secret: ${GITHUB_WEBHOOK_SECRET}
-  permissions:
-    contents: read
-    metadata: read
-    pull_requests: write
-```
+| Variable | Purpose |
+|----------|---------|
+| `GITHUB_APP_ID` | Your GitHub App's ID |
+| `GITHUB_APP_INSTALLATION_ID` | Installation ID for target account |
+| `GITHUB_APP_PRIVATE_KEY` or `GITHUB_APP_PRIVATE_KEY_PATH` | RSA private key (PEM format) |
 
-### API Key Authentication
+See the [GitHub App Setup Guide]({{ site.baseurl }}/GITHUB_APP_SETUP) for detailed configuration.
 
-For web endpoints:
+### Terraform Cloud Authentication
 
-```javascript
-// API key validation
-const apiKey = request.headers['x-api-key'];
-if (!apiKey || !isValidApiKey(apiKey)) {
-    return response.status(401).json({ error: 'Unauthorized' });
-}
-```
+Set the `TF_CLOUD_TOKEN` environment variable with your Terraform Cloud API token.
 
-## Secure Configuration
+## Docker Security
 
-### Environment Variables
+### Container Hardening
 
-```bash
-# Required security environment variables
-export WORKSPACE_ROOT="/mnt/workspace"
-export ALLOWED_WORKSPACE_PATHS="/mnt/workspace"
-export MAX_OPERATION_TIMEOUT=300
-export ENABLE_APPLY=false
-export ENABLE_DESTROY=false
-
-# Secrets (use secret management)
-export TERRAFORM_CLOUD_TOKEN="${SECRET_TF_TOKEN}"
-export GITHUB_APP_PRIVATE_KEY="${SECRET_GH_KEY}"
-export API_ENCRYPTION_KEY="${SECRET_API_KEY}"
-```
-
-### Docker Security
+The Docker image is built on `{{ site.data.project.base_image }}` (Alpine-based) and runs as a non-root user:
 
 ```dockerfile
-# Run as non-root user
-USER terraform:terraform
-
-# Drop capabilities
-RUN setcap -r /usr/bin/terraform
-
-# Read-only root filesystem
-VOLUME ["/mnt/workspace"]
+# Non-root user (UID {{ site.data.project.container_uid }})
+USER {{ site.data.project.container_user }}:{{ site.data.project.container_user }}
 ```
 
-Docker run options:
+### Recommended Docker Run Options
 
 ```bash
-docker run \
+docker run -i --rm \
   --security-opt=no-new-privileges \
   --cap-drop=ALL \
   --read-only \
   --tmpfs /tmp \
-  -v workspace:/mnt/workspace:rw \
-  terry-form-mcp
+  -v /path/to/workspace:/mnt/workspace:rw \
+  terry-form-mcp:latest
 ```
 
-### Kubernetes Security
+| Option | Purpose |
+|--------|---------|
+| `--security-opt=no-new-privileges` | Prevent privilege escalation |
+| `--cap-drop=ALL` | Drop all Linux capabilities |
+| `--read-only` | Read-only root filesystem |
+| `--tmpfs /tmp` | Writable temp directory |
+| `-v ...:rw` | Only workspace is writable |
 
-```yaml
-apiVersion: v1
-kind: Pod
-spec:
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    fsGroup: 1000
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-  - name: terry-form
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-        - ALL
-    resources:
-      limits:
-        cpu: "2"
-        memory: "2Gi"
-      requests:
-        cpu: "500m"
-        memory: "512Mi"
-```
+### Cloud Credential Passthrough
 
-## Network Security
+Only specific credential environment variables are allowed:
 
-### TLS Configuration
+**AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_DEFAULT_REGION`, `AWS_REGION`, `AWS_PROFILE`
 
-```yaml
-tls:
-  enabled: true
-  min_version: "1.2"
-  ciphers:
-    - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-    - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
-  cert_file: /certs/tls.crt
-  key_file: /certs/tls.key
-```
+**Google Cloud**: `GOOGLE_CREDENTIALS`, `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_PROJECT`, `GOOGLE_REGION`, `GOOGLE_ZONE`
 
-### Network Policies
+**Azure**: `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID`, `ARM_TENANT_ID`
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: terry-form-network-policy
-spec:
-  podSelector:
-    matchLabels:
-      app: terry-form
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          role: api-gateway
-    ports:
-    - protocol: TCP
-      port: 3000
-  egress:
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    ports:
-    - protocol: TCP
-      port: 53  # DNS
-  - to:
-    - podSelector: {}
-    ports:
-    - protocol: TCP
-      port: 443  # HTTPS
-```
+**Terraform Cloud**: `TF_TOKEN_app_terraform_io`, `TERRAFORM_CLOUD_TOKEN`
 
 ## Secret Management
 
-### Using HashiCorp Vault
+### Best Practices
 
-```python
-import hvac
+1. **Never commit secrets** to version control
+2. **Use environment variables** to pass credentials to the Docker container
+3. **Mount key files as read-only** (`:ro` flag)
+4. **Use short-lived tokens** where possible (GitHub App installation tokens expire after 1 hour)
 
-client = hvac.Client(url='https://vault.example.com')
-client.token = os.environ['VAULT_TOKEN']
+### Example with Secret Files
 
-# Read secrets
-secrets = client.read('secret/terry-form')
-terraform_token = secrets['data']['terraform_cloud_token']
-github_key = secrets['data']['github_app_key']
-```
-
-### Using Kubernetes Secrets
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: terry-form-secrets
-type: Opaque
-data:
-  terraform-cloud-token: <base64-encoded-token>
-  github-app-key: <base64-encoded-key>
----
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: terry-form
-    env:
-    - name: TERRAFORM_CLOUD_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: terry-form-secrets
-          key: terraform-cloud-token
-```
-
-## Audit Logging
-
-### Structured Logging
-
-```json
-{
-  "timestamp": "2024-01-15T10:30:45Z",
-  "level": "INFO",
-  "event": "terraform_operation",
-  "user": "ai-assistant-1",
-  "action": "plan",
-  "workspace": "production",
-  "source_ip": "10.0.0.100",
-  "duration": 12.5,
-  "success": true,
-  "resources_affected": 5
-}
-```
-
-### Audit Trail Configuration
-
-```yaml
-audit:
-  enabled: true
-  destinations:
-    - type: file
-      path: /var/log/terry-form/audit.log
-      rotation: daily
-      retention: 90
-    - type: syslog
-      host: syslog.example.com
-      port: 514
-      protocol: tcp
-    - type: elasticsearch
-      url: https://elastic.example.com
-      index: terry-form-audit
+```bash
+docker run -i --rm \
+  -v /path/to/workspace:/mnt/workspace \
+  -v /secrets/github-app.pem:/keys/github-app.pem:ro \
+  -e GITHUB_APP_PRIVATE_KEY_PATH=/keys/github-app.pem \
+  -e GITHUB_APP_ID=12345 \
+  -e GITHUB_APP_INSTALLATION_ID=67890 \
+  terry-form-mcp:latest
 ```
 
 ## Security Scanning
 
-### Container Scanning
+### Built-in Security Scanner
+
+Terry-Form MCP includes a built-in security scanner (`terry_security_scan`) that checks for:
+
+- Public S3 bucket ACLs (CKV_AWS_20)
+- Missing S3 encryption (CKV_AWS_19)
+- Overly permissive security groups (CKV_AWS_24)
+- Unencrypted RDS instances (CKV_AWS_16)
+- IAM wildcard permissions (CKV_AWS_1)
+
+### Container Image Scanning
+
+Scan the Docker image for vulnerabilities:
 
 ```bash
-# Scan Docker image
-trivy image aj-geddes/terry-form-mcp:latest
+# Using Trivy
+trivy image terry-form-mcp:latest
 
-# Scan running container
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy container terry-form
+# Using Docker Scout
+docker scout cves terry-form-mcp:latest
 ```
 
-### Code Security Analysis
+### Code Security
 
 ```bash
 # Python security scan
 bandit -r . -ll
 
 # Dependency scanning
-safety check
-
-# SAST scanning
-semgrep --config=auto .
-```
-
-## Incident Response
-
-### Security Incident Procedure
-
-1. **Detection**: Monitor logs and alerts
-2. **Containment**: Isolate affected components
-3. **Investigation**: Analyze audit logs
-4. **Remediation**: Apply fixes
-5. **Recovery**: Restore normal operations
-6. **Post-mortem**: Document and improve
-
-### Emergency Shutdown
-
-```bash
-# Immediate shutdown
-kubectl delete deployment terry-form-mcp --grace-period=0
-
-# Revoke all tokens
-terry-form-cli security revoke-all-tokens
-
-# Block network access
-iptables -A INPUT -p tcp --dport 3000 -j DROP
+pip-audit
 ```
 
 ## Security Checklist
 
-- [ ] Enable TLS for all communications
-- [ ] Configure authentication (API keys/OAuth)
-- [ ] Set up proper RBAC policies
-- [ ] Enable audit logging
-- [ ] Configure secret management
-- [ ] Implement rate limiting
-- [ ] Set resource limits
-- [ ] Enable security scanning
-- [ ] Configure network policies
-- [ ] Set up monitoring and alerting
-- [ ] Document incident response procedures
-- [ ] Regular security updates
-- [ ] Vulnerability scanning
-- [ ] Penetration testing
-- [ ] Security training
+- [ ] Run as non-root user (UID {{ site.data.project.container_uid }})
+- [ ] Drop all Linux capabilities (`--cap-drop=ALL`)
+- [ ] Use read-only root filesystem
+- [ ] Mount workspace with minimal permissions
+- [ ] Pass credentials via environment variables, not files
+- [ ] Enable rate limiting (enabled by default)
+- [ ] Scan container image for vulnerabilities
+- [ ] Review Terraform configurations with `terry_security_scan`
+- [ ] Use GitHub App tokens instead of personal access tokens
+- [ ] Regularly update the Docker image
 
-## Compliance
+## Security Contact
 
-### SOC 2 Compliance
-
-Terry-Form MCP supports SOC 2 compliance:
-
-- **Security**: Encryption, access controls, monitoring
-- **Availability**: HA deployment, backup procedures
-- **Processing Integrity**: Input validation, audit trails
-- **Confidentiality**: Secret management, data isolation
-- **Privacy**: Data minimization, retention policies
-
-### GDPR Compliance
-
-- No personal data collection by default
-- Audit logs can be configured to exclude PII
-- Data retention policies configurable
-- Right to erasure supported
-
-## Security Resources
-
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
-- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-
----
-
-<div class="alert alert-info">
-<strong>Security Contact</strong><br>
-For security issues, please open an issue on <a href="https://github.com/aj-geddes/terry-form-mcp/issues/new">GitHub</a>
-</div>
+For security issues, please open an issue on [GitHub]({{ site.data.project.repo_url }}/issues/new).
