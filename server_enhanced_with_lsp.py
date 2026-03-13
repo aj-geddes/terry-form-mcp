@@ -145,38 +145,54 @@ class AuthManager:
         # Role-based permissions
         self.permissions = {
             "admin": {"*"},  # Full access
-            "user": {"terry", "terry_*", "github_*", "terraform_*"},  # Standard operations
+            "user": {"terry", "terry_*", "github_*", "terraform_*", "tf_cloud_*"},  # Standard operations
             "readonly": {"terry_workspace_list", "terry_version", "terry_environment_check"},  # Read-only
         }
         
         # Default role if no authentication
         self.default_role = "user"
         
-    def authenticate(self, headers: dict = None) -> tuple[bool, str, str]:
+    def authenticate(self, headers: dict = None, kwargs: dict = None) -> tuple[bool, str, str]:
         """
-        Authenticate request and return (authenticated, user_id, role)
+        Authenticate request and return (authenticated, user_id, role).
+
+        Supports three modes:
+        1. No API key configured -> pass-through as anonymous user.
+        2. API key provided via HTTP Authorization header (Bearer token).
+        3. API key provided via tool kwargs["api_key"] (MCP stdio transport).
+        If an API key is configured but none is supplied and there are no HTTP
+        headers (stdio transport), authenticate as default user since stdio is
+        inherently authenticated by process-level access.
         """
         # If no API key configured, allow with default role
         if not self.api_key:
             return True, "anonymous", self.default_role
-        
-        # Check for API key in environment or headers
+
+        # Check for API key in HTTP headers
         provided_key = None
         if headers:
             auth_header = headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
                 provided_key = auth_header[7:]
-        
-        # No key provided but key required
-        if not provided_key:
-            return False, "", ""
+
+        # Check for API key in tool kwargs (MCP stdio transport fallback)
+        if not provided_key and kwargs:
+            provided_key = kwargs.get("api_key")
 
         # Validate API key (constant-time comparison to prevent timing attacks)
-        import hmac as _hmac
-        if _hmac.compare_digest(provided_key, self.api_key):
-            return True, "api_user", "admin"
+        if provided_key:
+            import hmac as _hmac
+            if _hmac.compare_digest(provided_key, self.api_key):
+                return True, "api_user", "admin"
+            # Invalid key provided explicitly — reject
+            return False, "", ""
 
-        # Invalid key
+        # No key provided: if no HTTP headers are present we are on stdio
+        # transport, which is inherently authenticated by process-level access.
+        if not headers:
+            return True, "stdio_user", self.default_role
+
+        # HTTP transport with no key provided but key required
         return False, "", ""
     
     def authorize(self, tool_name: str, role: str) -> bool:
@@ -214,10 +230,10 @@ def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
     Returns (ok, info) where info contains either error details or
     validated context (user_id, role, rate_info).
     """
-    authenticated, user_id, role = auth_manager.authenticate()
+    authenticated, user_id, role = auth_manager.authenticate(kwargs=kwargs)
     if not authenticated:
         logger.warning(f"Authentication failed for {tool_name}")
-        return False, {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token"}
+        return False, {"error": "Authentication required. Set TERRY_FORM_API_KEY and provide Bearer token or api_key parameter"}
 
     if not auth_manager.authorize(tool_name, role):
         logger.warning(f"Authorization failed for {tool_name}, user: {user_id}, role: {role}")
