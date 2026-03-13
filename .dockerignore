@@ -13,15 +13,14 @@ docs/
 .idea/
 
 # Images and screenshots
+screenshots/
 *.png
 *.jpg
 *.jpeg
 
-# Test files
-test_*.py
-debug_*.py
-test.json
-test-terraform-project/
+# Tests and scripts (not needed in container)
+tests/
+scripts/
 
 # Build artifacts
 __pycache__/
@@ -39,18 +38,10 @@ htmlcov/
 .secrets
 secrets.json
 
-# Other Dockerfiles (avoid confusion)
-Dockerfile_*
-
-# Scripts (not needed in container)
-build.sh
-build.bat
-verify.sh
-
-# Examples
+# Other
+k8s/
 examples/
-
-# Local development
 local/
 tmp/
 temp/
+.playwright-mcp/

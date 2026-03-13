@@ -12,19 +12,19 @@ Terry-Form MCP is a production-ready Model Context Protocol (MCP) server that pr
 
 ```bash
 # Build Docker image
-./build.sh                    # Linux/macOS
-build.bat                     # Windows
+scripts/build.sh              # Linux/macOS
+scripts\build.bat             # Windows
 docker build -t terry-form-mcp .
 
 # Run verification suite (8 checks: Docker, image size, Terraform, terraform-ls, Python, files, tools, startup)
-./verify.sh
+scripts/verify.sh
 
 # Run the server directly (requires dependencies)
 pip install -r requirements.txt
-python3 server_enhanced_with_lsp.py
+python3 src/server_enhanced_with_lsp.py
 
 # Run core module standalone
-python3 terry-form-mcp.py < test.json
+python3 src/terry-form-mcp.py < tests/fixtures/test.json
 
 # Integration test via Docker
 docker run -i --rm -v "$(pwd):/mnt/workspace" terry-form-mcp:latest python3 terry-form-mcp.py < test.json
@@ -32,22 +32,22 @@ docker run -i --rm -v "$(pwd):/mnt/workspace" terry-form-mcp:latest python3 terr
 # Code quality
 black .                       # Format (88 char line limit)
 flake8 .                      # Lint
-mypy *.py                     # Type check
+mypy src/*.py                 # Type check
 ```
 
 ## Architecture
 
 ### Entry Point & Server
 
-`server_enhanced_with_lsp.py` is the single entry point — a FastMCP async server that registers all 25 tools via `@mcp.tool()` decorators. It consolidates what were previously 3 separate server variants.
+`src/server_enhanced_with_lsp.py` is the single entry point — a FastMCP async server that registers all 25 tools via `@mcp.tool()` decorators. It consolidates what were previously 3 separate server variants.
 
 ### Module Responsibilities
 
-- **`terry-form-mcp.py`** — Core Terraform subprocess execution. Handles `init`, `validate`, `fmt`, `plan` (never `apply`/`destroy`). Manages workspace isolation at `/mnt/workspace`.
-- **`terraform_lsp_client.py`** — Async LSP client wrapping `terraform-ls`. Provides hover info, completions, diagnostics, and formatting. First call may take ~1-2s for LSP initialization.
-- **`mcp_request_validator.py`** — Input sanitization and security validation. Prevents path traversal, enforces JSON schema, applies rate limiting (20 req/min Terraform, 30 req/min GitHub, 100 req/min default).
-- **`github_repo_handler.py`** — Clone repos and extract Terraform files from GitHub.
-- **`github_app_auth.py`** — GitHub App OAuth with JWT/PyJWT authentication.
+- **`src/terry-form-mcp.py`** — Core Terraform subprocess execution. Handles `init`, `validate`, `fmt`, `plan` (never `apply`/`destroy`). Manages workspace isolation at `/mnt/workspace`.
+- **`src/terraform_lsp_client.py`** — Async LSP client wrapping `terraform-ls`. Provides hover info, completions, diagnostics, and formatting. First call may take ~1-2s for LSP initialization.
+- **`src/mcp_request_validator.py`** — Input sanitization and security validation. Prevents path traversal, enforces JSON schema, applies rate limiting (20 req/min Terraform, 30 req/min GitHub, 100 req/min default).
+- **`src/github_repo_handler.py`** — Clone repos and extract Terraform files from GitHub.
+- **`src/github_app_auth.py`** — GitHub App OAuth with JWT/PyJWT authentication.
 
 ### Tool Categories (25 total)
 

@@ -9,7 +9,7 @@ This project uses a **single, enhanced MCP server** with complete LSP integratio
 ### 1. Build the Docker Image
 
 ```bash
-./build.sh
+scripts/build.sh
 ```
 
 ### 2. Run the Server
@@ -41,7 +41,7 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 
 ## 📦 What's Included
 
-### Single Server: `server_enhanced_with_lsp.py`
+### Single Server: `src/server_enhanced_with_lsp.py`
 
 **25 MCP Tools Available:**
 
@@ -185,7 +185,7 @@ This version consolidates from 3 server variants to a single, production-ready s
 
 ### Docker Image Not Built
 ```bash
-./build.sh
+scripts/build.sh
 ```
 
 ### Server Won't Start

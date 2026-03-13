@@ -14,10 +14,10 @@ This guide covers building, running, and securing the Terry-Form MCP Docker cont
 
 ```bash
 # Linux/macOS
-./build.sh
+scripts/build.sh
 
 # Windows
-build.bat
+scripts\build.bat
 ```
 
 ### Manual Build
@@ -37,7 +37,7 @@ The image is built on `{{ site.data.project.base_image }}` (Alpine-based) and in
 Run the verification suite (8 checks):
 
 ```bash
-./verify.sh
+scripts/verify.sh
 ```
 
 This verifies:

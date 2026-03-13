@@ -125,7 +125,7 @@ Build and verify:
 docker build -t terry-form-mcp .
 
 # Run verification suite (8 checks)
-./verify.sh
+scripts/verify.sh
 ```
 
 ## Use Cases

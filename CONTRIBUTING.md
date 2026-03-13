@@ -90,10 +90,10 @@ echo '{"actions":["validate"],"path":"test-fixtures/basic"}' | \
 #### Manual Testing
 ```bash
 # Test FastMCP server
-python3 server_enhanced_with_lsp.py
+python3 src/server_enhanced_with_lsp.py
 
 # Test core functionality
-python3 terry-form-mcp.py < test.json
+python3 src/terry-form-mcp.py < tests/fixtures/test.json
 ```
 
 ## Coding Standards
@@ -116,7 +116,7 @@ black .
 flake8 .
 
 # Type checking (if using mypy)
-mypy *.py
+mypy src/*.py
 ```
 
 ### Documentation Standards
@@ -145,21 +145,31 @@ test: add integration tests for variable injection
 
 ```
 terry-form-mcp/
-├── server_enhanced_with_lsp.py  # FastMCP server (main entry point)
-├── terry-form-mcp.py           # Core Terraform execution logic
-├── terraform_lsp_client.py     # Async LSP client for terraform-ls
-├── mcp_request_validator.py    # Input validation & security
-├── github_app_auth.py          # GitHub App JWT/OAuth authentication
-├── github_repo_handler.py      # GitHub repo clone/extract operations
-├── Dockerfile                  # Production container definition
-├── test.json                   # Sample test input
-├── docs/                       # Jekyll documentation site
-├── examples/                   # Usage examples
-├── README.md                   # Main documentation
-├── CHANGELOG.md                # Version history
-├── CONTRIBUTING.md             # This file
-├── LICENSE                     # MIT License
-└── .gitignore                  # Git ignore patterns
+├── src/                            # Application source
+│   ├── server_enhanced_with_lsp.py # FastMCP server (main entry point)
+│   ├── terry-form-mcp.py          # Core Terraform execution logic
+│   ├── terraform_lsp_client.py    # Async LSP client for terraform-ls
+│   ├── mcp_request_validator.py   # Input validation & security
+│   ├── github_app_auth.py         # GitHub App JWT/OAuth authentication
+│   ├── github_repo_handler.py     # GitHub repo clone/extract operations
+│   └── frontend/                  # HAT stack web UI
+├── tests/                          # All test files
+│   ├── conftest.py
+│   ├── test_*.py
+│   └── fixtures/                  # Test data (test.json, sample projects)
+├── scripts/                        # Build & utility scripts
+│   ├── build.sh, build.bat
+│   ├── verify.sh
+│   └── export_tools_json.py
+├── k8s/                            # Kubernetes manifests
+├── docs/                           # Jekyll documentation site
+├── examples/                       # Usage examples
+├── Dockerfile                      # Production container definition
+├── README.md                       # Main documentation
+├── CHANGELOG.md                    # Version history
+├── CONTRIBUTING.md                 # This file
+├── LICENSE                         # MIT License
+└── .gitignore                      # Git ignore patterns
 ```
 
 ## Security Considerations

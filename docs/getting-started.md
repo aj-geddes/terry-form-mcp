@@ -29,10 +29,10 @@ git clone {{ site.data.project.repo_url }}.git
 cd terry-form-mcp
 
 # Build the image
-./build.sh
+scripts/build.sh
 
 # Verify the build (8 checks)
-./verify.sh
+scripts/verify.sh
 ```
 
 ### Option 2: Local Development
@@ -48,7 +48,7 @@ cd terry-form-mcp
 pip install -r requirements.txt
 
 # Run the server directly
-python3 server_enhanced_with_lsp.py
+python3 src/server_enhanced_with_lsp.py
 ```
 
 ## Configuration

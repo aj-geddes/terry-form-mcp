@@ -48,7 +48,7 @@ You should see an image around 150MB based on Alpine Linux.
 Run the verification script to confirm everything is working:
 
 ```bash
-./verify.sh
+scripts/verify.sh
 ```
 
 This runs 8 checks: Docker availability, image size, Terraform version ({{ site.data.project.terraform }}), terraform-ls version ({{ site.data.project.terraform_ls }}), Python version ({{ site.data.project.python }}), required files, tool registration, and server startup.

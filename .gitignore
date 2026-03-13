@@ -115,9 +115,13 @@ debug_*.py
 mcp-test-output/
 test-results/
 
+# Playwright MCP
+.playwright-mcp/
+
 # Jekyll local build artifacts
 docs/vendor/
 docs/.bundle/
+docs/_site/
 
 # Security findings and assessments
 orca-findings.md

@@ -22,16 +22,9 @@ RUN addgroup -g 1001 -S terraform && \
 # Create app directory
 WORKDIR /app
 
-# Copy only the required files
-COPY server_enhanced_with_lsp.py .
-COPY terraform_lsp_client.py .
-COPY mcp_request_validator.py .
-COPY github_app_auth.py .
-COPY github_repo_handler.py .
-COPY terry-form-mcp.py .
-
-# Copy frontend package
-COPY frontend/ /app/frontend/
+# Copy application source
+COPY src/ /app/
+COPY tools.json /app/tools.json
 
 # Create workspace and config directories with proper ownership
 RUN mkdir -p /mnt/workspace /app/config && \

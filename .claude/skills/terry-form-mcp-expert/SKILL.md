@@ -66,7 +66,7 @@ AI Assistant (Claude Desktop / CI)
 5. Result returned as MCP response via stdio
 
 ### Key Design Decisions
-- **Single entry point**: `server_enhanced_with_lsp.py` registers all 25 tools. Earlier versions had 3 separate servers — they were consolidated in v3.0.0.
+- **Single entry point**: `src/server_enhanced_with_lsp.py` registers all 25 tools. Earlier versions had 3 separate servers — they were consolidated in v3.0.0.
 - **Async throughout**: All tool handlers are async using `asyncio` with FastMCP. The LSP client uses async subprocess communication.
 - **Lazy LSP initialization**: The terraform-ls process starts on first use (1-2s cold start), not at server boot.
 - **Pre-compiled regex**: All Terraform analysis patterns are compiled at module load to prevent regex DoS.
@@ -121,19 +121,25 @@ terry-form-mcp/
 │   ├── Gemfile                       # Ruby dependencies
 │   └── index.md                      # Homepage
 ├── examples/                         # Example Terraform configurations
-├── test-terraform-project/           # Test workspace
-├── server_enhanced_with_lsp.py       # Main entry point — FastMCP server (1905 lines)
-├── terry-form-mcp.py                 # Core Terraform subprocess execution (426 lines)
-├── terraform_lsp_client.py           # Async LSP client for terraform-ls (487 lines)
-├── mcp_request_validator.py          # Input validation & security (258 lines)
-├── github_app_auth.py                # GitHub App JWT/OAuth authentication (214 lines)
-├── github_repo_handler.py            # GitHub repo clone/extract operations (359 lines)
+├── src/                              # Application source
+│   ├── server_enhanced_with_lsp.py   # Main entry point — FastMCP server (1905 lines)
+│   ├── terry-form-mcp.py            # Core Terraform subprocess execution (426 lines)
+│   ├── terraform_lsp_client.py      # Async LSP client for terraform-ls (487 lines)
+│   ├── mcp_request_validator.py     # Input validation & security (258 lines)
+│   ├── github_app_auth.py           # GitHub App JWT/OAuth authentication (214 lines)
+│   ├── github_repo_handler.py       # GitHub repo clone/extract operations (359 lines)
+│   └── frontend/                    # HAT stack web UI
+├── tests/                            # All test files
+│   ├── conftest.py
+│   ├── test_*.py
+│   └── fixtures/                    # Test data (test.json, sample projects)
+├── scripts/                          # Build & utility scripts
+│   ├── build.sh / build.bat
+│   ├── verify.sh
+│   └── export_tools_json.py
+├── k8s/                              # Kubernetes manifests
 ├── Dockerfile                        # Production container definition
-├── Dockerfile_github_enhanced        # Alternative with extra GitHub tooling
-├── build.sh / build.bat              # Build scripts (Linux/macOS, Windows)
-├── verify.sh                         # 8-check verification suite
 ├── requirements.txt                  # Python dependencies
-├── test.json                         # Test input for integration testing
 ├── CLAUDE.md                         # Project instructions for AI assistants
 ├── CHANGELOG.md                      # Version history
 ├── CONTRIBUTING.md                   # Contribution guidelines
@@ -151,12 +157,12 @@ git clone https://github.com/aj-geddes/terry-form-mcp.git
 cd terry-form-mcp
 
 # Option A: Docker (recommended)
-./build.sh                            # Build the Docker image
-./verify.sh                           # Run 8-check verification suite
+scripts/build.sh                      # Build the Docker image
+scripts/verify.sh                     # Run 8-check verification suite
 
 # Option B: Local development
 pip install -r requirements.txt       # Install Python dependencies
-python3 server_enhanced_with_lsp.py   # Run the MCP server directly
+python3 src/server_enhanced_with_lsp.py  # Run the MCP server directly
 ```
 
 ### Running the App
@@ -165,10 +171,10 @@ python3 server_enhanced_with_lsp.py   # Run the MCP server directly
 docker run -i --rm -v "$(pwd)/workspace:/mnt/workspace" terry-form-mcp:latest
 
 # Development: Direct Python execution
-python3 server_enhanced_with_lsp.py
+python3 src/server_enhanced_with_lsp.py
 
 # Core module standalone test
-python3 terry-form-mcp.py < test.json
+python3 src/terry-form-mcp.py < tests/fixtures/test.json
 
 # Integration test via Docker
 docker run -i --rm -v "$(pwd):/mnt/workspace" terry-form-mcp:latest python3 terry-form-mcp.py < test.json
@@ -194,15 +200,15 @@ pytest --cov=. --cov-report=term-missing
 black .                               # Format (88 char line limit)
 ruff check .                          # Fast linting
 flake8 .                              # Additional linting
-mypy *.py                             # Type checking
-bandit -r . -x ./docs,./test-terraform-project   # Security scan
+mypy src/*.py                         # Type checking
+bandit -r src/ -x ./docs              # Security scan
 ```
 
 ### Building
 ```bash
 # Docker image
-./build.sh                            # Linux/macOS
-build.bat                             # Windows
+scripts/build.sh                      # Linux/macOS
+scripts\build.bat                     # Windows
 docker build -t terry-form-mcp .      # Manual
 
 # Documentation site
@@ -244,8 +250,8 @@ bundle exec jekyll serve              # Local dev server at localhost:4000
 
 **Docker Image (Manual):**
 1. Make code changes and test locally
-2. Run `./build.sh` to build image
-3. Run `./verify.sh` to validate (8 checks must pass)
+2. Run `scripts/build.sh` to build image
+3. Run `scripts/verify.sh` to validate (8 checks must pass)
 4. Push to registry if applicable (no automated Docker CI currently)
 
 ### Rollback Procedure
@@ -254,7 +260,7 @@ bundle exec jekyll serve              # Local dev server at localhost:4000
 - `git revert <commit>` and push to `main` — Pages auto-redeploys
 
 **Docker Image:**
-- Rebuild from a previous commit: `git checkout <tag> && ./build.sh`
+- Rebuild from a previous commit: `git checkout <tag> && scripts/build.sh`
 - No container registry automation — images are built locally or in user CI
 
 ## Security Standards
@@ -279,9 +285,9 @@ bundle exec jekyll serve              # Local dev server at localhost:4000
 
 - **Framework**: pytest with pytest-asyncio for async handlers
 - **Coverage gate**: No enforced threshold currently
-- **Test layout**: Test files at project root (`test_*.py`), `.gitignore` excludes most test files
+- **Test layout**: Test files in `tests/` directory, fixtures in `tests/fixtures/`
 - **How to run all tests**: `pytest`
-- **How to run one test**: `pytest test_file.py::test_function -v`
+- **How to run one test**: `pytest tests/test_file.py::test_function -v`
 - **Integration testing**: `docker run -i --rm -v "$(pwd):/mnt/workspace" terry-form-mcp:latest python3 terry-form-mcp.py < test.json`
 - **Known state**: Test files are excluded from version control in `.gitignore` (`test_*.py`); the verify.sh script serves as the primary validation mechanism (8 checks)
 
@@ -335,17 +341,15 @@ bundle exec jekyll serve              # Local dev server at localhost:4000
 
 - [GOTCHA] **Liquid templates don't work in YAML front matter** — `{{ site.data.project.version }}` in a Jekyll front matter `description:` field renders literally, not as the substituted value. Hardcode values in front matter; use Liquid only in body content.
 
-- [GOTCHA] **Dockerfile_github_enhanced is stale** — Uses UID 1000 (not 1001), exposes ports 8000/8001 (no HTTP server exists), and has a socket-based healthcheck for a non-existent port. The primary `Dockerfile` is the correct production image.
-
 - [GOTCHA] **LSP cold start latency** — First call to any `terraform_*` LSP tool takes 1-2 seconds while terraform-ls initializes. Subsequent calls are fast. The `terry_lsp_init` tool exists for explicit pre-warming.
 
-- [GOTCHA] **test.json must use MCP JSON-RPC format** — Integration testing via `python3 terry-form-mcp.py < test.json` expects the raw module format, not MCP protocol. Use `docker run -i` for MCP stdio testing.
+- [GOTCHA] **test.json must use MCP JSON-RPC format** — Integration testing via `python3 src/terry-form-mcp.py < tests/fixtures/test.json` expects the raw module format, not MCP protocol. Use `docker run -i` for MCP stdio testing.
 
 - [GOTCHA] **docs/_site/ is committed** — The Jekyll build output is tracked in git. Changes to source files require rebuilding (`bundle exec jekyll build`) and committing both source and `_site/`. The GitHub Actions workflow also builds from source.
 
 - [GOTCHA] **docs/vendor/bundle/ must NOT be committed** — Local `bundle install` creates this directory. It is not in `.gitignore` so care must be taken to avoid staging it.
 
-- [DEBT] **No automated Docker CI** — Docker image builds are manual (`./build.sh`). There is no workflow to build, test, and push images to a registry on release.
+- [DEBT] **No automated Docker CI** — Docker image builds are manual (`scripts/build.sh`). There is no workflow to build, test, and push images to a registry on release.
 
 - [DEBT] **Test files excluded from VCS** — `.gitignore` excludes `test_*.py`, so there are no committed test files. The 8-check `verify.sh` script is the primary validation, but unit tests should be committed.
 

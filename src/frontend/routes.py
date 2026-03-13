@@ -175,7 +175,11 @@ def _load_tools_json() -> Dict[str, Any]:
     if _tools_json_cache is not None:
         return _tools_json_cache
 
+    # In Docker: parent.parent is /app/ (tools.json copied there)
+    # Locally: parent.parent is src/, so fall back to project root
     tools_path = Path(__file__).resolve().parent.parent / "tools.json"
+    if not tools_path.is_file():
+        tools_path = Path(__file__).resolve().parent.parent.parent / "tools.json"
     if tools_path.is_file():
         _tools_json_cache = json.loads(tools_path.read_text())
     else:

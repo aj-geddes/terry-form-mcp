@@ -56,7 +56,7 @@ if docker images | grep -q "terry-form-mcp"; then
     IMAGE_SIZE=$(docker images terry-form-mcp:latest --format "{{.Size}}")
     test_result "Docker image exists" "PASS" "Image size: $IMAGE_SIZE"
 else
-    test_result "Docker image exists" "FAIL" "Run ./build.sh first"
+    test_result "Docker image exists" "FAIL" "Run scripts/build.sh first"
     exit 1
 fi
 

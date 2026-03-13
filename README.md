@@ -47,8 +47,8 @@ The interactive tool catalog at `/tools` lists all 25 MCP tools with search, cat
 ### 1. Build
 
 ```bash
-./build.sh            # Linux/macOS
-build.bat             # Windows
+scripts/build.sh      # Linux/macOS
+scripts\build.bat     # Windows
 # or directly:
 docker build -t terry-form-mcp .
 ```
@@ -64,7 +64,7 @@ docker run -it --rm \
 ### 3. Verify the Image
 
 ```bash
-./verify.sh   # Runs 8 checks: Docker, image size, Terraform, terraform-ls, Python, files, tools, startup
+scripts/verify.sh   # Runs 8 checks: Docker, image size, Terraform, terraform-ls, Python, files, tools, startup
 ```
 
 ---
@@ -227,13 +227,13 @@ terry_recommendations(path="my-project")
 
 | File | Purpose |
 |---|---|
-| `server_enhanced_with_lsp.py` | Main FastMCP server — registers all 25 tools |
-| `terry-form-mcp.py` | Core Terraform subprocess execution |
-| `terraform_lsp_client.py` | Async LSP client wrapping `terraform-ls` |
-| `mcp_request_validator.py` | Input sanitization, path traversal prevention, rate limiting |
-| `github_repo_handler.py` | Clone repos and extract Terraform files |
-| `github_app_auth.py` | GitHub App JWT/OAuth authentication |
-| `frontend/` | HAT stack web UI (dashboard + configuration) |
+| `src/server_enhanced_with_lsp.py` | Main FastMCP server — registers all 25 tools |
+| `src/terry-form-mcp.py` | Core Terraform subprocess execution |
+| `src/terraform_lsp_client.py` | Async LSP client wrapping `terraform-ls` |
+| `src/mcp_request_validator.py` | Input sanitization, path traversal prevention, rate limiting |
+| `src/github_repo_handler.py` | Clone repos and extract Terraform files |
+| `src/github_app_auth.py` | GitHub App JWT/OAuth authentication |
+| `src/frontend/` | HAT stack web UI (dashboard + configuration) |
 
 ### Frontend Stack
 
@@ -267,7 +267,7 @@ To use the dashboard and configuration UI, run with HTTP transport:
 
 ```bash
 # Local
-MCP_TRANSPORT=streamable-http HOST=0.0.0.0 PORT=8000 python3 server_enhanced_with_lsp.py
+MCP_TRANSPORT=streamable-http HOST=0.0.0.0 PORT=8000 python3 src/server_enhanced_with_lsp.py
 
 # Docker
 docker run -it --rm \
@@ -309,12 +309,12 @@ Built on `hashicorp/terraform:1.12` (Alpine-based, ~150MB). Includes:
 pip install -r requirements.txt
 
 # Run locally
-python3 server_enhanced_with_lsp.py
+python3 src/server_enhanced_with_lsp.py
 
 # Code quality
 black .       # Format (88-char line limit)
 flake8 .      # Lint
-mypy *.py     # Type check
+mypy src/*.py # Type check
 ```
 
 ---

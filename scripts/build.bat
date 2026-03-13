@@ -33,7 +33,7 @@ echo Server startup test completed
 
 echo.
 echo Test 3: Sample test.json processing
-docker run -i --rm -v "%cd%:/mnt/workspace" %IMAGE_NAME% python3 terry-form-mcp.py < test.json
+docker run -i --rm -v "%cd%:/mnt/workspace" %IMAGE_NAME% python3 terry-form-mcp.py < tests\fixtures\test.json
 echo Sample test completed
 
 echo.
@@ -47,4 +47,4 @@ echo Run as MCP Server:
 echo docker run -it --rm -v "%cd%:/mnt/workspace" %IMAGE_NAME%
 echo.
 echo Test with sample data:
-echo docker run -i --rm -v "%cd%:/mnt/workspace" %IMAGE_NAME% python3 terry-form-mcp.py ^< test.json
+echo docker run -i --rm -v "%cd%:/mnt/workspace" %IMAGE_NAME% python3 terry-form-mcp.py ^< tests\fixtures\test.json
