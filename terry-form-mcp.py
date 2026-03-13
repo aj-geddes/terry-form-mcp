@@ -110,8 +110,8 @@ def build_terraform_command(
         return base_cmd + ["version", "-json"]
 
     else:
-        # Fallback for unknown actions (should be caught by validator)
-        return base_cmd + [action, "-no-color"]
+        # Reject unknown actions — never allow arbitrary Terraform subcommands
+        raise ValueError(f"Unsupported Terraform action: {action}")
 
 
 def parse_plan_output(path: str) -> Optional[Dict[str, Any]]:
@@ -314,15 +314,15 @@ def run_terraform(
                 response["provider_selections"] = version_data.get(
                     "provider_selections", {}
                 )
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                logger.debug(f"Failed to parse version JSON output: {e}")
 
         # For show action, include parsed state
         if action == "show" and result.returncode == 0:
             try:
                 response["state"] = json.loads(result.stdout)
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                logger.debug(f"Failed to parse show JSON output: {e}")
 
         logger.info(
             f"Terraform {action} completed: success={response['success']}, "

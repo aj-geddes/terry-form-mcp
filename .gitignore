@@ -50,7 +50,6 @@ ehthumbs.db
 Thumbs.db
 
 # Docker
-.dockerignore
 
 # Terraform
 *.tfstate
@@ -105,12 +104,19 @@ test_*_secret*.py
 
 # Local test files
 /tmp/
-test_*.py
 debug_*.py
+
+# Screenshots and temporary images
+*.png
+*.jpg
 
 # Claude MCP specific
 mcp-test-output/
 test-results/
+
+# Jekyll local build artifacts
+docs/vendor/
+docs/.bundle/
 
 # Security findings and assessments
 orca-findings.md

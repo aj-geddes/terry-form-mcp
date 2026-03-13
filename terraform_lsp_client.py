@@ -19,17 +19,22 @@ class TerraformLSPClient:
     """LSP client for terraform-ls Language Server"""
 
     def __init__(self, workspace_root: str = "/mnt/workspace"):
-        self.workspace_root = workspace_root
+        self.workspace_root = Path(workspace_root)
         self.terraform_ls_process = None
         self.request_id = 0
         self.pending_requests = {}
         self.initialized = False
         self.capabilities = {}
         self.initialization_error = None
-
-        # Setup logging
-        logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
+
+    def _validate_file_path(self, file_path: str) -> None:
+        """Ensure file_path is within the workspace root to prevent arbitrary file reads"""
+        resolved = Path(file_path).resolve()
+        if not resolved.is_relative_to(self.workspace_root.resolve()):
+            raise ValueError(
+                f"Access denied: {file_path} is outside workspace {self.workspace_root}"
+            )
 
     def _get_next_id(self) -> int:
         """Generate next request ID"""
@@ -51,7 +56,7 @@ class TerraformLSPClient:
 
             # Ensure terraform-ls binary exists
             result = subprocess.run(
-                ["which", "terraform-ls"], capture_output=True, text=True
+                ["which", "terraform-ls"], capture_output=True, text=True, timeout=10
             )
             if result.returncode != 0:
                 self.logger.error("terraform-ls binary not found")
@@ -62,7 +67,7 @@ class TerraformLSPClient:
 
             # Test terraform-ls version
             version_result = subprocess.run(
-                ["terraform-ls", "version"], capture_output=True, text=True
+                ["terraform-ls", "version"], capture_output=True, text=True, timeout=10
             )
             if version_result.returncode == 0:
                 self.logger.info(
@@ -163,8 +168,13 @@ class TerraformLSPClient:
                 key, value = line.split(":", 1)
                 headers[key.strip()] = value.strip()
 
-        # Read content
+        # Read content (enforce 10MB upper bound to prevent memory exhaustion)
         content_length = int(headers.get("Content-Length", 0))
+        max_content_length = 10 * 1024 * 1024  # 10MB
+        if content_length > max_content_length:
+            raise RuntimeError(
+                f"LSP response too large: {content_length} bytes (max {max_content_length})"
+            )
         if content_length > 0:
             content = await self.terraform_ls_process.stdout.read(content_length)
             if not content:
@@ -245,6 +255,8 @@ class TerraformLSPClient:
     async def validate_document(self, file_path: str) -> Dict:
         """Get diagnostics for a Terraform file"""
         try:
+            self._validate_file_path(file_path)
+
             if not self.initialized:
                 return {
                     "error": "LSP client not initialized",
@@ -291,6 +303,8 @@ class TerraformLSPClient:
     async def get_hover_info(self, file_path: str, line: int, character: int) -> Dict:
         """Get hover information for a position in a Terraform file"""
         try:
+            self._validate_file_path(file_path)
+
             if not self.initialized:
                 return {
                     "error": "LSP client not initialized",
@@ -344,6 +358,8 @@ class TerraformLSPClient:
     async def get_completions(self, file_path: str, line: int, character: int) -> Dict:
         """Get completion suggestions for a position in a Terraform file"""
         try:
+            self._validate_file_path(file_path)
+
             if not self.initialized:
                 return {
                     "error": "LSP client not initialized",
@@ -396,6 +412,8 @@ class TerraformLSPClient:
     async def format_document(self, file_path: str) -> Dict:
         """Format a Terraform document"""
         try:
+            self._validate_file_path(file_path)
+
             if not self.initialized:
                 return {
                     "error": "LSP client not initialized",
@@ -464,23 +482,25 @@ class TerraformLSPClient:
 
 # Global LSP client instance
 _lsp_client = None
+_lsp_client_lock = asyncio.Lock()
 
 
 async def get_lsp_client(workspace_path: str = None) -> TerraformLSPClient:
-    """Get or create LSP client instance"""
+    """Get or create LSP client instance (async-safe singleton)"""
     global _lsp_client
 
-    if _lsp_client is None:
-        _lsp_client = TerraformLSPClient()
-        if workspace_path and not _lsp_client.initialized:
-            success = await _lsp_client.start_terraform_ls(workspace_path)
-            if not success:
-                # Capture error before nulling the client
-                error_msg = _lsp_client.initialization_error or "Unknown error"
-                # Reset client on failure so next call will retry
-                _lsp_client = None
-                raise RuntimeError(
-                    f"Failed to initialize LSP client: {error_msg}"
-                )
+    async with _lsp_client_lock:
+        if _lsp_client is None:
+            _lsp_client = TerraformLSPClient()
+            if workspace_path and not _lsp_client.initialized:
+                success = await _lsp_client.start_terraform_ls(workspace_path)
+                if not success:
+                    # Capture error before nulling the client
+                    error_msg = _lsp_client.initialization_error or "Unknown error"
+                    # Reset client on failure so next call will retry
+                    _lsp_client = None
+                    raise RuntimeError(
+                        f"Failed to initialize LSP client: {error_msg}"
+                    )
 
     return _lsp_client

@@ -41,8 +41,8 @@ Enhancement suggestions are welcome! Please provide:
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Python 3.8 or higher
+- Docker
+- Python 3.10 or higher
 - Git
 
 ### Local Development
@@ -55,7 +55,7 @@ Enhancement suggestions are welcome! Please provide:
 
 2. Install development dependencies:
    ```bash
-   pip install fastmcp pytest black flake8
+   pip install -r requirements.txt
    ```
 
 3. Build the Docker image:
@@ -90,7 +90,7 @@ echo '{"actions":["validate"],"path":"test-fixtures/basic"}' | \
 #### Manual Testing
 ```bash
 # Test FastMCP server
-python3 server.py
+python3 server_enhanced_with_lsp.py
 
 # Test core functionality
 python3 terry-form-mcp.py < test.json
@@ -135,7 +135,7 @@ mypy *.py
 
 Examples:
 ```
-feat: add support for terraform apply command
+feat: add support for terraform graph visualization
 fix: resolve path validation issue on Windows
 docs: update configuration examples
 test: add integration tests for variable injection
@@ -145,21 +145,21 @@ test: add integration tests for variable injection
 
 ```
 terry-form-mcp/
-├── server.py              # FastMCP server implementation
-├── terry-form-mcp.py      # Core Terraform execution logic
-├── Dockerfile             # Container build configuration
-├── test.json              # Sample test input
-├── tests/                 # Test suite
-│   ├── test_server.py     # Server tests
-│   ├── test_core.py       # Core logic tests
-│   └── fixtures/          # Test fixtures
-├── docs/                  # Additional documentation
-├── examples/              # Usage examples
-├── README.md              # Main documentation
-├── CHANGELOG.md           # Version history
-├── CONTRIBUTING.md        # This file
-├── LICENSE                # MIT License
-└── .gitignore             # Git ignore patterns
+├── server_enhanced_with_lsp.py  # FastMCP server (main entry point)
+├── terry-form-mcp.py           # Core Terraform execution logic
+├── terraform_lsp_client.py     # Async LSP client for terraform-ls
+├── mcp_request_validator.py    # Input validation & security
+├── github_app_auth.py          # GitHub App JWT/OAuth authentication
+├── github_repo_handler.py      # GitHub repo clone/extract operations
+├── Dockerfile                  # Production container definition
+├── test.json                   # Sample test input
+├── docs/                       # Jekyll documentation site
+├── examples/                   # Usage examples
+├── README.md                   # Main documentation
+├── CHANGELOG.md                # Version history
+├── CONTRIBUTING.md             # This file
+├── LICENSE                     # MIT License
+└── .gitignore                  # Git ignore patterns
 ```
 
 ## Security Considerations

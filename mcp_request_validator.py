@@ -184,9 +184,9 @@ class MCPRequestValidator:
 
         return True, ""
 
-    def _validate_terraform_vars(self, vars: Dict[str, Any]) -> Tuple[bool, str]:
+    def _validate_terraform_vars(self, tf_vars: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate Terraform variables for security"""
-        for key, value in vars.items():
+        for key, value in tf_vars.items():
             # Validate key format
             if (
                 not isinstance(key, str)
@@ -220,7 +220,7 @@ class MCPRequestValidator:
             # Ensure path is within workspace
             real_path.relative_to(self.workspace_root.resolve())
             return True
-        except (ValueError, Exception):
+        except ValueError:
             return False
 
     def _sanitize_params(self, params: Dict[str, Any]) -> Dict[str, Any]:

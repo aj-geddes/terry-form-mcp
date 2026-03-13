@@ -3,14 +3,18 @@
 __version__ = "3.1.0"
 
 import asyncio
+import functools
 import importlib
 import json
 import logging
 import os
 import re
 import subprocess
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
+from threading import Lock
 from typing import Dict, List, Optional, Any, Tuple
 
 from fastmcp import FastMCP
@@ -60,10 +64,6 @@ except Exception as e:
 # ============================================================================
 # RATE LIMITING SYSTEM
 # ============================================================================
-
-import time
-from collections import defaultdict, deque
-from threading import Lock
 
 class RateLimiter:
     """Thread-safe rate limiter with per-tool limits"""
@@ -167,15 +167,17 @@ class AuthManager:
             if auth_header.startswith("Bearer "):
                 provided_key = auth_header[7:]
         
-        # Validate API key
-        if provided_key == self.api_key:
+        # No key provided but key required
+        if not provided_key:
+            return False, "", ""
+
+        # Validate API key (constant-time comparison to prevent timing attacks)
+        import hmac as _hmac
+        if _hmac.compare_digest(provided_key, self.api_key):
             return True, "api_user", "admin"
-        elif not provided_key:
-            # No key provided but key required
-            return False, "", ""
-        else:
-            # Invalid key
-            return False, "", ""
+
+        # Invalid key
+        return False, "", ""
     
     def authorize(self, tool_name: str, role: str) -> bool:
         """Check if role has permission to use tool"""
@@ -229,7 +231,7 @@ def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
             "rate_limit": rate_info,
         }
 
-    logger.info(f"Tool invoked: {tool_name} by {user_id}({role}) with args: {kwargs}, rate_limit: {rate_info}")
+    logger.info(f"Tool invoked: {tool_name} by {user_id}({role}), rate_limit: {rate_info}")
 
     if request_validator:
         request = {"method": "tools/call", "params": {"name": tool_name, "arguments": kwargs}}
@@ -255,8 +257,6 @@ def _post_process(result: Any, info: dict) -> Any:
 def validate_request(tool_name: str):
     """Decorator to validate MCP requests before tool execution"""
     def decorator(func):
-        import functools
-
         if asyncio.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapper(**kwargs):
@@ -309,7 +309,7 @@ def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> boo
         # Ensure path is within workspace
         real_path.relative_to(workspace_base.resolve())
         return True
-    except (ValueError, Exception):
+    except Exception:
         return False
 
 
@@ -327,7 +327,7 @@ import terraform_lsp_client
 @mcp.tool()
 @validate_request("terry")
 def terry(
-    path: str, actions: List[str] = ["plan"], vars: Dict[str, Any] = {}
+    path: str, actions: List[str] = None, vars: Dict[str, Any] = None
 ) -> Dict[str, object]:
     """
     Execute Terraform operations with comprehensive output and security validation.
@@ -342,6 +342,10 @@ def terry(
         
     Supported actions: init, validate, fmt, plan, show, graph, providers, version
     """
+    if actions is None:
+        actions = ["plan"]
+    if vars is None:
+        vars = {}
     full_path = str(Path("/mnt/workspace") / path)
     results = []
     for action in actions:
@@ -394,8 +398,8 @@ def terry_workspace_list() -> Dict[str, object]:
                         ["date", "-u", "-d", f"@{int(mtime)}", "+%Y-%m-%dT%H:%M:%SZ"],
                         capture_output=True, text=True
                     ).stdout.strip()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to get last modified time for workspace: {e}")
 
                 # Extract provider information
                 for tf_file in tf_files:
@@ -408,8 +412,8 @@ def terry_workspace_list() -> Dict[str, object]:
                             # Count module calls
                             modules = _RE_MODULE.findall(content)
                             workspace_info["modules"] += len(modules)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to read Terraform file {tf_file}: {e}")
                 
                 workspace_info["providers"] = list(set(workspace_info["providers"]))
                 workspaces.append(workspace_info)
@@ -432,7 +436,8 @@ def terry_version() -> Dict[str, object]:
         version_result = subprocess.run(
             ["terraform", "version", "-json"],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=30
         )
         
         if version_result.returncode == 0:
@@ -455,7 +460,8 @@ def terry_version() -> Dict[str, object]:
                 version_result = subprocess.run(
                     ["terraform", "version"],
                     capture_output=True,
-                    text=True
+                    text=True,
+                    timeout=30
                 )
                 if version_result.returncode == 0:
                     lines = version_result.stdout.strip().split('\n')
@@ -465,7 +471,8 @@ def terry_version() -> Dict[str, object]:
                     platform_result = subprocess.run(
                         ["uname", "-m"],
                         capture_output=True,
-                        text=True
+                        text=True,
+                        timeout=10
                     )
                     platform = f"linux_{platform_result.stdout.strip()}" if platform_result.returncode == 0 else "unknown"
                     
@@ -503,11 +510,11 @@ def terry_environment_check() -> Dict[str, object]:
 
         # Check Terraform
         terraform_check = subprocess.run(
-            ["which", "terraform"], capture_output=True, text=True
+            ["which", "terraform"], capture_output=True, text=True, timeout=10
         )
         if terraform_check.returncode == 0:
             version_check = subprocess.run(
-                ["terraform", "version"], capture_output=True, text=True
+                ["terraform", "version"], capture_output=True, text=True, timeout=30
             )
             results["terraform"] = {
                 "available": True,
@@ -523,11 +530,11 @@ def terry_environment_check() -> Dict[str, object]:
 
         # Check terraform-ls
         terraformls_check = subprocess.run(
-            ["which", "terraform-ls"], capture_output=True, text=True
+            ["which", "terraform-ls"], capture_output=True, text=True, timeout=10
         )
         if terraformls_check.returncode == 0:
             version_check = subprocess.run(
-                ["terraform-ls", "version"], capture_output=True, text=True
+                ["terraform-ls", "version"], capture_output=True, text=True, timeout=10
             )
             results["terraform_ls"] = {
                 "available": True,
@@ -554,7 +561,7 @@ def terry_environment_check() -> Dict[str, object]:
         results["container"] = {
             "is_docker": os.path.exists("/.dockerenv"),
             "hostname": subprocess.run(
-                ["hostname"], capture_output=True, text=True
+                ["hostname"], capture_output=True, text=True, timeout=10
             ).stdout.strip(),
         }
 
@@ -820,6 +827,10 @@ def terry_workspace_setup(
     Sets up basic files and directory structure.
     """
     try:
+        # Sanitize project_name to prevent HCL injection
+        if not re.match(r'^[a-zA-Z0-9_-]+$', project_name):
+            return {"terry-workspace-setup": {"error": "Invalid project_name: only alphanumeric, hyphens, and underscores allowed"}}
+
         full_path = str(Path("/mnt/workspace") / path)
 
         # Create directory if it doesn't exist
@@ -1121,8 +1132,6 @@ def terraform_lsp_status() -> Dict[str, object]:
     """
     Get the status of the terraform-ls Language Server integration.
     """
-    global terraform_lsp_client
-
     if (
         terraform_lsp_client._lsp_client
         and terraform_lsp_client._lsp_client.initialized
@@ -1306,8 +1315,7 @@ def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object
         for tf_file in Path(full_path).glob("*.tf"):
             with open(tf_file, 'r') as f:
                 content = f.read()
-                file_lines = content.split('\n')
-                
+
                 # Check for public S3 buckets
                 s3_blocks = re.finditer(r'resource\s+"aws_s3_bucket"\s+"([^"]+)"\s*{([^}]+)}', content, re.DOTALL)
                 for match in s3_blocks:

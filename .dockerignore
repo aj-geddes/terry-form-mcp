@@ -1,0 +1,56 @@
+# Git
+.git/
+.gitignore
+
+# Documentation site
+docs/
+*.md
+!requirements.txt
+
+# Claude/IDE config
+.claude/
+.vscode/
+.idea/
+
+# Images and screenshots
+*.png
+*.jpg
+*.jpeg
+
+# Test files
+test_*.py
+debug_*.py
+test.json
+test-terraform-project/
+
+# Build artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets and credentials
+*.key
+*.pem
+*.p12
+.env
+.secrets
+secrets.json
+
+# Other Dockerfiles (avoid confusion)
+Dockerfile_*
+
+# Scripts (not needed in container)
+build.sh
+build.bat
+verify.sh
+
+# Examples
+examples/
+
+# Local development
+local/
+tmp/
+temp/

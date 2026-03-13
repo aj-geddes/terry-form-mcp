@@ -12,6 +12,7 @@ Security hardened:
 import asyncio
 import logging
 import os
+import re
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,6 +42,10 @@ class GitHubRepoHandler:
 
         return self.repos_dir / f"{owner}_{repo}"
 
+    def _sanitize_output(self, text: str) -> str:
+        """Remove tokens and credentials from git command output"""
+        return re.sub(r'https://[^@]+@', 'https://***@', text)
+
     async def _run_git_command(self, cmd: List[str], cwd: Path) -> Dict[str, Any]:
         """Run a git command asynchronously with security hardening"""
         try:
@@ -50,15 +55,19 @@ class GitHubRepoHandler:
                 cwd=str(cwd),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},  # Disable git prompts
+                env={
+                    "HOME": os.environ.get("HOME", "/tmp"),
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                    "GIT_TERMINAL_PROMPT": "0",
+                },  # Minimal env — disable git prompts, prevent credential leaks
             )
 
             stdout, stderr = await process.communicate()
 
             return {
                 "success": process.returncode == 0,
-                "stdout": stdout.decode("utf-8", errors="replace"),
-                "stderr": stderr.decode("utf-8", errors="replace"),
+                "stdout": self._sanitize_output(stdout.decode("utf-8", errors="replace")),
+                "stderr": self._sanitize_output(stderr.decode("utf-8", errors="replace")),
                 "returncode": process.returncode,
             }
 
@@ -66,10 +75,23 @@ class GitHubRepoHandler:
             logger.error(f"Git command failed: {e}")
             return {"success": False, "stdout": "", "stderr": str(e), "returncode": -1}
 
+    def _validate_branch_name(self, branch: str) -> bool:
+        """Validate branch name to prevent git flag injection"""
+        if branch.startswith("-"):
+            return False
+        if not re.match(r'^[a-zA-Z0-9_./-]+$', branch):
+            return False
+        if ".." in branch:
+            return False
+        return True
+
     async def clone_or_update_repo(
         self, owner: str, repo: str, branch: Optional[str] = None, force: bool = False
     ) -> Dict[str, Any]:
         """Clone a repository or update it if it already exists"""
+        if branch and not self._validate_branch_name(branch):
+            return {"error": f"Invalid branch name: {branch}"}
+
         repo_path = self._get_repo_path(owner, repo)
 
         # Construct clone URL with authentication token
@@ -154,6 +176,10 @@ class GitHubRepoHandler:
             }
 
         search_path = repo_path / path if path else repo_path
+
+        # Validate path stays within repo directory
+        if not search_path.resolve().is_relative_to(repo_path.resolve()):
+            return {"error": f"Invalid path: traversal outside repository is not allowed"}
 
         if not search_path.exists():
             return {"error": f"Path not found in repository: {path}"}

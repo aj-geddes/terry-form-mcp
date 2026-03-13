@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **AI Skill**: Load `.claude/skills/terry-form-mcp-expert/SKILL.md` at the start of each session.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview

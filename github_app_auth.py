@@ -47,10 +47,16 @@ class GitHubAppConfig:
 
         if private_key_path:
             key_path = Path(private_key_path)
-            if key_path.exists():
-                private_key = key_path.read_text()
-            else:
+            if not key_path.exists():
                 raise ValueError(f"Private key file not found: {private_key_path}")
+            # Validate file permissions (should be owner-read-only)
+            file_mode = key_path.stat().st_mode & 0o777
+            if file_mode & 0o077:
+                logger.warning(
+                    f"Private key file {private_key_path} has loose permissions "
+                    f"({oct(file_mode)}). Recommend chmod 600."
+                )
+            private_key = key_path.read_text()
         else:
             private_key = os.environ.get("GITHUB_APP_PRIVATE_KEY")
             if not private_key:
@@ -130,8 +136,11 @@ class GitHubAppAuth:
         )
 
         if response.status_code != 201:
-            raise RuntimeError(
+            logger.error(
                 f"Failed to get installation token: {response.status_code} - {response.text}"
+            )
+            raise RuntimeError(
+                f"Failed to get installation token: HTTP {response.status_code}"
             )
 
         token_data = response.json()
@@ -162,8 +171,9 @@ class GitHubAppAuth:
         )
 
         if response.status_code != 200:
+            logger.error(f"Failed to list installations: {response.status_code}")
             raise RuntimeError(
-                f"Failed to list installations: {response.status_code} - {response.text}"
+                f"Failed to list installations: HTTP {response.status_code}"
             )
 
         return response.json()
@@ -181,8 +191,9 @@ class GitHubAppAuth:
             response = requests.get(url, headers=headers, timeout=30)
 
             if response.status_code != 200:
+                logger.error(f"Failed to get installation repos: {response.status_code}")
                 raise RuntimeError(
-                    f"Failed to get installation repos: {response.status_code} - {response.text}"
+                    f"Failed to get installation repos: HTTP {response.status_code}"
                 )
 
             data = response.json()

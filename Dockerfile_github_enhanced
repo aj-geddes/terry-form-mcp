@@ -11,9 +11,9 @@ RUN TERRAFORM_LS_VERSION="0.38.5" && \
     chmod +x /usr/local/bin/terraform-ls && \
     rm terraform-ls.zip
 
-# Create non-root user for security
-RUN addgroup -g 1000 terry && \
-    adduser -D -u 1000 -G terry -h /home/terry terry
+# Create non-root user for security (UID 1001 matches primary Dockerfile)
+RUN addgroup -g 1001 -S terraform && \
+    adduser -u 1001 -S terraform -G terraform
 
 # Create app directory
 WORKDIR /app
@@ -34,29 +34,25 @@ COPY mcp_request_validator.py .
 
 # Create workspace directory
 RUN mkdir -p /mnt/workspace && \
-    chown -R terry:terry /mnt/workspace
+    chown -R terraform:terraform /mnt/workspace
 
 # Security: Set proper permissions
-RUN chown -R terry:terry /app && \
+RUN chown -R terraform:terraform /app && \
     chmod -R 755 /app && \
     chmod 644 /app/*.py
 
-# Security: Drop capabilities not needed
-USER terry
+# Switch to non-root user
+USER terraform
 
 # Volume for workspace
 VOLUME ["/mnt/workspace"]
 
-# Expose MCP and web dashboard ports
-EXPOSE 8000 8001
+# MCP uses stdio transport — no ports are exposed
+ENTRYPOINT ["python3", "server_enhanced_with_lsp.py"]
 
-# Default to running the enhanced server
-ENTRYPOINT ["python3"]
-CMD ["server_enhanced_with_lsp.py"]
-
-# Health check for MCP server
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.settimeout(2); s.connect(('localhost', 8000)); s.close()" || exit 1
+# Health check - verify server files and dependencies are present
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD python3 -c "import sys; sys.path.append('/app'); import server_enhanced_with_lsp" || exit 1
 
 # Labels for documentation
 LABEL maintainer="aj-geddes" \

@@ -1,13 +1,13 @@
 # Terry-Form MCP Server Requirements
 # Core dependencies
-fastmcp>=3.0.0
-aiohttp>=3.13.0
+fastmcp>=3.1.0
+aiohttp>=3.13.3
 async-lru>=2.2.0
 
 # GitHub OAuth integration
 PyJWT>=2.11.0
-cryptography>=46.0.0
-requests>=2.32.0
+cryptography>=46.0.5  # CVE-2026-26007: subgroup validation fix
+requests>=2.32.5
 
 # Testing
 pytest>=9.0.0
