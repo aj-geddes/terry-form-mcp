@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: terry-form-mcp
+  namespace: terry-form-mcp
+  labels:
+    app: terry-form-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: terry-form-mcp
+  template:
+    metadata:
+      labels:
+        app: terry-form-mcp
+    spec:
+      containers:
+        - name: mcp
+          image: 192.168.86.94:30500/terry-form-mcp:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MCP_TRANSPORT
+              value: "streamable-http"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8000"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: TF_IN_AUTOMATION
+              value: "true"
+            - name: TF_INPUT
+              value: "false"
+            - name: CHECKPOINT_DISABLE
+              value: "true"
+          volumeMounts:
+            - name: config-storage
+              mountPath: /app/config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          imagePullPolicy: Always
+      volumes:
+        - name: config-storage
+          persistentVolumeClaim:
+            claimName: terry-form-config

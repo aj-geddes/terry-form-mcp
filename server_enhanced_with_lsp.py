@@ -127,6 +127,14 @@ class RateLimiter:
             
             return allowed, rate_limit_info
 
+    def update_limits(self, new_limits: dict) -> None:
+        """Update rate limits from config UI. Thread-safe."""
+        with self.lock:
+            for key in ("terraform", "github", "tf_cloud", "default"):
+                if key in new_limits:
+                    self.limits[key] = int(new_limits[key])
+            logger.info(f"Rate limits updated: {self.limits}")
+
 # Initialize global rate limiter
 rate_limiter = RateLimiter()
 logger.info("Rate limiter initialized")
@@ -1923,8 +1931,34 @@ async def github_prepare_workspace(
 
 
 # ============================================================================
+# CONFIGURATION FRONTEND (HAT Stack)
+# ============================================================================
+
+try:
+    from frontend.config_manager import ConfigManager
+    from frontend.routes import register_routes
+
+    config_manager = ConfigManager()
+    config_manager.load()
+    register_routes(mcp, config_manager, rate_limiter=rate_limiter)
+    logger.info("Configuration frontend registered")
+except Exception as e:
+    logger.warning(f"Frontend not available: {e}")
+    config_manager = None
+
+
+# ============================================================================
 # SERVER STARTUP
 # ============================================================================
 
 if __name__ == "__main__":
-    mcp.run()
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    transport_kwargs = {}
+    if transport in ("sse", "streamable-http"):
+        transport_kwargs["host"] = os.environ.get("HOST", "0.0.0.0")
+        transport_kwargs["port"] = int(os.environ.get("PORT", "8000"))
+        logger.info(
+            f"Starting with {transport} transport on "
+            f"{transport_kwargs['host']}:{transport_kwargs['port']}"
+        )
+    mcp.run(transport=transport, **transport_kwargs)

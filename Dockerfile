@@ -30,9 +30,12 @@ COPY github_app_auth.py .
 COPY github_repo_handler.py .
 COPY terry-form-mcp.py .
 
-# Create workspace directory with proper ownership
-RUN mkdir -p /mnt/workspace && \
-    chown -R terraform:terraform /mnt/workspace
+# Copy frontend package
+COPY frontend/ /app/frontend/
+
+# Create workspace and config directories with proper ownership
+RUN mkdir -p /mnt/workspace /app/config && \
+    chown -R terraform:terraform /mnt/workspace /app/config
 
 # Set proper file permissions
 RUN chown -R terraform:terraform /app && \

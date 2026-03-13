@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Terry-Form MCP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        terry: {
+                            400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex items-center justify-center">
+    <div class="w-full max-w-sm">
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-8">
+            <h1 class="text-xl font-bold text-white text-center mb-6">Terry-Form MCP</h1>
+
+            {% if error %}
+            <div class="bg-red-900/30 border border-red-700 rounded-lg px-4 py-2 text-sm text-red-300 mb-4">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="mb-4">
+                    <label for="api_key" class="block text-sm text-gray-400 mb-1">API Key</label>
+                    <input type="password" id="api_key" name="api_key" required autofocus
+                           class="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white text-sm focus:border-terry-500 focus:outline-none"
+                           placeholder="Enter your API key">
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-terry-600 hover:bg-terry-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div>
+        <div class="text-xs text-gray-500 mb-1">Uptime</div>
+        <div class="text-sm text-white font-mono">{{ status.uptime }}</div>
+    </div>
+    <div>
+        <div class="text-xs text-gray-500 mb-1">Server Status</div>
+        <div class="flex items-center space-x-1.5">
+            <span class="h-2 w-2 rounded-full {{ 'bg-green-500' if status.healthy else 'bg-red-500' }}"></span>
+            <span class="text-sm {{ 'text-green-400' if status.healthy else 'text-red-400' }}">
+                {{ 'Healthy' if status.healthy else 'Degraded' }}
+            </span>
+        </div>
+    </div>
+    <div>
+        <div class="text-xs text-gray-500 mb-1">Terraform</div>
+        <div class="text-sm text-white font-mono">{{ status.terraform_version or 'N/A' }}</div>
+    </div>
+    <div>
+        <div class="text-xs text-gray-500 mb-1">LSP</div>
+        <div class="flex items-center space-x-1.5">
+            <span class="h-2 w-2 rounded-full {{ 'bg-green-500' if status.lsp_available else 'bg-gray-600' }}"></span>
+            <span class="text-sm {{ 'text-green-400' if status.lsp_available else 'text-gray-400' }}">
+                {{ 'Available' if status.lsp_available else 'Unavailable' }}
+            </span>
+        </div>
+    </div>
+</div>

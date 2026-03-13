@@ -1,0 +1,34 @@
+<form hx-post="/config/terraform-options" hx-target="#tab-content" hx-swap="innerHTML"
+      class="space-y-6 max-w-2xl">
+
+    <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 space-y-4">
+        <h3 class="text-sm font-medium text-white">Terraform Options</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label for="tf_log" class="block text-sm text-gray-400 mb-1">TF_LOG Level</label>
+                <select id="tf_log" name="tf_log">
+                    <option value="" {{ 'selected' if not config.tf_log }}>Off</option>
+                    <option value="TRACE" {{ 'selected' if config.tf_log == 'TRACE' }}>TRACE</option>
+                    <option value="DEBUG" {{ 'selected' if config.tf_log == 'DEBUG' }}>DEBUG</option>
+                    <option value="INFO" {{ 'selected' if config.tf_log == 'INFO' }}>INFO</option>
+                    <option value="WARN" {{ 'selected' if config.tf_log == 'WARN' }}>WARN</option>
+                    <option value="ERROR" {{ 'selected' if config.tf_log == 'ERROR' }}>ERROR</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="max_operation_timeout" class="block text-sm text-gray-400 mb-1">Max Operation Timeout (seconds)</label>
+                <input type="number" id="max_operation_timeout" name="max_operation_timeout"
+                       value="{{ config.max_operation_timeout }}" min="10" max="3600">
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-end">
+        <button type="submit"
+                class="bg-terry-600 hover:bg-terry-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Save Terraform Options
+        </button>
+    </div>
+</form>

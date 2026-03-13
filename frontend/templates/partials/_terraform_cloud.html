@@ -1,0 +1,33 @@
+<form hx-post="/config/terraform-cloud" hx-target="#tab-content" hx-swap="innerHTML"
+      class="space-y-6 max-w-2xl">
+
+    <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 space-y-4">
+        <h3 class="text-sm font-medium text-white">Terraform Cloud</h3>
+
+        <div>
+            <label for="token" class="block text-sm text-gray-400 mb-1">API Token</label>
+            <input type="password" id="token" name="token"
+                   placeholder="{{ 'Value is set' if config.token else 'Not set' }}"
+                   class="{{ 'has-value' if config.token }}">
+            {% if config.token %}
+            <p class="text-xs text-gray-500 mt-1">Current: {{ config.token }}</p>
+            {% endif %}
+            <p class="text-xs text-gray-500 mt-1">Generate at <span class="text-gray-400">app.terraform.io &rarr; User Settings &rarr; Tokens</span></p>
+        </div>
+    </div>
+
+    <div class="flex justify-between">
+        <button type="button"
+                hx-post="/config/terraform-cloud/test"
+                hx-target="#tf-cloud-test-result"
+                hx-swap="innerHTML"
+                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Test Connection
+        </button>
+        <button type="submit"
+                class="bg-terry-600 hover:bg-terry-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Save Terraform Cloud Settings
+        </button>
+    </div>
+    <div id="tf-cloud-test-result"></div>
+</form>

@@ -1,0 +1,51 @@
+<form hx-post="/config/server" hx-target="#tab-content" hx-swap="innerHTML"
+      class="space-y-6 max-w-2xl">
+
+    {% if restart_required is defined and restart_required %}
+    <div class="bg-yellow-900/30 border border-yellow-700 rounded-lg px-4 py-3 text-sm text-yellow-300">
+        Changes to transport, host, or port require a server restart to take effect.
+    </div>
+    {% endif %}
+
+    <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 space-y-4">
+        <h3 class="text-sm font-medium text-white">Server Settings</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label for="transport" class="block text-sm text-gray-400 mb-1">Transport</label>
+                <select id="transport" name="transport">
+                    <option value="stdio" {{ 'selected' if config.transport == 'stdio' }}>stdio</option>
+                    <option value="sse" {{ 'selected' if config.transport == 'sse' }}>sse</option>
+                    <option value="streamable-http" {{ 'selected' if config.transport == 'streamable-http' }}>streamable-http</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="host" class="block text-sm text-gray-400 mb-1">Host</label>
+                <input type="text" id="host" name="host" value="{{ config.host }}" placeholder="0.0.0.0">
+            </div>
+
+            <div>
+                <label for="port" class="block text-sm text-gray-400 mb-1">Port</label>
+                <input type="number" id="port" name="port" value="{{ config.port }}" min="1" max="65535">
+            </div>
+
+            <div>
+                <label for="api_key" class="block text-sm text-gray-400 mb-1">API Key</label>
+                <input type="password" id="api_key" name="api_key"
+                       placeholder="{{ 'Value is set' if config.api_key else 'Not set' }}"
+                       class="{{ 'has-value' if config.api_key }}">
+                {% if config.api_key %}
+                <p class="text-xs text-gray-500 mt-1">Current: {{ config.api_key }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-end">
+        <button type="submit"
+                class="bg-terry-600 hover:bg-terry-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Save Server Settings
+        </button>
+    </div>
+</form>

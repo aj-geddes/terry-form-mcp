@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Terry-Form MCP{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+        <p class="text-gray-400 text-sm mt-1">Terry-Form MCP Server Overview</p>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-4">
+            <div class="text-sm text-gray-400 mb-1">Transport</div>
+            <div class="text-lg font-semibold text-white">{{ status.transport }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ status.host }}:{{ status.port }}</div>
+        </div>
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-4">
+            <div class="text-sm text-gray-400 mb-1">MCP Tools</div>
+            <div class="text-lg font-semibold text-terry-400">{{ status.tool_count }}</div>
+            <div class="text-xs text-gray-500 mt-1">registered tools</div>
+        </div>
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-4">
+            <div class="text-sm text-gray-400 mb-1">Server Version</div>
+            <div class="text-lg font-semibold text-white">{{ status.version }}</div>
+            <div class="text-xs text-gray-500 mt-1">terry-form-mcp</div>
+        </div>
+    </div>
+
+    <!-- Live Status Panel -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+            <h2 class="text-sm font-medium text-white">Live Status</h2>
+            <span class="text-xs text-gray-500">auto-refreshes every 5s</span>
+        </div>
+        <div hx-get="/api/status/panel" hx-trigger="load, every 5s" hx-swap="innerHTML"
+             class="p-4">
+            <div class="text-gray-500 text-sm">Loading status...</div>
+        </div>
+    </div>
+
+    <!-- Tool Categories -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="border-b border-gray-800 px-4 py-3">
+            <h2 class="text-sm font-medium text-white">Tool Categories</h2>
+        </div>
+        <div class="divide-y divide-gray-800">
+            {% for category in tool_categories %}
+            <div class="px-4 py-3 flex items-center justify-between">
+                <div>
+                    <span class="text-sm text-white">{{ category.name }}</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ category.prefix }}</span>
+                </div>
+                <span class="bg-gray-800 text-terry-400 text-xs font-medium px-2 py-0.5 rounded">
+                    {{ category.count }} tools
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Integration Status -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-4">
+            <h3 class="text-sm font-medium text-white mb-3">GitHub Integration</h3>
+            {% if status.github_configured %}
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                <span class="text-sm text-green-400">Configured</span>
+            </div>
+            {% else %}
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-gray-600"></span>
+                <span class="text-sm text-gray-400">Not configured</span>
+            </div>
+            <a href="/config?tab=github" class="text-xs text-terry-400 hover:underline mt-2 inline-block">Configure &rarr;</a>
+            {% endif %}
+        </div>
+        <div class="bg-gray-900 rounded-lg border border-gray-800 p-4">
+            <h3 class="text-sm font-medium text-white mb-3">Terraform Cloud</h3>
+            {% if status.tf_cloud_configured %}
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                <span class="text-sm text-green-400">Configured</span>
+            </div>
+            {% else %}
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-gray-600"></span>
+                <span class="text-sm text-gray-400">Not configured</span>
+            </div>
+            <a href="/config?tab=terraform-cloud" class="text-xs text-terry-400 hover:underline mt-2 inline-block">Configure &rarr;</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

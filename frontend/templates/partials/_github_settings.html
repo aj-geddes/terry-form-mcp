@@ -1,0 +1,49 @@
+<form hx-post="/config/github" hx-target="#tab-content" hx-swap="innerHTML"
+      class="space-y-6 max-w-2xl">
+
+    <div class="bg-gray-900 rounded-lg border border-gray-800 p-6 space-y-4">
+        <h3 class="text-sm font-medium text-white">GitHub App Integration</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label for="app_id" class="block text-sm text-gray-400 mb-1">App ID</label>
+                <input type="text" id="app_id" name="app_id" value="{{ config.app_id or '' }}" placeholder="123456">
+            </div>
+
+            <div>
+                <label for="installation_id" class="block text-sm text-gray-400 mb-1">Installation ID</label>
+                <input type="text" id="installation_id" name="installation_id" value="{{ config.installation_id or '' }}" placeholder="12345678">
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="private_key_path" class="block text-sm text-gray-400 mb-1">Private Key Path</label>
+                <input type="text" id="private_key_path" name="private_key_path" value="{{ config.private_key_path or '' }}" placeholder="/app/config/github-app.pem">
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="webhook_secret" class="block text-sm text-gray-400 mb-1">Webhook Secret</label>
+                <input type="password" id="webhook_secret" name="webhook_secret"
+                       placeholder="{{ 'Value is set' if config.webhook_secret else 'Not set' }}"
+                       class="{{ 'has-value' if config.webhook_secret }}">
+                {% if config.webhook_secret %}
+                <p class="text-xs text-gray-500 mt-1">Current: {{ config.webhook_secret }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-between">
+        <button type="button"
+                hx-post="/config/github/test"
+                hx-target="#github-test-result"
+                hx-swap="innerHTML"
+                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Test Connection
+        </button>
+        <button type="submit"
+                class="bg-terry-600 hover:bg-terry-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            Save GitHub Settings
+        </button>
+    </div>
+    <div id="github-test-result"></div>
+</form>
