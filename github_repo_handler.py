@@ -62,7 +62,20 @@ class GitHubRepoHandler:
                 },  # Minimal env — disable git prompts, prevent credential leaks
             )
 
-            stdout, stderr = await process.communicate()
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), timeout=120
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                logger.error("Git command timed out after 120 seconds")
+                return {
+                    "success": False,
+                    "stdout": "",
+                    "stderr": "Git command timed out after 120 seconds",
+                    "returncode": -1,
+                }
 
             return {
                 "success": process.returncode == 0,
@@ -71,6 +84,8 @@ class GitHubRepoHandler:
                 "returncode": process.returncode,
             }
 
+        except asyncio.TimeoutError:
+            raise
         except Exception as e:
             logger.error(f"Git command failed: {e}")
             return {"success": False, "stdout": "", "stderr": str(e), "returncode": -1}

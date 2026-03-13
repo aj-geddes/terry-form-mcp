@@ -240,8 +240,9 @@ def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
             logger.warning(f"Request validation failed for {tool_name}: {error_msg}")
             return False, {"error": f"Validation failed: {error_msg}"}
 
-    if "path" in kwargs and not validate_safe_path(kwargs["path"]):
-        return False, {"error": "Invalid path: Access outside workspace is not allowed"}
+    for path_key in ("path", "file_path", "workspace_path", "config_path"):
+        if path_key in kwargs and not validate_safe_path(str(kwargs[path_key])):
+            return False, {"error": f"Invalid {path_key}: Access outside workspace is not allowed"}
 
     return True, {"user_id": user_id, "role": role, "rate_info": rate_info}
 
