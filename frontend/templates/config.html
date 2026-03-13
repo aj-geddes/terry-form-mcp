@@ -29,7 +29,7 @@
 
     <!-- Tab Content (initial load rendered server-side, subsequent loads via HTMX) -->
     <div id="tab-content" class="tab-content-enter">
-        {{ tab_content }}
+        {{ tab_content | safe }}
     </div>
 </div>
 {% endblock %}
