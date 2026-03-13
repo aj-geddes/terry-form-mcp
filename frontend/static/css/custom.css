@@ -26,11 +26,11 @@
 input[type="text"],
 input[type="number"],
 input[type="password"],
-select,
 textarea {
-    background-color: rgb(17 24 39); /* gray-900 */
+    background-color: rgb(17 24 39) !important; /* gray-900 */
     border-color: rgb(55 65 81); /* gray-700 */
-    color: white;
+    color: rgb(243 244 246) !important; /* gray-100 */
+    color-scheme: dark;
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
@@ -38,6 +38,37 @@ textarea {
     border-width: 1px;
     outline: none;
     transition: border-color 0.15s;
+}
+
+/* Select dropdowns — custom styled for dark mode */
+select {
+    background-color: rgb(31 41 55) !important; /* gray-800 — slightly lighter for contrast */
+    border-color: rgb(75 85 99); /* gray-600 */
+    color: rgb(243 244 246) !important; /* gray-100 */
+    color-scheme: dark;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    width: 100%;
+    border-width: 1px;
+    outline: none;
+    transition: border-color 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+/* Dropdown option items */
+select option {
+    background-color: rgb(31 41 55); /* gray-800 */
+    color: rgb(243 244 246); /* gray-100 */
+    padding: 0.5rem;
 }
 
 input:focus,
@@ -48,7 +79,7 @@ textarea:focus {
 }
 
 input::placeholder {
-    color: rgb(107 114 128); /* gray-500 */
+    color: rgb(156 163 175); /* gray-400 — brighter for readability */
 }
 
 /* Password field with "value is set" state */
