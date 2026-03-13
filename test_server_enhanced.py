@@ -25,7 +25,15 @@ import pytest
 # Import helpers — the module has top-level side effects (FastMCP creation,
 # importlib.import_module("terry-form-mcp"), terraform_lsp_client import).
 # We mock what is needed so the classes and functions can be imported cleanly.
+#
+# IMPORTANT: We snapshot sys.modules before injecting stubs and restore the
+# originals once the import is complete.  This prevents stub leakage into
+# other test modules that need the real implementations (e.g.
+# test_terraform_lsp_client.py importing the real terraform_lsp_client).
 # ---------------------------------------------------------------------------
+
+_STUBBED_NAMES = ("fastmcp", "terraform_lsp_client", "terry-form-mcp")
+_saved_modules = {name: sys.modules.get(name) for name in _STUBBED_NAMES}
 
 # Patch FastMCP before importing the module so `mcp = FastMCP(...)` succeeds
 # without requiring the real fastmcp package or its server machinery.
@@ -47,14 +55,12 @@ class _StubFastMCP:
 
 
 _fake_fastmcp_mod.FastMCP = _StubFastMCP  # type: ignore[attr-defined]
-sys.modules.setdefault("fastmcp", _fake_fastmcp_mod)
+sys.modules["fastmcp"] = _fake_fastmcp_mod
 
 # Stub out heavy sibling modules that the server imports at module level
-for _mod_name in ("terraform_lsp_client",):
-    if _mod_name not in sys.modules:
-        _stub = types.ModuleType(_mod_name)
-        _stub._lsp_client = None  # type: ignore[attr-defined]
-        sys.modules[_mod_name] = _stub
+_lsp_stub = types.ModuleType("terraform_lsp_client")
+_lsp_stub._lsp_client = None  # type: ignore[attr-defined]
+sys.modules["terraform_lsp_client"] = _lsp_stub
 
 # terry-form-mcp is loaded via importlib.import_module inside the server.
 # Provide a minimal stub so the import does not fail.
@@ -71,6 +77,15 @@ from server_enhanced_with_lsp import (  # noqa: E402
     validate_request,
     validate_safe_path,
 )
+
+# Restore original sys.modules entries so stubs do not leak into other
+# test modules collected after this one.
+for _name in _STUBBED_NAMES:
+    _orig = _saved_modules[_name]
+    if _orig is None:
+        sys.modules.pop(_name, None)
+    else:
+        sys.modules[_name] = _orig
 
 
 # ---------------------------------------------------------------------------
