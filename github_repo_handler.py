@@ -84,8 +84,6 @@ class GitHubRepoHandler:
                 "returncode": process.returncode,
             }
 
-        except asyncio.TimeoutError:
-            raise
         except Exception as e:
             logger.error(f"Git command failed: {e}")
             return {"success": False, "stdout": "", "stderr": str(e), "returncode": -1}

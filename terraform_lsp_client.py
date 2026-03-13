@@ -22,7 +22,6 @@ class TerraformLSPClient:
         self.workspace_root = Path(workspace_root)
         self.terraform_ls_process = None
         self.request_id = 0
-        self.pending_requests = {}
         self.initialized = False
         self.capabilities = {}
         self.initialization_error = None
@@ -138,10 +137,36 @@ class TerraformLSPClient:
             self.terraform_ls_process.stdin.write(message.encode("utf-8"))
             await self.terraform_ls_process.stdin.drain()
 
-            # Read response with timeout
-            response = await asyncio.wait_for(self._read_response(), timeout=30.0)
-            self.logger.debug(f"Received LSP response for {method}")
-            return response
+            # Read responses, skipping server-initiated notifications until
+            # we find the response matching our request ID.
+            max_iterations: int = 50
+            for _ in range(max_iterations):
+                response = await asyncio.wait_for(
+                    self._read_response(), timeout=30.0
+                )
+
+                # A matching response will have an "id" equal to our request_id
+                if response.get("id") == request_id:
+                    self.logger.debug(f"Received LSP response for {method}")
+                    return response
+
+                # Server-initiated notifications have a "method" field and no "id"
+                if "method" in response:
+                    self.logger.debug(
+                        f"Skipping LSP notification: {response['method']}"
+                    )
+                    continue
+
+                # Response with a mismatched id — log and skip
+                self.logger.debug(
+                    f"Skipping LSP message with id={response.get('id')} "
+                    f"(expected {request_id})"
+                )
+
+            raise RuntimeError(
+                f"No matching response for {method} (id={request_id}) "
+                f"after {max_iterations} messages"
+            )
 
         except asyncio.TimeoutError:
             self.logger.error(f"Timeout waiting for response to {method}")
