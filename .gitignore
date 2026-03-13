@@ -109,6 +109,7 @@ debug_*.py
 # Screenshots and temporary images
 *.png
 *.jpg
+!screenshots/*.png
 
 # Claude MCP specific
 mcp-test-output/
