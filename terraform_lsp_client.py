@@ -260,6 +260,12 @@ class TerraformLSPClient:
             self.initialization_error = str(e)
             return False
 
+    async def _close_document(self, file_uri: str) -> None:
+        """Send textDocument/didClose notification to release LSP resources"""
+        await self._send_notification(
+            "textDocument/didClose", {"textDocument": {"uri": file_uri}}
+        )
+
     async def _send_notification(self, method: str, params: Dict = None):
         """Send JSON-RPC notification to terraform-ls"""
         notification = {"jsonrpc": "2.0", "method": method}
@@ -311,16 +317,19 @@ class TerraformLSPClient:
                 },
             )
 
-            # Wait a bit for diagnostics
-            await asyncio.sleep(1.0)
+            try:
+                # Wait a bit for diagnostics
+                await asyncio.sleep(1.0)
 
-            # For now, return success - in full implementation we'd listen for diagnostics
-            return {
-                "success": True,
-                "uri": file_uri,
-                "diagnostics": [],
-                "message": "Document opened successfully, diagnostics would be provided via separate channel",
-            }
+                # For now, return success - in full implementation we'd listen for diagnostics
+                return {
+                    "success": True,
+                    "uri": file_uri,
+                    "diagnostics": [],
+                    "message": "Document opened successfully, diagnostics would be provided via separate channel",
+                }
+            finally:
+                await self._close_document(file_uri)
 
         except Exception as e:
             return {"error": str(e)}
@@ -359,23 +368,26 @@ class TerraformLSPClient:
                 # Small delay to let LSP process the document
                 await asyncio.sleep(0.1)
 
-            response = await self._send_request(
-                "textDocument/hover",
-                {
-                    "textDocument": {"uri": file_uri},
-                    "position": {"line": line, "character": character},
-                },
-            )
+            try:
+                response = await self._send_request(
+                    "textDocument/hover",
+                    {
+                        "textDocument": {"uri": file_uri},
+                        "position": {"line": line, "character": character},
+                    },
+                )
 
-            if "result" in response and response["result"]:
-                hover_content = response["result"].get("contents", {})
-                return {"success": True, "hover": hover_content}
+                if "result" in response and response["result"]:
+                    hover_content = response["result"].get("contents", {})
+                    return {"success": True, "hover": hover_content}
 
-            return {
-                "success": True,
-                "hover": None,
-                "message": "No hover information available",
-            }
+                return {
+                    "success": True,
+                    "hover": None,
+                    "message": "No hover information available",
+                }
+            finally:
+                await self._close_document(file_uri)
 
         except Exception as e:
             return {"error": str(e)}
@@ -414,22 +426,25 @@ class TerraformLSPClient:
                 # Small delay to let LSP process the document
                 await asyncio.sleep(0.1)
 
-            response = await self._send_request(
-                "textDocument/completion",
-                {
-                    "textDocument": {"uri": file_uri},
-                    "position": {"line": line, "character": character},
-                },
-            )
+            try:
+                response = await self._send_request(
+                    "textDocument/completion",
+                    {
+                        "textDocument": {"uri": file_uri},
+                        "position": {"line": line, "character": character},
+                    },
+                )
 
-            if "result" in response:
-                completions = response["result"]
-                if isinstance(completions, list):
-                    return {"success": True, "completions": completions}
-                elif isinstance(completions, dict) and "items" in completions:
-                    return {"success": True, "completions": completions["items"]}
+                if "result" in response:
+                    completions = response["result"]
+                    if isinstance(completions, list):
+                        return {"success": True, "completions": completions}
+                    elif isinstance(completions, dict) and "items" in completions:
+                        return {"success": True, "completions": completions["items"]}
 
-            return {"success": True, "completions": []}
+                return {"success": True, "completions": []}
+            finally:
+                await self._close_document(file_uri)
 
         except Exception as e:
             return {"error": str(e)}
@@ -468,19 +483,22 @@ class TerraformLSPClient:
                 # Small delay to let LSP process the document
                 await asyncio.sleep(0.1)
 
-            response = await self._send_request(
-                "textDocument/formatting",
-                {
-                    "textDocument": {"uri": file_uri},
-                    "options": {"tabSize": 2, "insertSpaces": True},
-                },
-            )
+            try:
+                response = await self._send_request(
+                    "textDocument/formatting",
+                    {
+                        "textDocument": {"uri": file_uri},
+                        "options": {"tabSize": 2, "insertSpaces": True},
+                    },
+                )
 
-            if "result" in response:
-                edits = response["result"]
-                return {"success": True, "edits": edits}
+                if "result" in response:
+                    edits = response["result"]
+                    return {"success": True, "edits": edits}
 
-            return {"success": True, "edits": []}
+                return {"success": True, "edits": []}
+            finally:
+                await self._close_document(file_uri)
 
         except Exception as e:
             return {"error": str(e)}
