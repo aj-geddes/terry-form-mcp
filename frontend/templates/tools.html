@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Tool Catalog - Terry-Form MCP{% endblock %}
+
+{% block content %}
+<script>
+    window.__TERRY_TOOLS__ = {{ tools_json | safe }};
+    window.__TERRY_CATEGORIES__ = {{ categories_json | safe }};
+
+    function toolCatalog() {
+        return {
+            search: '',
+            category: 'all',
+            expanded: null,
+            tools: window.__TERRY_TOOLS__,
+            categories: window.__TERRY_CATEGORIES__,
+            get filteredTools() {
+                return this.tools.filter(t => {
+                    const matchSearch = !this.search ||
+                        t.name.toLowerCase().includes(this.search.toLowerCase()) ||
+                        t.summary.toLowerCase().includes(this.search.toLowerCase());
+                    const matchCategory = this.category === 'all' || t.category === this.category;
+                    return matchSearch && matchCategory;
+                });
+            },
+            get counts() {
+                let c = { all: this.tools.length };
+                for (let [name, info] of Object.entries(this.categories)) {
+                    c[name] = info.count;
+                }
+                return c;
+            },
+            toggle(name) {
+                this.expanded = this.expanded === name ? null : name;
+            },
+            typeColor(type) {
+                const colors = {
+                    'string': 'text-green-400',
+                    'boolean': 'text-yellow-400',
+                    'integer': 'text-blue-400',
+                    'number': 'text-blue-400',
+                    'object': 'text-purple-400',
+                };
+                if (type.startsWith('array')) return 'text-orange-400';
+                return colors[type] || 'text-gray-400';
+            }
+        };
+    }
+</script>
+
+<div class="space-y-6" x-data="toolCatalog()">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-white">Tool Catalog</h1>
+        <p class="text-gray-400 text-sm mt-1">
+            <span x-text="filteredTools.length"></span> of {{ tool_count }} MCP tools
+        </p>
+    </div>
+
+    <!-- Search -->
+    <div>
+        <input type="text"
+               x-model="search"
+               placeholder="Search tools by name or description..."
+               class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-terry-400 focus:ring-1 focus:ring-terry-400 focus:outline-none">
+    </div>
+
+    <!-- Category Filters -->
+    <div class="flex flex-wrap gap-2">
+        <button @click="category = 'all'"
+                :class="category === 'all' ? 'bg-terry-600 text-white border-terry-500' : 'bg-gray-900 text-gray-400 border-gray-700 hover:border-gray-600'"
+                class="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors">
+            All <span class="ml-1 opacity-75" x-text="counts.all"></span>
+        </button>
+        <template x-for="[name, info] in Object.entries(categories)" :key="name">
+            <button @click="category = name"
+                    :class="category === name ? 'bg-terry-600 text-white border-terry-500' : 'bg-gray-900 text-gray-400 border-gray-700 hover:border-gray-600'"
+                    class="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors">
+                <span x-text="name"></span>
+                <span class="ml-1 opacity-75" x-text="info.count"></span>
+            </button>
+        </template>
+    </div>
+
+    <!-- Tool List -->
+    <div class="space-y-2">
+        <template x-for="tool in filteredTools" :key="tool.name">
+            <div class="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+                <!-- Tool Header (clickable) -->
+                <button @click="toggle(tool.name)"
+                        class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-800/50 transition-colors">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <code class="text-terry-400 text-sm font-semibold shrink-0" x-text="tool.name"></code>
+                        <span class="text-gray-500 text-xs truncate hidden sm:inline" x-text="tool.summary"></span>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0 ml-2">
+                        <span class="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded" x-text="tool.parameters.length + ' param' + (tool.parameters.length !== 1 ? 's' : '')"></span>
+                        <span class="bg-gray-800 text-xs px-2 py-0.5 rounded hidden md:inline"
+                              :class="{
+                                  'text-blue-400': tool.category === 'Core Terraform',
+                                  'text-green-400': tool.category === 'LSP Intelligence',
+                                  'text-yellow-400': tool.category === 'Diagnostics',
+                                  'text-red-400': tool.category === 'Security & Recommendations',
+                                  'text-purple-400': tool.category === 'GitHub Integration',
+                                  'text-orange-400': tool.category === 'Terraform Cloud',
+                              }"
+                              x-text="tool.category"></span>
+                        <svg :class="expanded === tool.name ? 'rotate-180' : ''"
+                             class="w-4 h-4 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </button>
+
+                <!-- Expanded Detail -->
+                <div x-show="expanded === tool.name"
+                     x-transition
+                     class="border-t border-gray-800">
+                    <div class="px-4 py-4 space-y-4">
+                        <!-- Description -->
+                        <p class="text-sm text-gray-300" x-text="tool.summary"></p>
+
+                        <!-- Returns -->
+                        <div x-show="tool.returns">
+                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Returns</span>
+                            <p class="text-sm text-gray-400 mt-1" x-text="tool.returns"></p>
+                        </div>
+
+                        <!-- Parameters Table -->
+                        <div x-show="tool.parameters.length > 0">
+                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Parameters</span>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs text-gray-500 uppercase tracking-wide">
+                                            <th class="pb-2 pr-4">Name</th>
+                                            <th class="pb-2 pr-4">Type</th>
+                                            <th class="pb-2 pr-4">Required</th>
+                                            <th class="pb-2">Default</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="param in tool.parameters" :key="param.name">
+                                            <tr class="border-t border-gray-800/50">
+                                                <td class="py-2 pr-4">
+                                                    <code class="text-white text-xs" x-text="param.name"></code>
+                                                </td>
+                                                <td class="py-2 pr-4">
+                                                    <code class="text-xs" :class="typeColor(param.type)" x-text="param.type"></code>
+                                                </td>
+                                                <td class="py-2 pr-4">
+                                                    <span x-show="param.required" class="text-xs text-red-400">required</span>
+                                                    <span x-show="!param.required" class="text-xs text-gray-600">optional</span>
+                                                </td>
+                                                <td class="py-2">
+                                                    <code x-show="param.default !== null && param.default !== undefined"
+                                                          class="text-xs text-gray-500" x-text="JSON.stringify(param.default)"></code>
+                                                    <span x-show="param.default === null || param.default === undefined"
+                                                          class="text-xs text-gray-700">&mdash;</span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- No Parameters -->
+                        <div x-show="tool.parameters.length === 0">
+                            <span class="text-xs text-gray-600">No parameters required</span>
+                        </div>
+
+                        <!-- Input Schema (collapsible) -->
+                        <details class="group">
+                            <summary class="text-xs font-medium text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-400">
+                                Input Schema (JSON)
+                            </summary>
+                            <pre class="mt-2 bg-gray-950 border border-gray-800 rounded p-3 text-xs text-gray-400 overflow-x-auto"><code x-text="JSON.stringify(tool.inputSchema, null, 2)"></code></pre>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Empty State -->
+        <div x-show="filteredTools.length === 0" class="text-center py-8">
+            <p class="text-gray-500 text-sm">No tools match your search.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

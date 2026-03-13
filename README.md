@@ -29,6 +29,12 @@ A tabbed configuration interface lets you manage server settings, integrations, 
 |---|---|---|
 | ![GitHub](screenshots/config-github.png) | ![Cloud Providers](screenshots/config-cloud-providers.png) | ![Rate Limits](screenshots/config-rate-limits.png) |
 
+## Tool Catalog
+
+![Tool Catalog](screenshots/tools-catalog.png)
+
+The interactive tool catalog at `/tools` lists all 25 MCP tools with search, category filtering, and expandable parameter details. Also available as a raw JSON endpoint at `/api/tools` and as a static [`tools.json`](tools.json) file.
+
 ---
 
 ## Quick Start

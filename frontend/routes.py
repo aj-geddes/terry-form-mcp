@@ -166,6 +166,24 @@ def _get_server_status(config_mgr: ConfigManager) -> Dict[str, Any]:
     }
 
 
+_tools_json_cache: Optional[Dict[str, Any]] = None
+
+
+def _load_tools_json() -> Dict[str, Any]:
+    """Load and cache tools.json."""
+    global _tools_json_cache
+    if _tools_json_cache is not None:
+        return _tools_json_cache
+
+    tools_path = Path(__file__).resolve().parent.parent / "tools.json"
+    if tools_path.is_file():
+        _tools_json_cache = json.loads(tools_path.read_text())
+    else:
+        _tools_json_cache = {"tools": [], "categories": {}, "tool_count": 0}
+        logger.warning(f"tools.json not found at {tools_path}")
+    return _tools_json_cache
+
+
 def _get_tool_categories() -> list:
     """Return tool category summary."""
     return [
@@ -264,6 +282,36 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         )
         resp = _html(html)
         return _set_csrf_cookie(resp, csrf_token)
+
+    # ------------------------------------------------------------------
+    # Tool Catalog
+    # ------------------------------------------------------------------
+    @mcp_server.custom_route("/tools", methods=["GET"])
+    async def tools_catalog(request: Request) -> Response:
+        auth_resp = _check_auth(request, config_mgr)
+        if auth_resp:
+            return auth_resp
+
+        csrf_token = _generate_csrf_token()
+        tools_data = _load_tools_json()
+        html = _render(
+            "tools.html",
+            active_page="tools",
+            version="3.1.0",
+            csrf_token=csrf_token,
+            tools_json=json.dumps(tools_data["tools"]),
+            categories_json=json.dumps(tools_data["categories"]),
+            tool_count=tools_data["tool_count"],
+        )
+        resp = _html(html)
+        return _set_csrf_cookie(resp, csrf_token)
+
+    # ------------------------------------------------------------------
+    # API: tools.json (raw)
+    # ------------------------------------------------------------------
+    @mcp_server.custom_route("/api/tools", methods=["GET"])
+    async def api_tools(request: Request) -> Response:
+        return JSONResponse(_load_tools_json())
 
     # ------------------------------------------------------------------
     # Config page (full page load)

@@ -43,6 +43,7 @@
                     <span class="text-gray-700">|</span>
                     <a href="/" class="text-sm text-gray-400 hover:text-white {{ 'text-white' if active_page == 'dashboard' else '' }}">Dashboard</a>
                     <a href="/config" class="text-sm text-gray-400 hover:text-white {{ 'text-white' if active_page == 'config' else '' }}">Configuration</a>
+                    <a href="/tools" class="text-sm text-gray-400 hover:text-white {{ 'text-white' if active_page == 'tools' else '' }}">Tools</a>
                 </div>
                 <div class="flex items-center space-x-3">
                     <div hx-get="/api/status/badge" hx-trigger="load, every 10s" hx-swap="innerHTML"
