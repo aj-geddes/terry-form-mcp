@@ -309,7 +309,7 @@ def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> boo
         # Ensure path is within workspace
         real_path.relative_to(workspace_base.resolve())
         return True
-    except Exception:
+    except ValueError:
         return False
 
 

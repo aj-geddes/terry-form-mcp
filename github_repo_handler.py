@@ -222,6 +222,10 @@ class GitHubRepoHandler:
 
         config_dir = repo_path / config_path if config_path else repo_path
 
+        # Validate path stays within repo directory
+        if not config_dir.resolve().is_relative_to(repo_path.resolve()):
+            return {"error": "Invalid path: traversal outside repository is not allowed"}
+
         if not config_dir.exists():
             return {"error": f"Configuration path not found: {config_path}"}
 
@@ -287,6 +291,10 @@ class GitHubRepoHandler:
         repo_path = self._get_repo_path(owner, repo)
         source_path = repo_path / config_path if config_path else repo_path
 
+        # Validate path stays within repo directory
+        if not source_path.resolve().is_relative_to(repo_path.resolve()):
+            return {"error": "Invalid path: traversal outside repository is not allowed"}
+
         if not source_path.exists():
             return {"error": f"Configuration path not found: {config_path}"}
 
@@ -324,8 +332,11 @@ class GitHubRepoHandler:
             response = requests.get(url, headers=headers, timeout=30)
 
             if response.status_code != 200:
+                logger.error(
+                    f"Failed to get repository info: {response.status_code} - {response.text}"
+                )
                 return {
-                    "error": f"Failed to get repository info: {response.status_code} - {response.text}"
+                    "error": f"Failed to get repository info: HTTP {response.status_code}"
                 }
 
             repo_data = response.json()
