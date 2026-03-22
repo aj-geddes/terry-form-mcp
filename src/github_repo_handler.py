@@ -219,7 +219,7 @@ class GitHubRepoHandler:
 
         # Validate path stays within repo directory
         if not search_path.resolve().is_relative_to(repo_path.resolve()):
-            return {"error": f"Invalid path: traversal outside repository is not allowed"}
+            return {"error": "Invalid path: traversal outside repository is not allowed"}
 
         if not search_path.exists():
             return {"error": f"Path not found in repository: {path}"}
@@ -455,7 +455,7 @@ class GitHubRepoHandler:
             return {"error": f"Failed to get repository info: {e}"}
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in repository info response: {e}")
-            return {"error": f"Failed to get repository info: invalid JSON response"}
+            return {"error": "Failed to get repository info: invalid JSON response"}
         except KeyError as e:
             logger.error(f"Unexpected missing key in repository info response: {e}")
             return {"error": f"Failed to get repository info: missing field {e}"}

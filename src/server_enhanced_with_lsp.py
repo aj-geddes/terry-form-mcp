@@ -140,7 +140,7 @@ async def app_lifespan(server: FastMCP):
 mcp = FastMCP("terry-form", lifespan=app_lifespan)
 
 # Import security validator — hard failure: the server must not start without validation
-from mcp_request_validator import MCPRequestValidator
+from mcp_request_validator import MCPRequestValidator  # noqa: E402
 request_validator = MCPRequestValidator()
 logger.info("Security validator initialized")
 
@@ -449,7 +449,7 @@ def _resolve_lsp_paths(
 terry_form = importlib.import_module("terry-form-mcp")
 
 # Load the LSP client
-import terraform_lsp_client
+import terraform_lsp_client  # noqa: E402
 
 # ============================================================================
 # EXISTING TERRAFORM EXECUTION TOOLS
@@ -1869,7 +1869,7 @@ try:
         github_config = GitHubAppConfig.from_env()
         github_auth = GitHubAppAuth(github_config)
         github_handler = GitHubRepoHandler(github_auth)
-    except Exception as e:
+    except Exception:
         logger.info("GitHub integration disabled (GITHUB_APP_ID not set). GitHub tools will be unavailable.")
 
 except Exception as e:
