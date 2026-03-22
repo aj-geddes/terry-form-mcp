@@ -554,8 +554,8 @@ class TestVerifyWebhook:
     def test_valid_signature_returns_true(self, auth):
         """A correctly signed payload is accepted."""
         payload = b'{"action": "opened"}'
-        expected_sig = "sha256=" + hmac.new(
-            b"test-webhook-secret", payload, hashlib.sha256
+        expected_sig = "sha256=" + hmac.HMAC(
+            key=b"test-webhook-secret", msg=payload, digestmod=hashlib.sha256
         ).hexdigest()
 
         result = auth.verify_webhook(payload, expected_sig)
@@ -589,8 +589,8 @@ class TestVerifyWebhook:
         """A signature without the sha256= prefix is rejected."""
         payload = b'{"action": "opened"}'
         # Compute a valid hex digest but with wrong prefix
-        valid_hex = hmac.new(
-            b"test-webhook-secret", payload, hashlib.sha256
+        valid_hex = hmac.HMAC(
+            key=b"test-webhook-secret", msg=payload, digestmod=hashlib.sha256
         ).hexdigest()
 
         result = auth.verify_webhook(payload, valid_hex)
@@ -610,8 +610,8 @@ class TestVerifyWebhook:
         payload = b'{"action": "opened"}'
         different_payload = b'{"action": "closed"}'
 
-        sig_for_different = "sha256=" + hmac.new(
-            b"test-webhook-secret", different_payload, hashlib.sha256
+        sig_for_different = "sha256=" + hmac.HMAC(
+            key=b"test-webhook-secret", msg=different_payload, digestmod=hashlib.sha256
         ).hexdigest()
 
         result = auth.verify_webhook(payload, sig_for_different)
@@ -621,8 +621,8 @@ class TestVerifyWebhook:
     def test_valid_empty_payload(self, auth):
         """Verification works correctly with an empty payload."""
         payload = b""
-        expected_sig = "sha256=" + hmac.new(
-            b"test-webhook-secret", payload, hashlib.sha256
+        expected_sig = "sha256=" + hmac.HMAC(
+            key=b"test-webhook-secret", msg=payload, digestmod=hashlib.sha256
         ).hexdigest()
 
         result = auth.verify_webhook(payload, expected_sig)
@@ -654,3 +654,232 @@ class TestGetHeaders:
         assert "Authorization" not in headers
         assert headers["Accept"] == "application/vnd.github+json"
         assert headers["X-GitHub-Api-Version"] == "2022-11-28"
+
+
+# ---------------------------------------------------------------------------
+# Fix 1 & 2: Network error handling and retry logic
+# ---------------------------------------------------------------------------
+
+
+class TestNetworkErrorHandling:
+    """Tests for network error handling on requests.post / requests.get calls."""
+
+    # --- get_installation_token ---
+
+    def test_connection_error_raises_runtime_error(self, auth):
+        """ConnectionError during get_installation_token raises RuntimeError with message."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post",
+            side_effect=req.exceptions.ConnectionError("refused"),
+        ):
+            with pytest.raises(RuntimeError, match="Cannot reach GitHub API"):
+                auth.get_installation_token("78901234")
+
+    def test_timeout_raises_runtime_error(self, auth):
+        """Timeout during get_installation_token raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post",
+            side_effect=req.exceptions.Timeout(),
+        ):
+            with pytest.raises(RuntimeError, match="timed out"):
+                auth.get_installation_token("78901234")
+
+    def test_request_exception_raises_runtime_error(self, auth):
+        """Generic RequestException during get_installation_token raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post",
+            side_effect=req.exceptions.RequestException("bad"),
+        ):
+            with pytest.raises(RuntimeError, match="GitHub API request failed"):
+                auth.get_installation_token("78901234")
+
+    # --- list_installations ---
+
+    def test_list_installations_connection_error(self, auth):
+        """ConnectionError during list_installations raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.get",
+            side_effect=req.exceptions.ConnectionError("refused"),
+        ):
+            with pytest.raises(RuntimeError, match="Cannot reach GitHub API"):
+                auth.list_installations()
+
+    def test_list_installations_timeout(self, auth):
+        """Timeout during list_installations raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.get",
+            side_effect=req.exceptions.Timeout(),
+        ):
+            with pytest.raises(RuntimeError, match="timed out"):
+                auth.list_installations()
+
+    def test_list_installations_request_exception(self, auth):
+        """Generic RequestException during list_installations raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.get",
+            side_effect=req.exceptions.RequestException("err"),
+        ):
+            with pytest.raises(RuntimeError, match="GitHub API request failed"):
+                auth.list_installations()
+
+    # --- get_installation_repos ---
+
+    def _mock_token_response(self):
+        mock = MagicMock()
+        mock.status_code = 201
+        mock.json.return_value = {
+            "token": "ghs_repos_token",
+            "expires_at": "2099-01-01T00:00:00Z",
+        }
+        return mock
+
+    def test_get_repos_connection_error(self, auth):
+        """ConnectionError during get_installation_repos raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post", return_value=self._mock_token_response()
+        ):
+            with patch(
+                "github_app_auth.requests.get",
+                side_effect=req.exceptions.ConnectionError("refused"),
+            ):
+                with pytest.raises(RuntimeError, match="Cannot reach GitHub API"):
+                    auth.get_installation_repos("78901234")
+
+    def test_get_repos_timeout(self, auth):
+        """Timeout during get_installation_repos raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post", return_value=self._mock_token_response()
+        ):
+            with patch(
+                "github_app_auth.requests.get",
+                side_effect=req.exceptions.Timeout(),
+            ):
+                with pytest.raises(RuntimeError, match="timed out"):
+                    auth.get_installation_repos("78901234")
+
+    def test_get_repos_request_exception(self, auth):
+        """Generic RequestException during get_installation_repos raises RuntimeError."""
+        import requests as req
+
+        with patch(
+            "github_app_auth.requests.post", return_value=self._mock_token_response()
+        ):
+            with patch(
+                "github_app_auth.requests.get",
+                side_effect=req.exceptions.RequestException("err"),
+            ):
+                with pytest.raises(RuntimeError, match="GitHub API request failed"):
+                    auth.get_installation_repos("78901234")
+
+
+class TestRetryLogic:
+    """Tests for exponential backoff retry on transient HTTP errors."""
+
+    def _mock_token_response(self):
+        mock = MagicMock()
+        mock.status_code = 201
+        mock.json.return_value = {
+            "token": "ghs_retry_token",
+            "expires_at": "2099-01-01T00:00:00Z",
+        }
+        return mock
+
+    def test_get_installation_token_retries_on_429(self, auth):
+        """get_installation_token retries on 429 and succeeds on 3rd attempt."""
+        rate_limited = MagicMock()
+        rate_limited.status_code = 429
+
+        success = MagicMock()
+        success.status_code = 201
+        success.json.return_value = {
+            "token": "ghs_ok",
+            "expires_at": "2099-01-01T00:00:00Z",
+        }
+
+        with patch("github_app_auth.requests.post", side_effect=[rate_limited, rate_limited, success]):
+            with patch("time.sleep"):  # Suppress actual sleep in tests
+                token = auth.get_installation_token("78901234")
+
+        assert token == "ghs_ok"
+
+    def test_get_installation_token_retries_on_503(self, auth):
+        """get_installation_token retries on 503 and succeeds."""
+        unavailable = MagicMock()
+        unavailable.status_code = 503
+
+        success = MagicMock()
+        success.status_code = 201
+        success.json.return_value = {
+            "token": "ghs_ok",
+            "expires_at": "2099-01-01T00:00:00Z",
+        }
+
+        with patch("github_app_auth.requests.post", side_effect=[unavailable, success]):
+            with patch("time.sleep"):
+                token = auth.get_installation_token("78901234")
+
+        assert token == "ghs_ok"
+
+    def test_get_installation_token_gives_up_after_3_retries(self, auth):
+        """get_installation_token raises RuntimeError after 3 consecutive 429s."""
+        rate_limited = MagicMock()
+        rate_limited.status_code = 429
+
+        with patch("github_app_auth.requests.post", return_value=rate_limited):
+            with patch("time.sleep"):
+                with pytest.raises(RuntimeError):
+                    auth.get_installation_token("78901234")
+
+    def test_list_installations_retries_on_500(self, auth):
+        """list_installations retries on 500 and succeeds on next attempt."""
+        server_error = MagicMock()
+        server_error.status_code = 500
+
+        success = MagicMock()
+        success.status_code = 200
+        success.json.return_value = [{"id": 1}]
+
+        with patch("github_app_auth.requests.get", side_effect=[server_error, success]):
+            with patch("time.sleep"):
+                result = auth.list_installations()
+
+        assert result == [{"id": 1}]
+
+    def test_get_installation_repos_retries_on_502(self, auth):
+        """get_installation_repos retries on 502 and succeeds."""
+        bad_gateway = MagicMock()
+        bad_gateway.status_code = 502
+
+        success_repos = MagicMock()
+        success_repos.status_code = 200
+        success_repos.json.return_value = {"repositories": [{"name": "repo1"}]}
+        success_repos.links = {}
+
+        with patch(
+            "github_app_auth.requests.post", return_value=self._mock_token_response()
+        ):
+            with patch(
+                "github_app_auth.requests.get",
+                side_effect=[bad_gateway, success_repos],
+            ):
+                with patch("time.sleep"):
+                    result = auth.get_installation_repos("78901234")
+
+        assert len(result) == 1
+        assert result[0]["name"] == "repo1"

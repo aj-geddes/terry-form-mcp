@@ -617,6 +617,133 @@ class TestCloneOrUpdateRepo:
 
 
 # ---------------------------------------------------------------------------
+# 5b. Token exposure in clone_or_update_repo() exception paths
+# ---------------------------------------------------------------------------
+
+
+class TestTokenNotExposedOnCloneError:
+    """Security tests: installation token must never appear in any error response.
+
+    The installation token is embedded in the git clone URL as
+    ``https://x-access-token:{token}@github.com/...``.  If a subprocess
+    exception surfaces (e.g. OSError from create_subprocess_exec) and the
+    exception message contains the raw URL, the token could leak through
+    the ``stderr`` field returned by ``_run_git_command`` and then through
+    the ``error`` field returned by ``clone_or_update_repo``.
+    """
+
+    TOKEN = "ghp_fake_token_1234567890"
+
+    def _result_contains_token(self, result: dict, token: str) -> bool:
+        """Check every string value in the result dict for the token."""
+        for value in result.values():
+            if isinstance(value, str) and token in value:
+                return True
+        return False
+
+    @pytest.mark.asyncio
+    async def test_token_not_in_error_when_subprocess_raises_oserror(
+        self, handler, mock_auth
+    ):
+        """Token must not appear in the result when create_subprocess_exec raises OSError.
+
+        Some OS error messages include the command arguments in their text,
+        which would expose the token-bearing clone URL.  The handler must
+        sanitize before returning.
+        """
+        token = self.TOKEN
+        # Simulate an OSError whose message includes the token-bearing URL
+        # (e.g. "No such file or directory: 'git'" from a misconfigured system
+        # where the full argv is embedded in the exception string).
+        error_message = (
+            f"[Errno 2] No such file or directory — "
+            f"cmd=['git','clone','https://x-access-token:{token}@github.com/owner/repo.git']"
+        )
+
+        with patch("asyncio.create_subprocess_exec") as mock_exec:
+            mock_exec.side_effect = OSError(error_message)
+
+            result = await handler.clone_or_update_repo("owner", "repo")
+
+        assert "success" not in result or result.get("success") is False
+        assert not self._result_contains_token(result, token), (
+            f"Installation token '{token}' was found in clone_or_update_repo result: {result}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_token_not_in_error_when_subprocess_raises_generic_exception(
+        self, handler, mock_auth
+    ):
+        """Token must not appear in the result when any Exception is raised from subprocess.
+
+        A generic RuntimeError or ValueError that somehow includes the clone
+        URL must not expose the token.
+        """
+        token = self.TOKEN
+        error_message = (
+            f"Subprocess setup failed for "
+            f"https://x-access-token:{token}@github.com/owner/repo.git"
+        )
+
+        with patch("asyncio.create_subprocess_exec") as mock_exec:
+            mock_exec.side_effect = RuntimeError(error_message)
+
+            result = await handler.clone_or_update_repo("owner", "repo")
+
+        assert not self._result_contains_token(result, token), (
+            f"Installation token found in result after RuntimeError: {result}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_sanitized_url_used_in_clone_failure_error_field(
+        self, handler, mock_auth
+    ):
+        """The 'error' field on clone failure must use the sanitized URL, not the token URL."""
+        token = self.TOKEN
+
+        with patch.object(handler, "_run_git_command", new_callable=AsyncMock) as mock_run:
+            mock_run.return_value = {
+                "success": False,
+                "stdout": "",
+                "stderr": "fatal: repository not found",
+                "returncode": 128,
+            }
+
+            result = await handler.clone_or_update_repo("owner", "repo")
+
+        assert token not in str(result), (
+            f"Installation token found in clone failure result: {result}"
+        )
+        # The sanitized URL (no token) should appear instead
+        assert "clone_url_sanitized" in result
+        assert token not in result["clone_url_sanitized"]
+        assert "github.com/owner/repo" in result["clone_url_sanitized"]
+
+    @pytest.mark.asyncio
+    async def test_run_git_command_sanitizes_exception_message(self, handler, tmp_path):
+        """_run_git_command must sanitize the token from exception messages.
+
+        When create_subprocess_exec raises an exception whose str()
+        representation contains the token-bearing URL, _run_git_command
+        must strip it before returning in the 'stderr' field.
+        """
+        token = self.TOKEN
+        raw_exception = OSError(
+            f"failed: https://x-access-token:{token}@github.com/o/r.git"
+        )
+
+        with patch("asyncio.create_subprocess_exec") as mock_exec:
+            mock_exec.side_effect = raw_exception
+
+            result = await handler._run_git_command(["git", "clone", "url"], tmp_path)
+
+        assert result["success"] is False
+        assert token not in result.get("stderr", ""), (
+            f"Token found in _run_git_command stderr: {result['stderr']!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
 # 6. list_terraform_files()
 # ---------------------------------------------------------------------------
 
@@ -1208,9 +1335,11 @@ class TestGetRepositoryInfo:
     @pytest.mark.asyncio
     async def test_api_exception_returns_error(self, handler, mock_auth):
         """A network exception should return an error."""
+        import requests as req
+
         with patch(
             "requests.get",
-            side_effect=Exception("Connection refused"),
+            side_effect=req.exceptions.RequestException("Connection refused"),
         ):
             result = await handler.get_repository_info("owner", "repo")
 
@@ -1247,3 +1376,800 @@ class TestGetRepositoryInfo:
             headers = call_kwargs.kwargs.get("headers") or call_kwargs[1].get("headers")
             assert "Authorization" in headers
             assert "Bearer" in headers["Authorization"]
+
+
+# ---------------------------------------------------------------------------
+# 11. Security fix: workspace_name validation in prepare_terraform_workspace()
+# ---------------------------------------------------------------------------
+
+
+class TestPrepareWorkspaceNameValidation:
+    """Tests for workspace_name format and path traversal validation."""
+
+    @pytest.mark.asyncio
+    async def test_workspace_name_path_traversal_blocked(
+        self, handler_with_repo, mock_auth
+    ):
+        """workspace_name containing '..' must be rejected to prevent traversal."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# minimal")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            result = await handler.prepare_terraform_workspace(
+                "test-owner", "test-repo", "", workspace_name="../../evil"
+            )
+
+        assert "error" in result
+        assert "workspace_name" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_workspace_name_slash_blocked(
+        self, handler_with_repo, mock_auth
+    ):
+        """workspace_name containing '/' must be rejected."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# minimal")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            result = await handler.prepare_terraform_workspace(
+                "test-owner", "test-repo", "", workspace_name="valid/evil"
+            )
+
+        assert "error" in result
+        assert "workspace_name" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_workspace_name_special_chars_blocked(
+        self, handler_with_repo, mock_auth
+    ):
+        """workspace_name with shell-special characters must be rejected."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# minimal")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            result = await handler.prepare_terraform_workspace(
+                "test-owner", "test-repo", "", workspace_name="ws;rm -rf /"
+            )
+
+        assert "error" in result
+        assert "workspace_name" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_workspace_name_valid_alphanumeric(
+        self, handler_with_repo, mock_auth
+    ):
+        """workspace_name with alphanumeric, hyphens, and underscores must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# minimal")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            result = await handler.prepare_terraform_workspace(
+                "test-owner", "test-repo", "", workspace_name="my-ws_01"
+            )
+
+        assert result.get("success") is True
+        assert result["workspace_name"] == "my-ws_01"
+
+    @pytest.mark.asyncio
+    async def test_workspace_name_absolute_path_blocked(
+        self, handler_with_repo, mock_auth
+    ):
+        """workspace_name that resolves outside workspace_root must be rejected."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# minimal")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            result = await handler.prepare_terraform_workspace(
+                "test-owner", "test-repo", "", workspace_name="../escape"
+            )
+
+        assert "error" in result
+        assert "workspace_name" in result["error"].lower()
+
+
+# ---------------------------------------------------------------------------
+# 12. Security fix: pattern allowlist in list_terraform_files()
+# ---------------------------------------------------------------------------
+
+
+class TestListTerraformFilesPatternAllowlist:
+    """Tests for pattern allowlist validation in list_terraform_files."""
+
+    @pytest.mark.asyncio
+    async def test_disallowed_pattern_rejected(self, handler_with_repo):
+        """An arbitrary glob pattern outside the allowlist must be rejected."""
+        handler, repo_dir = handler_with_repo
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.py"
+        )
+
+        assert "error" in result
+        assert "Invalid pattern" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_malicious_pattern_rejected(self, handler_with_repo):
+        """A pattern with path traversal characters must be rejected."""
+        handler, repo_dir = handler_with_repo
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="../../*"
+        )
+
+        assert "error" in result
+        assert "Invalid pattern" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_shell_injection_pattern_rejected(self, handler_with_repo):
+        """A pattern with shell metacharacters must be rejected."""
+        handler, repo_dir = handler_with_repo
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*;rm -rf /"
+        )
+
+        assert "error" in result
+        assert "Invalid pattern" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_tf_pattern_allowed(self, handler_with_repo):
+        """The default '*.tf' pattern must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# tf")
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.tf"
+        )
+
+        assert result.get("success") is True
+
+    @pytest.mark.asyncio
+    async def test_tfvars_pattern_allowed(self, handler_with_repo):
+        """The '*.tfvars' pattern must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "prod.tfvars").write_text('region = "us-east-1"')
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.tfvars"
+        )
+
+        assert result.get("success") is True
+        assert result["count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_hcl_pattern_allowed(self, handler_with_repo):
+        """The '*.hcl' pattern must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "config.hcl").write_text("# hcl")
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.hcl"
+        )
+
+        assert result.get("success") is True
+
+    @pytest.mark.asyncio
+    async def test_json_pattern_allowed(self, handler_with_repo):
+        """The '*.json' pattern must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "config.json").write_text("{}")
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.json"
+        )
+
+        assert result.get("success") is True
+
+    @pytest.mark.asyncio
+    async def test_tfvars_json_pattern_allowed(self, handler_with_repo):
+        """The '*.tfvars.json' pattern must be accepted."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "prod.tfvars.json").write_text("{}")
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.tfvars.json"
+        )
+
+        assert result.get("success") is True
+
+    @pytest.mark.asyncio
+    async def test_error_message_lists_allowed_patterns(self, handler_with_repo):
+        """Error message for invalid pattern must list the allowed patterns."""
+        handler, repo_dir = handler_with_repo
+
+        result = await handler.list_terraform_files(
+            "test-owner", "test-repo", pattern="*.sh"
+        )
+
+        assert "error" in result
+        # Error should mention allowed patterns so callers know what to use
+        assert "*.tf" in result["error"] or "Allowed" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# Fix 3: get_terraform_config file read error handling
+# ---------------------------------------------------------------------------
+
+
+class TestGetTerraformConfigFileReadErrors:
+    """Tests that unreadable or invalid-encoding .tf files are skipped gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_oserror_on_read_skips_file(self, handler_with_repo):
+        """An OSError reading a .tf file should be logged and skipped, not crash."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "good.tf").write_text('variable "region" {}')
+        (repo_dir / "bad.tf").write_text("# will be mocked as unreadable")
+
+        def _mock_read_text(self_path, encoding="utf-8"):
+            if self_path.name == "bad.tf":
+                raise OSError("permission denied")
+            return self_path.read_bytes().decode(encoding)
+
+        with patch.object(Path, "read_text", _mock_read_text):
+            result = await handler.get_terraform_config("test-owner", "test-repo", "")
+
+        # Should succeed and include the good file
+        assert result.get("success") is True
+        assert "good.tf" in result["terraform_files"]
+        # bad.tf is listed as a file (from glob) but read is skipped
+        # The key invariant: no crash, good file still analysed
+        assert result["has_variables"] is True
+
+    @pytest.mark.asyncio
+    async def test_unicode_decode_error_skips_file(self, handler_with_repo):
+        """A UnicodeDecodeError reading a .tf file should be logged and skipped."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "good.tf").write_text('output "id" { value = 1 }')
+        # Write a binary file with a .tf extension to trigger decode error
+        bad_tf = repo_dir / "binary.tf"
+        bad_tf.write_bytes(b"\xff\xfe\x00invalid\x80binary")
+
+        result = await handler.get_terraform_config("test-owner", "test-repo", "")
+
+        # Should succeed without crashing
+        assert result.get("success") is True
+        assert "good.tf" in result["terraform_files"]
+        assert result["has_outputs"] is True
+
+
+# ---------------------------------------------------------------------------
+# Fix 4: prepare_terraform_workspace shutil error handling
+# ---------------------------------------------------------------------------
+
+
+class TestPrepareWorkspaceShutilErrors:
+    """Tests that OSErrors from shutil.rmtree / shutil.copytree are handled."""
+
+    @pytest.mark.asyncio
+    async def test_rmtree_oserror_returns_error(self, handler_with_repo, mock_auth, tmp_path):
+        """An OSError from shutil.rmtree should return an error dict, not crash."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# main")
+
+        # Pre-create the workspace so rmtree is triggered
+        workspace_dir = tmp_path / "terraform-workspaces" / "target-ws"
+        workspace_dir.mkdir(parents=True)
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            with patch("shutil.rmtree", side_effect=OSError("rmtree failed")):
+                result = await handler.prepare_terraform_workspace(
+                    "test-owner", "test-repo", "", workspace_name="target-ws"
+                )
+
+        assert "error" in result
+        assert "rmtree failed" in result["error"] or "workspace" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_copytree_oserror_returns_error(self, handler_with_repo, mock_auth):
+        """An OSError from shutil.copytree should return an error dict, not crash."""
+        handler, repo_dir = handler_with_repo
+        (repo_dir / "main.tf").write_text("# main")
+
+        with patch.object(
+            handler, "clone_or_update_repo", new_callable=AsyncMock
+        ) as mock_clone:
+            mock_clone.return_value = {"success": True}
+
+            with patch("shutil.copytree", side_effect=OSError("disk full")):
+                result = await handler.prepare_terraform_workspace(
+                    "test-owner", "test-repo", "", workspace_name="fresh-ws"
+                )
+
+        assert "error" in result
+        assert "disk full" in result["error"] or "workspace" in result["error"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Fix 5 & 6: get_repository_info optional field safety and specific exceptions
+# ---------------------------------------------------------------------------
+
+
+class TestGetRepositoryInfoFieldSafety:
+    """Tests that optional fields use .get() and required fields are validated."""
+
+    @pytest.mark.asyncio
+    async def test_missing_description_defaults_to_empty(self, handler, mock_auth):
+        """Missing 'description' in API response should default to empty string."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "name": "repo",
+            "full_name": "owner/repo",
+            # description intentionally absent
+            "private": False,
+            "default_branch": "main",
+            "language": "HCL",
+            "size": 100,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "has_issues": True,
+            "has_wiki": False,
+            "archived": False,
+            "topics": [],
+            "clone_url": "https://github.com/owner/repo.git",
+            "html_url": "https://github.com/owner/repo",
+        }
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert result.get("success") is True
+        assert result["description"] == ""
+
+    @pytest.mark.asyncio
+    async def test_missing_language_defaults_to_unknown(self, handler, mock_auth):
+        """Missing 'language' in API response should default to 'Unknown'."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "name": "repo",
+            "full_name": "owner/repo",
+            "description": "A repo",
+            "private": False,
+            "default_branch": "main",
+            # language intentionally absent
+            "size": 100,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "has_issues": True,
+            "has_wiki": False,
+            "archived": False,
+            "topics": [],
+            "clone_url": "https://github.com/owner/repo.git",
+            "html_url": "https://github.com/owner/repo",
+        }
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert result.get("success") is True
+        assert result["language"] == "Unknown"
+
+    @pytest.mark.asyncio
+    async def test_missing_topics_defaults_to_empty_list(self, handler, mock_auth):
+        """Missing 'topics' in API response should default to []."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "name": "repo",
+            "full_name": "owner/repo",
+            "description": "",
+            "private": False,
+            "default_branch": "main",
+            "language": "HCL",
+            "size": 100,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "has_issues": True,
+            "has_wiki": False,
+            "archived": False,
+            # topics intentionally absent
+            "clone_url": "https://github.com/owner/repo.git",
+            "html_url": "https://github.com/owner/repo",
+        }
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert result.get("success") is True
+        assert result["topics"] == []
+
+    @pytest.mark.asyncio
+    async def test_missing_required_field_returns_error(self, handler, mock_auth):
+        """Missing required field 'name' in API response should return an error, not KeyError."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            # 'name' intentionally missing — required field
+            "full_name": "owner/repo",
+            "private": False,
+            "default_branch": "main",
+            "size": 100,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "has_issues": True,
+            "has_wiki": False,
+            "archived": False,
+            "clone_url": "https://github.com/owner/repo.git",
+            "html_url": "https://github.com/owner/repo",
+        }
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert "error" in result
+
+
+class TestGetRepositoryInfoSpecificExceptions:
+    """Tests that get_repository_info handles specific exception types."""
+
+    @pytest.mark.asyncio
+    async def test_http_error_returns_error(self, handler, mock_auth):
+        """requests.exceptions.HTTPError should return error dict."""
+        import requests as req
+
+        with patch(
+            "requests.get",
+            side_effect=req.exceptions.HTTPError("403 Forbidden"),
+        ):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert "error" in result
+        assert "403 Forbidden" in result["error"] or "Failed" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_request_exception_returns_error(self, handler, mock_auth):
+        """requests.exceptions.RequestException should return error dict."""
+        import requests as req
+
+        with patch(
+            "requests.get",
+            side_effect=req.exceptions.RequestException("connection reset"),
+        ):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert "error" in result
+        assert "connection reset" in result["error"] or "Failed" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_json_decode_error_returns_error(self, handler, mock_auth):
+        """json.JSONDecodeError from response.json() should return error dict."""
+        import json
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.side_effect = json.JSONDecodeError("bad json", "", 0)
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_key_error_returns_error(self, handler, mock_auth):
+        """KeyError from missing required field should return error dict, not propagate."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        # Return empty dict — all field accesses will raise KeyError
+        mock_response.json.return_value = {}
+
+        with patch("requests.get", return_value=mock_response):
+            result = await handler.get_repository_info("owner", "repo")
+
+        assert "error" in result
+
+
+# ---------------------------------------------------------------------------
+# _sanitize_workspace_name() — exhaustive tests (RED phase first)
+# ---------------------------------------------------------------------------
+
+
+class TestSanitizeWorkspaceName:
+    """Exhaustive tests for the _sanitize_workspace_name static method.
+
+    Covers every category from the task specification plus boundary cases.
+    All tests operate on the static method directly.
+    """
+
+    # ------------------------------------------------------------------
+    # Simple / already-valid inputs
+    # ------------------------------------------------------------------
+
+    def test_simple_main_tf(self):
+        """A plain filename with an extension produces a valid name with dot replaced."""
+        result = GitHubRepoHandler._sanitize_workspace_name("main.tf")
+        assert result == "main_tf"
+
+    def test_already_valid_simple(self):
+        """An already-valid name passes through unchanged."""
+        result = GitHubRepoHandler._sanitize_workspace_name("simple_name")
+        assert result == "simple_name"
+
+    def test_numbers_preserved(self):
+        """Purely alphanumeric names are returned unchanged."""
+        result = GitHubRepoHandler._sanitize_workspace_name("project123")
+        assert result == "project123"
+
+    def test_single_char(self):
+        """A single valid character is returned as-is."""
+        result = GitHubRepoHandler._sanitize_workspace_name("a")
+        assert result == "a"
+
+    def test_hyphens_preserved(self):
+        """Hyphens are valid and must be preserved."""
+        result = GitHubRepoHandler._sanitize_workspace_name("my-project")
+        assert result == "my-project"
+
+    def test_underscores_preserved(self):
+        """Underscores in an already-clean name are preserved."""
+        result = GitHubRepoHandler._sanitize_workspace_name("my_project")
+        assert result == "my_project"
+
+    # ------------------------------------------------------------------
+    # Dot / slash handling (typical path inputs)
+    # ------------------------------------------------------------------
+
+    def test_path_dots_become_underscores(self):
+        """Dots in paths are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("modules/vpc/main.tf")
+        assert result == "modules_vpc_main_tf"
+
+    def test_spaces_become_underscores(self):
+        """Spaces are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("my project/main.tf")
+        assert result == "my_project_main_tf"
+
+    def test_mixed_valid_invalid(self):
+        """Mixed valid/invalid chars: hyphens preserved, dots/slashes become underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("my-project_v2.0/modules")
+        assert result == "my-project_v2_0_modules"
+
+    # ------------------------------------------------------------------
+    # Unicode
+    # ------------------------------------------------------------------
+
+    def test_unicode_chars_become_underscores(self):
+        """Unicode characters outside ASCII set are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("módulo/main.tf")
+        assert result == "m_dulo_main_tf"
+
+    # ------------------------------------------------------------------
+    # Security / traversal inputs
+    # ------------------------------------------------------------------
+
+    def test_double_dots_path_traversal(self):
+        """Path traversal '../../etc/passwd' becomes safe underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("../../etc/passwd")
+        assert result == "etc_passwd"
+
+    # ------------------------------------------------------------------
+    # Collapsing consecutive special chars
+    # ------------------------------------------------------------------
+
+    def test_consecutive_dots_collapsed(self):
+        """Multiple consecutive dots collapse to a single underscore."""
+        result = GitHubRepoHandler._sanitize_workspace_name("a...b///c")
+        assert result == "a_b_c"
+
+    def test_consecutive_special_chars(self):
+        """Multiple mixed special chars in a row collapse to one underscore."""
+        result = GitHubRepoHandler._sanitize_workspace_name("a@#$b")
+        assert result == "a_b"
+
+    # ------------------------------------------------------------------
+    # Fallback for empty / whitespace / all-special-char inputs
+    # ------------------------------------------------------------------
+
+    def test_empty_string_fallback(self):
+        """Empty string falls back to 'workspace'."""
+        result = GitHubRepoHandler._sanitize_workspace_name("")
+        assert result == "workspace"
+
+    def test_all_special_chars_fallback(self):
+        """String of only special chars falls back to 'workspace'."""
+        result = GitHubRepoHandler._sanitize_workspace_name("@#$%^&*()")
+        assert result == "workspace"
+
+    def test_underscore_only_fallback(self):
+        """String of only underscores strips to empty, falls back to 'workspace'."""
+        result = GitHubRepoHandler._sanitize_workspace_name("___")
+        assert result == "workspace"
+
+    def test_dots_only_fallback(self):
+        """String of only dots becomes all underscores then strips to 'workspace'."""
+        result = GitHubRepoHandler._sanitize_workspace_name("...")
+        assert result == "workspace"
+
+    # ------------------------------------------------------------------
+    # Stripping leading/trailing invalid chars
+    # ------------------------------------------------------------------
+
+    def test_leading_trailing_dots_stripped(self):
+        """Leading and trailing dots are removed after conversion."""
+        result = GitHubRepoHandler._sanitize_workspace_name(".hidden.dir.")
+        assert result == "hidden_dir"
+
+    def test_leading_trailing_slashes_stripped(self):
+        """Leading and trailing slashes are removed."""
+        result = GitHubRepoHandler._sanitize_workspace_name("/path/to/config/")
+        assert result == "path_to_config"
+
+    # ------------------------------------------------------------------
+    # Backslash / Windows paths
+    # ------------------------------------------------------------------
+
+    def test_backslashes_become_underscores(self):
+        """Windows-style backslashes are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("modules\\vpc")
+        assert result == "modules_vpc"
+
+    # ------------------------------------------------------------------
+    # Whitespace variants
+    # ------------------------------------------------------------------
+
+    def test_tab_char_becomes_underscore(self):
+        """Tab characters are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("mod\tvpc")
+        assert result == "mod_vpc"
+
+    def test_newline_char_becomes_underscore(self):
+        """Newline characters are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("mod\nvpc")
+        assert result == "mod_vpc"
+
+    # ------------------------------------------------------------------
+    # Null bytes
+    # ------------------------------------------------------------------
+
+    def test_null_byte_becomes_underscore(self):
+        """Null bytes are replaced with underscores."""
+        result = GitHubRepoHandler._sanitize_workspace_name("mod\x00vpc")
+        assert result == "mod_vpc"
+
+    # ------------------------------------------------------------------
+    # Length truncation
+    # ------------------------------------------------------------------
+
+    def test_long_name_truncated_to_128(self):
+        """Names longer than 128 chars are truncated."""
+        long_name = "a" * 200
+        result = GitHubRepoHandler._sanitize_workspace_name(long_name)
+        assert len(result) == 128
+        assert result == "a" * 128
+
+    def test_exact_128_char_boundary(self):
+        """A name of exactly 128 chars is not truncated."""
+        name = "a" * 128
+        result = GitHubRepoHandler._sanitize_workspace_name(name)
+        assert result == name
+        assert len(result) == 128
+
+    def test_129_chars_truncated(self):
+        """A name of 129 chars is truncated to 128."""
+        name = "b" * 129
+        result = GitHubRepoHandler._sanitize_workspace_name(name)
+        assert len(result) == 128
+
+    def test_truncation_after_sanitize_not_before(self):
+        """Truncation is applied to the sanitized string, not the raw input.
+
+        200-char raw string with embedded dots -- after sanitization collapses
+        to fewer underscores. Result must still be <= 128.
+        """
+        raw = ("ab." * 50)[:200]  # 200-char raw with dots
+        result = GitHubRepoHandler._sanitize_workspace_name(raw)
+        assert len(result) <= 128
+
+
+# ---------------------------------------------------------------------------
+# prepare_terraform_workspace: auto-generated name uses _sanitize_workspace_name
+# ---------------------------------------------------------------------------
+
+
+class TestPrepareWorkspaceAutoGeneratedName:
+    """Tests that prepare_terraform_workspace uses _sanitize_workspace_name
+    for auto-generated workspace names (when workspace_name=None).
+
+    Constraint: user-supplied names still go through the strict regex check.
+    """
+
+    @pytest.mark.asyncio
+    async def test_auto_name_with_dotted_config_path(self, handler, tmp_path):
+        """Config path with dots produces a valid sanitized workspace name."""
+        repo_dir = tmp_path / "github-repos" / "owner_repo"
+        config_src = repo_dir / "modules" / "vpc"
+        config_src.mkdir(parents=True)
+        (config_src / "main.tf").write_text('resource "aws_vpc" "main" {}')
+
+        with patch.object(
+            handler,
+            "clone_or_update_repo",
+            new_callable=AsyncMock,
+            return_value={"success": True, "action": "cloned"},
+        ):
+            result = await handler.prepare_terraform_workspace(
+                owner="owner",
+                repo="repo",
+                config_path="modules/vpc",
+                workspace_name=None,
+            )
+
+        assert result.get("success") is True
+        ws_name = result["workspace_name"]
+        import re
+        assert re.match(r'^[a-zA-Z0-9_\-]+$', ws_name), (
+            f"Auto-generated name {ws_name!r} contains invalid characters"
+        )
+
+    @pytest.mark.asyncio
+    async def test_user_supplied_valid_name_accepted(self, handler, tmp_path):
+        """A valid user-supplied workspace name bypasses sanitization."""
+        repo_dir = tmp_path / "github-repos" / "owner_repo"
+        config_src = repo_dir / "infra"
+        config_src.mkdir(parents=True)
+        (config_src / "main.tf").write_text('resource "aws_s3_bucket" "b" {}')
+
+        with patch.object(
+            handler,
+            "clone_or_update_repo",
+            new_callable=AsyncMock,
+            return_value={"success": True, "action": "cloned"},
+        ):
+            result = await handler.prepare_terraform_workspace(
+                owner="owner",
+                repo="repo",
+                config_path="infra",
+                workspace_name="my_custom_workspace",
+            )
+
+        assert result.get("success") is True
+        assert result["workspace_name"] == "my_custom_workspace"
+
+    @pytest.mark.asyncio
+    async def test_user_supplied_invalid_name_rejected(self, handler, tmp_path):
+        """A user-supplied name with dots is rejected by strict regex."""
+        repo_dir = tmp_path / "github-repos" / "owner_repo"
+        config_src = repo_dir / "infra"
+        config_src.mkdir(parents=True)
+        (config_src / "main.tf").write_text("")
+
+        with patch.object(
+            handler,
+            "clone_or_update_repo",
+            new_callable=AsyncMock,
+            return_value={"success": True, "action": "cloned"},
+        ):
+            result = await handler.prepare_terraform_workspace(
+                owner="owner",
+                repo="repo",
+                config_path="infra",
+                workspace_name="bad.name.with.dots",
+            )
+
+        assert "error" in result
+        assert "Invalid workspace_name" in result["error"]

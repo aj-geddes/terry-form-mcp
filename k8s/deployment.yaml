@@ -17,15 +17,22 @@ spec:
     spec:
       containers:
         - name: mcp
-          image: 192.168.86.94:30500/terry-form-mcp:latest
+          # Production deployments MUST override this with a specific image tag.
+          # Using :latest in production is prohibited — pin to a immutable digest or semver tag.
+          # Example: image: ghcr.io/your-org/terry-form-mcp:3.1.0
+          image: terry-form-mcp:latest  # Override with specific tag in deployment pipeline
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: terry-form-mcp-secrets
           env:
             - name: MCP_TRANSPORT
               value: "streamable-http"
-            - name: HOST
+            - name: TERRY_HOST
               value: "0.0.0.0"
-            - name: PORT
+            - name: TERRY_PORT
               value: "8000"
             - name: PYTHONUNBUFFERED
               value: "1"
@@ -38,26 +45,37 @@ spec:
           volumeMounts:
             - name: config-storage
               mountPath: /app/config
+            - name: workspace
+              mountPath: /mnt/workspace
           resources:
             requests:
               cpu: 50m
               memory: 256Mi
             limits:
               memory: 512Mi
-          livenessProbe:
-            httpGet:
-              path: /api/status
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            readOnlyRootFilesystem: false  # needs to write to /mnt/workspace and /app/config
+            allowPrivilegeEscalation: false
+          startupProbe:
+            tcpSocket:
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: 8000
             periodSeconds: 30
           readinessProbe:
-            httpGet:
-              path: /api/status
+            tcpSocket:
               port: 8000
-            initialDelaySeconds: 15
             periodSeconds: 10
-          imagePullPolicy: Always
       volumes:
         - name: config-storage
           persistentVolumeClaim:
             claimName: terry-form-config
+        - name: workspace
+          emptyDir: {}

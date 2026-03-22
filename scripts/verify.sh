@@ -6,7 +6,7 @@
 # Verifies that the Docker image is built correctly and all components work
 # ============================================================================
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'

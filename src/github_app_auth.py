@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import jwt
 import requests
@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 
 GITHUB_API_VERSION = "2022-11-28"
 
+# HTTP status codes that warrant a retry with exponential backoff
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+_MAX_RETRY_ATTEMPTS = 3
+
 
 @dataclass
 class GitHubAppConfig:
@@ -31,8 +35,8 @@ class GitHubAppConfig:
 
     app_id: str
     private_key: str
-    installation_id: Optional[str] = None
-    webhook_secret: Optional[str] = None
+    installation_id: str | None = None
+    webhook_secret: str | None = None
 
     @classmethod
     def from_env(cls) -> "GitHubAppConfig":
@@ -80,7 +84,7 @@ class GitHubAppAuth:
 
     def __init__(self, config: GitHubAppConfig):
         self.config = config
-        self._installation_tokens: Dict[str, Dict[str, Any]] = {}
+        self._installation_tokens: dict[str, dict[str, Any]] = {}
         self.base_url = "https://api.github.com"
 
     def _generate_jwt(self) -> str:
@@ -97,7 +101,7 @@ class GitHubAppAuth:
 
         return jwt.encode(payload, self.config.private_key, algorithm="RS256")
 
-    def _get_headers(self, use_jwt: bool = True) -> Dict[str, str]:
+    def _get_headers(self, use_jwt: bool = True) -> dict[str, str]:
         """Get headers for GitHub API requests"""
         headers = {
             "Accept": "application/vnd.github+json",
@@ -109,7 +113,49 @@ class GitHubAppAuth:
 
         return headers
 
-    def get_installation_token(self, installation_id: Optional[str] = None) -> str:
+    def _request_with_retry(
+        self, method: str, url: str, **kwargs: Any
+    ) -> requests.Response:
+        """Execute an HTTP request with exponential backoff on transient errors.
+
+        Retries up to _MAX_RETRY_ATTEMPTS times on status codes in
+        _RETRYABLE_STATUS_CODES (429, 500, 502, 503, 504).  Network-level
+        exceptions are translated into RuntimeError immediately.
+        """
+        request_fn = getattr(requests, method)
+        last_response: requests.Response | None = None
+
+        for attempt in range(_MAX_RETRY_ATTEMPTS):
+            try:
+                response = request_fn(url, **kwargs)
+            except requests.exceptions.ConnectionError as exc:
+                logger.error(f"Network error reaching GitHub API: {exc}")
+                raise RuntimeError(
+                    "Cannot reach GitHub API. Check network connectivity."
+                ) from exc
+            except requests.exceptions.Timeout:
+                logger.error("Timeout reaching GitHub API")
+                raise RuntimeError("GitHub API request timed out.") from None
+            except requests.exceptions.RequestException as exc:
+                logger.error(f"GitHub API request failed: {exc}")
+                raise RuntimeError("GitHub API request failed.") from exc
+
+            if response.status_code not in _RETRYABLE_STATUS_CODES:
+                return response
+
+            last_response = response
+            wait = 2**attempt  # 1s, 2s, 4s
+            logger.warning(
+                f"GitHub API returned {response.status_code} (attempt "
+                f"{attempt + 1}/{_MAX_RETRY_ATTEMPTS}). Retrying in {wait}s."
+            )
+            time.sleep(wait)
+
+        # All retries exhausted — return the last response so callers can
+        # inspect the status code and raise their own errors.
+        return last_response  # type: ignore[return-value]
+
+    def get_installation_token(self, installation_id: str | None = None) -> str:
         """Get an installation access token"""
         install_id = installation_id or self.config.installation_id
         if not install_id:
@@ -131,13 +177,13 @@ class GitHubAppAuth:
         logger.info(f"Generating new installation token for {install_id}")
 
         url = f"{self.base_url}/app/installations/{install_id}/access_tokens"
-        response = requests.post(
-            url, headers=self._get_headers(use_jwt=True), timeout=30
+        response = self._request_with_retry(
+            "post", url, headers=self._get_headers(use_jwt=True), timeout=30
         )
 
         if response.status_code != 201:
             logger.error(
-                f"Failed to get installation token: {response.status_code} - {response.text}"
+                f"Failed to get installation token: HTTP {response.status_code}"
             )
             raise RuntimeError(
                 f"Failed to get installation token: HTTP {response.status_code}"
@@ -151,8 +197,8 @@ class GitHubAppAuth:
         return token_data["token"]
 
     def get_authenticated_headers(
-        self, installation_id: Optional[str] = None
-    ) -> Dict[str, str]:
+        self, installation_id: str | None = None
+    ) -> dict[str, str]:
         """Get headers with installation access token"""
         token = self.get_installation_token(installation_id)
 
@@ -162,12 +208,12 @@ class GitHubAppAuth:
             "X-GitHub-Api-Version": GITHUB_API_VERSION,
         }
 
-    def list_installations(self) -> list[Dict[str, Any]]:
+    def list_installations(self) -> list[dict[str, Any]]:
         """List all installations of this GitHub App"""
         url = f"{self.base_url}/app/installations"
 
-        response = requests.get(
-            url, headers=self._get_headers(use_jwt=True), timeout=30
+        response = self._request_with_retry(
+            "get", url, headers=self._get_headers(use_jwt=True), timeout=30
         )
 
         if response.status_code != 200:
@@ -179,8 +225,8 @@ class GitHubAppAuth:
         return response.json()
 
     def get_installation_repos(
-        self, installation_id: Optional[str] = None
-    ) -> list[Dict[str, Any]]:
+        self, installation_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """Get repositories accessible to an installation"""
         headers = self.get_authenticated_headers(installation_id)
 
@@ -188,7 +234,7 @@ class GitHubAppAuth:
         all_repos = []
 
         while url:
-            response = requests.get(url, headers=headers, timeout=30)
+            response = self._request_with_retry("get", url, headers=headers, timeout=30)
 
             if response.status_code != 200:
                 logger.error(f"Failed to get installation repos: {response.status_code}")
@@ -216,8 +262,10 @@ class GitHubAppAuth:
 
         expected_signature = (
             "sha256="
-            + hmac.new(
-                self.config.webhook_secret.encode(), payload, hashlib.sha256
+            + hmac.HMAC(
+                key=self.config.webhook_secret.encode(),
+                msg=payload,
+                digestmod=hashlib.sha256,
             ).hexdigest()
         )
 

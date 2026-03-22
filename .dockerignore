@@ -27,8 +27,12 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.mypy_cache/
 .coverage
 htmlcov/
+
+# GitHub CI/CD config (not needed in container)
+.github/
 
 # Secrets and credentials
 *.key

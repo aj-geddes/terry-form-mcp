@@ -15,7 +15,7 @@
 #
 # ============================================================================
 
-set -e
+set -euo pipefail
 
 # Configuration
 IMAGE_NAME="terry-form-mcp"
@@ -43,11 +43,6 @@ fi
 # Step 2: Build the Docker image
 echo -e "${YELLOW}Building Docker image: ${FULL_IMAGE_NAME}${NC}"
 docker build -f Dockerfile -t ${FULL_IMAGE_NAME} .
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Docker build failed!${NC}"
-    exit 1
-fi
 
 echo -e "${GREEN}✅ Docker build successful!${NC}"
 

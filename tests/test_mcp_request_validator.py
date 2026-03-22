@@ -4,7 +4,7 @@ Comprehensive tests for mcp_request_validator.py
 
 Covers:
 - Path safety validation (_is_safe_path)
-- Input sanitization (_sanitize_params, _validate_terraform_vars)
+- Input sanitization (_validate_terraform_vars)
 - Rate limiting categories (via tool routing)
 - JSON/schema validation (validate_request structure checks)
 - The validate_request method and validate_mcp_request convenience function
@@ -110,7 +110,7 @@ class TestPathSafety:
 
 
 # ---------------------------------------------------------------------------
-# 2. Input Sanitization (_validate_terraform_vars, _sanitize_params)
+# 2. Input Sanitization (_validate_terraform_vars)
 # ---------------------------------------------------------------------------
 
 
@@ -208,39 +208,6 @@ class TestInputSanitization:
         """An empty variables dict is fine (no vars to check)."""
         valid, msg = validator._validate_terraform_vars({})
         assert valid is True
-
-    def test_sanitize_params_resolves_relative_path(self, validator_tmp, tmp_path):
-        """_sanitize_params should resolve relative paths to absolute within workspace."""
-        result = validator_tmp._sanitize_params({"path": "modules/main.tf"})
-        assert result["path"] == str((tmp_path / "modules" / "main.tf").resolve())
-
-    def test_sanitize_params_resolves_absolute_path(self, validator_tmp, tmp_path):
-        """_sanitize_params should resolve absolute workspace paths."""
-        abs_path = str(tmp_path / "main.tf")
-        result = validator_tmp._sanitize_params({"path": abs_path})
-        assert result["path"] == str(Path(abs_path).resolve())
-
-    def test_sanitize_params_preserves_github_protocol(self, validator):
-        """_sanitize_params should not modify github:// paths."""
-        result = validator._sanitize_params({"path": "github://owner/repo"})
-        assert result["path"] == "github://owner/repo"
-
-    def test_sanitize_params_preserves_workspace_protocol(self, validator):
-        """_sanitize_params should not modify workspace:// paths."""
-        result = validator._sanitize_params({"path": "workspace://dir"})
-        assert result["path"] == "workspace://dir"
-
-    def test_sanitize_params_no_path_key(self, validator):
-        """_sanitize_params should return params unchanged when no path key exists."""
-        params = {"action": "init", "vars": {"a": "b"}}
-        result = validator._sanitize_params(params)
-        assert result == params
-
-    def test_sanitize_params_unsafe_path_kept(self, validator):
-        """If the path is unsafe, _sanitize_params skips resolution and keeps original."""
-        result = validator._sanitize_params({"path": "/etc/passwd"})
-        # Unsafe path -> _is_safe_path returns False -> original kept
-        assert result["path"] == "/etc/passwd"
 
 
 # ---------------------------------------------------------------------------
@@ -614,51 +581,6 @@ class TestGitHubToolValidation:
             )
         )
         assert valid is False
-
-    def test_cleanup_repos_valid_days(self, validator):
-        """github_cleanup_repos with a valid days_old parameter should pass."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": 30})
-        )
-        assert valid is True
-
-    def test_cleanup_repos_negative_days(self, validator):
-        """github_cleanup_repos with negative days_old should be rejected."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": -1})
-        )
-        assert valid is False
-        assert "Invalid days_old" in msg
-
-    def test_cleanup_repos_excessive_days(self, validator):
-        """github_cleanup_repos with days_old > 365 should be rejected."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": 500})
-        )
-        assert valid is False
-        assert "Invalid days_old" in msg
-
-    def test_cleanup_repos_non_int_days(self, validator):
-        """github_cleanup_repos with a string days_old should be rejected."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": "thirty"})
-        )
-        assert valid is False
-        assert "Invalid days_old" in msg
-
-    def test_cleanup_repos_zero_days(self, validator):
-        """github_cleanup_repos with days_old=0 should pass (0 is >= 0 and <= 365)."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": 0})
-        )
-        assert valid is True
-
-    def test_cleanup_repos_boundary_365(self, validator):
-        """github_cleanup_repos with days_old=365 should pass."""
-        valid, msg = validator.validate_request(
-            self._make_request("github_cleanup_repos", {"days_old": 365})
-        )
-        assert valid is True
 
     def test_empty_owner_and_repo_passes(self, validator):
         """Missing or empty owner/repo should pass (the regex check is conditional)."""

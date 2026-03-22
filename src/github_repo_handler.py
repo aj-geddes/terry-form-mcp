@@ -16,7 +16,7 @@ import re
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from github_app_auth import GitHubAppAuth
 
@@ -42,11 +42,27 @@ class GitHubRepoHandler:
 
         return self.repos_dir / f"{owner}_{repo}"
 
+    @staticmethod
+    def _sanitize_workspace_name(raw: str) -> str:
+        """Sanitize a string for use as a workspace name.
+
+        Replaces dots, slashes, spaces, and other special chars with underscores.
+        Collapses multiple consecutive underscores into one.
+        Strips leading and trailing underscores.
+        Truncates to 128 chars.
+        Falls back to 'workspace' if the result is empty.
+        """
+        sanitized = re.sub(r'[^a-zA-Z0-9_\-]', '_', raw)
+        sanitized = re.sub(r'_+', '_', sanitized)
+        sanitized = sanitized.strip('_')
+        sanitized = sanitized[:128]
+        return sanitized or "workspace"
+
     def _sanitize_output(self, text: str) -> str:
         """Remove tokens and credentials from git command output"""
         return re.sub(r'https://[^@]+@', 'https://***@', text)
 
-    async def _run_git_command(self, cmd: List[str], cwd: Path) -> Dict[str, Any]:
+    async def _run_git_command(self, cmd: list[str], cwd: Path) -> dict[str, Any]:
         """Run a git command asynchronously with security hardening"""
         try:
             # Security: Use shell=False and command list
@@ -85,8 +101,9 @@ class GitHubRepoHandler:
             }
 
         except Exception as e:
-            logger.error(f"Git command failed: {e}")
-            return {"success": False, "stdout": "", "stderr": str(e), "returncode": -1}
+            sanitized_error = self._sanitize_output(str(e))
+            logger.error(f"Git command failed: {sanitized_error}")
+            return {"success": False, "stdout": "", "stderr": sanitized_error, "returncode": -1}
 
     def _validate_branch_name(self, branch: str) -> bool:
         """Validate branch name to prevent git flag injection"""
@@ -99,8 +116,8 @@ class GitHubRepoHandler:
         return True
 
     async def clone_or_update_repo(
-        self, owner: str, repo: str, branch: Optional[str] = None, force: bool = False
-    ) -> Dict[str, Any]:
+        self, owner: str, repo: str, branch: str | None = None, force: bool = False
+    ) -> dict[str, Any]:
         """Clone a repository or update it if it already exists"""
         if branch and not self._validate_branch_name(branch):
             return {"error": f"Invalid branch name: {branch}"}
@@ -177,10 +194,20 @@ class GitHubRepoHandler:
                 "branch": branch or "default",
             }
 
+    ALLOWED_FILE_PATTERNS = {"*.tf", "*.tfvars", "*.hcl", "*.json", "*.tfvars.json"}
+
     async def list_terraform_files(
         self, owner: str, repo: str, path: str = "", pattern: str = "*.tf"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """List Terraform files in a repository"""
+        if pattern not in self.ALLOWED_FILE_PATTERNS:
+            return {
+                "error": (
+                    f"Invalid pattern. Allowed: "
+                    f"{', '.join(sorted(self.ALLOWED_FILE_PATTERNS))}"
+                )
+            }
+
         repo_path = self._get_repo_path(owner, repo)
 
         if not repo_path.exists():
@@ -224,7 +251,7 @@ class GitHubRepoHandler:
 
     async def get_terraform_config(
         self, owner: str, repo: str, config_path: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get information about a Terraform configuration in a repository"""
         repo_path = self._get_repo_path(owner, repo)
 
@@ -260,7 +287,11 @@ class GitHubRepoHandler:
                 info["terraform_files"].append(tf_file.name)
 
                 # Quick content analysis
-                content = tf_file.read_text()
+                try:
+                    content = tf_file.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as e:
+                    logger.warning(f"Cannot read {tf_file}: {e}")
+                    continue
                 if "backend " in content:
                     info["has_backend"] = True
                 if "variable " in content:
@@ -292,8 +323,8 @@ class GitHubRepoHandler:
         owner: str,
         repo: str,
         config_path: str,
-        workspace_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        workspace_name: str | None = None,
+    ) -> dict[str, Any]:
         """Prepare a Terraform workspace from a GitHub repository"""
         # First ensure the repository is cloned/updated
         clone_result = await self.clone_or_update_repo(owner, repo)
@@ -312,16 +343,31 @@ class GitHubRepoHandler:
             return {"error": f"Configuration path not found: {config_path}"}
 
         # Create workspace directory
-        workspace_name = (
-            workspace_name or f"{owner}_{repo}_{config_path.replace('/', '_')}"
-        )
+        if not workspace_name:
+            raw_name = f"{owner}_{repo}_{config_path.replace('/', '_')}"
+            workspace_name = self._sanitize_workspace_name(raw_name)
+
+        # Security: validate workspace_name format before constructing the path
+        if not re.match(r'^[a-zA-Z0-9_\-]+$', workspace_name):
+            return {"error": f"Invalid workspace_name: {workspace_name!r}. "
+                             f"Only alphanumeric characters, hyphens, and underscores are allowed."}
+
         workspace_path = self.workspace_root / "terraform-workspaces" / workspace_name
 
-        # Copy configuration to workspace
-        if workspace_path.exists():
-            shutil.rmtree(workspace_path)
+        # Security: validate resolved path stays within workspace_root
+        if not workspace_path.resolve().is_relative_to(self.workspace_root.resolve()):
+            return {"error": f"Invalid workspace_name: {workspace_name!r}. "
+                             f"Path traversal outside workspace root is not allowed."}
 
-        shutil.copytree(source_path, workspace_path)
+        # Copy configuration to workspace
+        try:
+            if workspace_path.exists():
+                shutil.rmtree(workspace_path)
+
+            shutil.copytree(source_path, workspace_path)
+        except OSError as e:
+            logger.error(f"Failed to prepare workspace {workspace_path}: {e}")
+            return {"error": f"Failed to prepare workspace: {e}"}
 
         return {
             "success": True,
@@ -334,8 +380,10 @@ class GitHubRepoHandler:
             },
         }
 
-    async def get_repository_info(self, owner: str, repo: str) -> Dict[str, Any]:
+    async def get_repository_info(self, owner: str, repo: str) -> dict[str, Any]:
         """Get information about a GitHub repository"""
+        import json
+
         import requests
 
         headers = self.auth.get_authenticated_headers()
@@ -354,7 +402,32 @@ class GitHubRepoHandler:
 
             repo_data = response.json()
 
-            # Extract relevant information
+            # Validate required fields are present before accessing them
+            required_fields = (
+                "name",
+                "full_name",
+                "private",
+                "default_branch",
+                "size",
+                "created_at",
+                "updated_at",
+                "has_issues",
+                "has_wiki",
+                "archived",
+                "clone_url",
+                "html_url",
+            )
+            missing = [f for f in required_fields if f not in repo_data]
+            if missing:
+                logger.error(f"GitHub API response missing required fields: {missing}")
+                return {
+                    "error": (
+                        f"Failed to get repository info: "
+                        f"API response missing fields: {missing}"
+                    )
+                }
+
+            # Extract relevant information; use .get() for all optional fields
             return {
                 "success": True,
                 "name": repo_data["name"],
@@ -374,10 +447,20 @@ class GitHubRepoHandler:
                 "html_url": repo_data["html_url"],
             }
 
-        except Exception as e:
-            return {"error": f"Failed to get repository info: {str(e)}"}
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error getting repository info: {e}")
+            return {"error": f"Failed to get repository info: {e}"}
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error getting repository info: {e}")
+            return {"error": f"Failed to get repository info: {e}"}
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in repository info response: {e}")
+            return {"error": f"Failed to get repository info: invalid JSON response"}
+        except KeyError as e:
+            logger.error(f"Unexpected missing key in repository info response: {e}")
+            return {"error": f"Failed to get repository info: missing field {e}"}
 
-    async def cleanup_old_repos(self, days: int = 7) -> Dict[str, Any]:
+    async def cleanup_old_repos(self, days: int = 7) -> dict[str, Any]:
         """Clean up repositories that haven't been accessed in specified days"""
         if not self.repos_dir.exists():
             return {

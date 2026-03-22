@@ -12,6 +12,8 @@ Covers:
 """
 
 import asyncio
+import json
+import logging
 import sys
 import time
 import types
@@ -492,52 +494,52 @@ class TestPreValidate:
         _pre_validate succeeds because stdio is inherently authenticated."""
         monkeypatch.setenv("TERRY_FORM_API_KEY", "secret")
         import server_enhanced_with_lsp as mod
-        mod.auth_manager = AuthManager()
-        mod.rate_limiter = RateLimiter()
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
 
         try:
-            ok, info = _pre_validate("terry_validate", {})
+            ok, info = mod._pre_validate("terry_validate", {})
             assert ok is True
             assert info["user_id"] == "stdio_user"
         finally:
             monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
-            mod.auth_manager = AuthManager()
-            mod.rate_limiter = RateLimiter()
+            mod.auth_manager = mod.AuthManager()
+            mod.rate_limiter = mod.RateLimiter()
 
     def test_fails_when_invalid_api_key_provided(self, monkeypatch):
         """When an explicit but wrong api_key is provided, pre-validation fails."""
         monkeypatch.setenv("TERRY_FORM_API_KEY", "secret")
         import server_enhanced_with_lsp as mod
-        mod.auth_manager = AuthManager()
-        mod.rate_limiter = RateLimiter()
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
 
         try:
-            ok, info = _pre_validate("terry_validate", {"api_key": "wrong"})
+            ok, info = mod._pre_validate("terry_validate", {"api_key": "wrong"})
             assert ok is False
             assert "error" in info
             assert "Authentication" in info["error"]
         finally:
             monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
-            mod.auth_manager = AuthManager()
-            mod.rate_limiter = RateLimiter()
+            mod.auth_manager = mod.AuthManager()
+            mod.rate_limiter = mod.RateLimiter()
 
     def test_fails_on_rate_limit(self, monkeypatch):
         """Pre-validation fails when the rate limit is exhausted."""
         monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
         import server_enhanced_with_lsp as mod
-        mod.auth_manager = AuthManager()
-        mod.rate_limiter = RateLimiter()
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
 
         try:
             # Exhaust the terraform bucket (limit 20)
             for _ in range(20):
                 mod.rate_limiter.is_allowed("terry_validate")
 
-            ok, info = _pre_validate("terry_validate", {})
+            ok, info = mod._pre_validate("terry_validate", {})
             assert ok is False
             assert "Rate limit" in info["error"]
         finally:
-            mod.rate_limiter = RateLimiter()
+            mod.rate_limiter = mod.RateLimiter()
 
     def test_rejects_unsafe_path_key(self, monkeypatch, tmp_path):
         """Pre-validation rejects kwargs containing unsafe paths."""
@@ -564,15 +566,15 @@ class TestPreValidate:
         """Pre-validation scans path, file_path, workspace_path, and config_path."""
         monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
         import server_enhanced_with_lsp as mod
-        mod.auth_manager = AuthManager()
-        mod.rate_limiter = RateLimiter()
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
         saved_validator = mod.request_validator
         mod.request_validator = None
 
         try:
             for key in ("path", "file_path", "workspace_path", "config_path"):
-                mod.rate_limiter = RateLimiter()  # reset between iterations
-                ok, info = _pre_validate(
+                mod.rate_limiter = mod.RateLimiter()  # reset between iterations
+                ok, info = mod._pre_validate(
                     "terry_validate",
                     {key: "../../etc/shadow"},
                 )
@@ -580,7 +582,7 @@ class TestPreValidate:
                 assert key in info["error"]
         finally:
             mod.request_validator = saved_validator
-            mod.rate_limiter = RateLimiter()
+            mod.rate_limiter = mod.RateLimiter()
 
     def test_valid_request_passes_through(self, monkeypatch, tmp_path):
         """A well-formed request passes all validation stages."""
@@ -707,13 +709,13 @@ class TestValidateRequestDecorator:
         """When auth fails (wrong api_key), the decorated function returns an error dict."""
         monkeypatch.setenv("TERRY_FORM_API_KEY", "secret")
         import server_enhanced_with_lsp as mod
-        mod.auth_manager = AuthManager()
-        mod.rate_limiter = RateLimiter()
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
         saved_validator = mod.request_validator
         mod.request_validator = None
 
         try:
-            @validate_request("terry_validate")
+            @mod.validate_request("terry_validate")
             def guarded_tool(api_key: str = ""):
                 return {"should": "not reach"}
 
@@ -722,9 +724,9 @@ class TestValidateRequestDecorator:
             assert "Authentication" in result["error"]
         finally:
             monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
-            mod.auth_manager = AuthManager()
+            mod.auth_manager = mod.AuthManager()
             mod.request_validator = saved_validator
-            mod.rate_limiter = RateLimiter()
+            mod.rate_limiter = mod.RateLimiter()
 
     def test_decorator_catches_tool_exception(self, monkeypatch):
         """If the wrapped function raises, the decorator returns an error dict."""
@@ -737,7 +739,7 @@ class TestValidateRequestDecorator:
 
             result = failing_tool()
             assert "error" in result
-            assert "boom" in result["error"]
+            assert "execution failed" in result["error"]
         finally:
             self._teardown(mod, saved)
 
@@ -754,7 +756,7 @@ class TestValidateRequestDecorator:
                 failing_async_tool()
             )
             assert "error" in result
-            assert "async boom" in result["error"]
+            assert "execution failed" in result["error"]
         finally:
             self._teardown(mod, saved)
 
@@ -803,7 +805,7 @@ class TestValidateRequestDecorator:
         mod, saved = self._setup_open_auth(monkeypatch)
 
         try:
-            @validate_request("terry_validate")
+            @mod.validate_request("terry_validate")
             def limited_tool():
                 return {"ok": True}
 
@@ -816,3 +818,157 @@ class TestValidateRequestDecorator:
             assert "Rate limit" in result["error"]
         finally:
             self._teardown(mod, saved)
+
+
+# ---------------------------------------------------------------------------
+# 9. JSON Logging formatter
+# ---------------------------------------------------------------------------
+
+
+class TestJsonFormatter:
+    """Tests for _JsonFormatter structured log output."""
+
+    def test_format_produces_valid_json(self):
+        """_JsonFormatter.format() must return parseable JSON."""
+        import server_enhanced_with_lsp as mod
+        formatter = mod._JsonFormatter()
+        record = logging.LogRecord(
+            name="test", level=logging.INFO, pathname="", lineno=0,
+            msg="hello world", args=(), exc_info=None
+        )
+        output = formatter.format(record)
+        parsed = json.loads(output)
+        assert parsed["level"] == "INFO"
+        assert parsed["message"] == "hello world"
+        assert parsed["logger"] == "test"
+        assert "timestamp" in parsed
+
+    def test_format_includes_exception_when_present(self):
+        """_JsonFormatter includes 'exception' key when exc_info is set."""
+        import server_enhanced_with_lsp as mod
+        formatter = mod._JsonFormatter()
+        try:
+            raise ValueError("test error")
+        except ValueError:
+            import sys
+            exc_info = sys.exc_info()
+        record = logging.LogRecord(
+            name="test", level=logging.ERROR, pathname="", lineno=0,
+            msg="something failed", args=(), exc_info=exc_info
+        )
+        output = formatter.format(record)
+        parsed = json.loads(output)
+        assert "exception" in parsed
+        assert "ValueError" in parsed["exception"]
+
+    def test_format_omits_exception_when_absent(self):
+        """_JsonFormatter omits 'exception' key when no exc_info."""
+        import server_enhanced_with_lsp as mod
+        formatter = mod._JsonFormatter()
+        record = logging.LogRecord(
+            name="test", level=logging.INFO, pathname="", lineno=0,
+            msg="clean log", args=(), exc_info=None
+        )
+        output = formatter.format(record)
+        parsed = json.loads(output)
+        assert "exception" not in parsed
+
+
+# ---------------------------------------------------------------------------
+# 10. Path traversal warning logging
+# ---------------------------------------------------------------------------
+
+
+class TestPathTraversalLogging:
+    """Verify that path traversal blocks emit a warning log."""
+
+    def test_path_traversal_logged_as_warning(self, monkeypatch, caplog):
+        """_pre_validate emits a WARNING when a path traversal is blocked."""
+        monkeypatch.delenv("TERRY_FORM_API_KEY", raising=False)
+        import server_enhanced_with_lsp as mod
+        mod.auth_manager = mod.AuthManager()
+        mod.rate_limiter = mod.RateLimiter()
+        saved_validator = mod.request_validator
+        mod.request_validator = None
+
+        try:
+            with caplog.at_level(logging.WARNING, logger="server_enhanced_with_lsp"):
+                ok, info = mod._pre_validate(
+                    "terry_validate",
+                    {"path": "/etc/passwd"},
+                )
+            assert ok is False
+            path_traversal_warnings = [
+                r for r in caplog.records
+                if "Path traversal attempt blocked" in r.message
+            ]
+            assert len(path_traversal_warnings) >= 1
+            assert "terry_validate" in path_traversal_warnings[0].message
+            assert "path" in path_traversal_warnings[0].message
+        finally:
+            mod.request_validator = saved_validator
+            mod.rate_limiter = mod.RateLimiter()
+
+
+# ---------------------------------------------------------------------------
+# 11. Module-level constants
+# ---------------------------------------------------------------------------
+
+
+class TestModuleLevelConstants:
+    """Verify module-level constants are set correctly."""
+
+    def test_start_time_is_float(self):
+        """_START_TIME must be a float representing a Unix timestamp."""
+        import server_enhanced_with_lsp as mod
+        assert isinstance(mod._START_TIME, float)
+        assert mod._START_TIME > 0
+
+    def test_start_time_is_in_recent_past(self):
+        """_START_TIME should be close to now (set at import time)."""
+        import server_enhanced_with_lsp as mod
+        age = time.time() - mod._START_TIME
+        # Must have been set within the last hour (accounts for cached imports)
+        assert 0 <= age < 3600
+
+    def test_version_is_string(self):
+        """__version__ must be a non-empty string."""
+        import server_enhanced_with_lsp as mod
+        assert isinstance(mod.__version__, str)
+        assert len(mod.__version__) > 0
+
+
+# ---------------------------------------------------------------------------
+# 12. RateLimiter.update_limits
+# ---------------------------------------------------------------------------
+
+
+class TestRateLimiterUpdateLimits:
+    """Tests for RateLimiter.update_limits()."""
+
+    def test_update_single_category(self, limiter):
+        """Updating one category does not affect others."""
+        original_github = limiter.limits["github"]
+        limiter.update_limits({"terraform": 50})
+        assert limiter.limits["terraform"] == 50
+        assert limiter.limits["github"] == original_github
+
+    def test_update_all_categories(self, limiter):
+        """All four categories can be updated simultaneously."""
+        limiter.update_limits({"terraform": 10, "github": 15, "tf_cloud": 20, "default": 5})
+        assert limiter.limits["terraform"] == 10
+        assert limiter.limits["github"] == 15
+        assert limiter.limits["tf_cloud"] == 20
+        assert limiter.limits["default"] == 5
+
+    def test_update_ignores_unknown_keys(self, limiter):
+        """Unknown keys in new_limits dict are silently ignored."""
+        original = dict(limiter.limits)
+        limiter.update_limits({"unknown_category": 999})
+        assert limiter.limits == original
+
+    def test_string_values_are_cast_to_int(self, limiter):
+        """String-typed limit values are cast to int."""
+        limiter.update_limits({"terraform": "42"})
+        assert limiter.limits["terraform"] == 42
+        assert isinstance(limiter.limits["terraform"], int)

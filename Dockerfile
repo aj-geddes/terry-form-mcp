@@ -1,17 +1,21 @@
-FROM hashicorp/terraform:1.12
+FROM hashicorp/terraform:1.12.1
 
 # Install Python, pip, and other dependencies
 RUN apk add --no-cache python3 py3-pip curl unzip bash git
 
+ARG TERRAFORM_LS_VERSION="0.38.5"
+ARG TERRAFORM_LS_SHA256="94e85b54353fd036e82c039dc7f8d256dc0fd507e667d9b33574a4ab22c06b1a"
+
 # Install terraform-ls
-RUN TERRAFORM_LS_VERSION="0.38.5" && \
-    curl -sSL "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -o terraform-ls.zip && \
+RUN curl -sSfL "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -o terraform-ls.zip && \
+    echo "${TERRAFORM_LS_SHA256}  terraform-ls.zip" | sha256sum -c - && \
     unzip terraform-ls.zip && \
     mv terraform-ls /usr/local/bin/ && \
     chmod +x /usr/local/bin/terraform-ls && \
     rm terraform-ls.zip
 
-# Install Python dependencies (before COPY app files for better layer caching)
+# Install runtime Python dependencies only (before COPY app files for better layer caching)
+# Dev/test tools are in requirements-dev.txt and are NOT installed here.
 COPY requirements.txt .
 RUN pip install --break-system-packages -r requirements.txt
 

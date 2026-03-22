@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Environment variable reference**: README now documents all 37+ configuration variables across Server, Terraform, LSP, GitHub, Terraform Cloud, rate limits, and cloud provider passthrough categories.
+- **Health endpoints**: `/health` and `/ready` endpoints for liveness and readiness probing.
+- **Metrics endpoint**: `/metrics` exposes request counts and error rates per tool category.
+- **Structured JSON logging**: All server log output is now machine-parseable JSON with `level`, `timestamp`, `message`, and `context` fields.
+
+### Changed
+- **`TERRY_HOST` / `TERRY_PORT`**: Server bind address and port are now configurable via dedicated `TERRY_HOST`/`TERRY_PORT` variables (with fallback to `HOST`/`PORT` for backwards compatibility).
+- **`TERRY_WORKSPACE_ROOT`**: Workspace root directory is now configurable instead of hard-coded to `/mnt/workspace`.
+- **LSP timeouts**: `TERRY_LSP_TIMEOUT` and `TERRY_LSP_MAX_RESPONSE_BYTES` allow tuning per-deployment rather than relying on compiled-in defaults.
+- **TF Cloud tools marked not-implemented**: `tf_cloud_list_workspaces`, `tf_cloud_get_workspace`, `tf_cloud_list_runs`, and `tf_cloud_get_state_outputs` now return a clear `not_implemented` error instead of silently returning mock data.
+- **Dependency split**: `requirements.txt` split into `requirements.txt` (runtime) and `requirements-dev.txt` (dev/test tooling). Unused `openai` and `anthropic` packages removed.
+- **Dependency pinning**: All runtime dependencies pinned to minimum compatible versions for reproducible builds.
+- **Dead code removed**: Unreachable branches, unused helper functions, and commented-out blocks removed throughout `server_enhanced_with_lsp.py` and `mcp_request_validator.py`.
+- **DRY improvements**: Duplicated rate-limit lookup and error-formatting logic extracted into shared helpers.
+
+### Removed
+- Terraform Cloud tools (`tf_cloud_list_workspaces`, `tf_cloud_get_workspace`,
+  `tf_cloud_list_runs`, `tf_cloud_get_state_outputs`) removed from tool registry.
+  These were returning stub responses and are planned for v3.2.0 with full API integration.
+  Implementation code is preserved in `server_enhanced_with_lsp.py` (commented out)
+  for future reference.
+
+### Known Limitations
+- **LSP Diagnostics**: `terraform_validate_lsp` opens the document in terraform-ls but
+  does not yet collect `textDocument/publishDiagnostics` notifications. The tool returns
+  `"diagnostics": []` for all files. Hover, completions, and formatting work correctly.
+  Full diagnostic collection planned for v3.2.0.
+- **Return Key Naming**: MCP tool response keys use mixed naming conventions
+  (kebab-case: `"terry-results"`, snake_case: `"security_scan"`). Standardization to
+  snake_case is a breaking API change deferred to v4.0.0.
+
+### Fixed
+- **Auth on API endpoints**: Frontend API routes (`/api/config`, `/api/tools`) now enforce `TERRY_FORM_API_KEY` when set; previously auth was only checked on the dashboard root.
+- **Secure cookies**: Session cookies now set `HttpOnly`, `SameSite=Strict`, and `Secure` (when served over HTTPS).
+- **Session management**: Sessions are invalidated on auth failure rather than preserved with an error flag.
+- **Path traversal**: Additional normalization step added to `mcp_request_validator.py` to reject paths that resolve outside `TERRY_WORKSPACE_ROOT` after symlink expansion.
+- **Exception sanitization**: Internal exception messages (stack traces, file paths) are no longer forwarded to MCP tool responses; a generic error string is returned instead, with full detail logged server-side.
+- **Retry logic**: Transient LSP initialization failures now retry up to 3 times with exponential back-off before surfacing an error.
+- **Graceful shutdown**: Server waits for in-flight requests to complete (up to 5 s) before terminating the LSP subprocess.
+- **CSP header**: `Content-Security-Policy` header added to all HTML responses from the frontend.
+
 ## [3.1.0] - 2026-03-03
 
 ### Changed

@@ -1243,8 +1243,26 @@ class TestGetLspClient:
 
     @pytest.fixture(autouse=True)
     def reset_singleton(self):
-        """Reset the global singleton before and after each test."""
-        import terraform_lsp_client as mod
+        """Reset the global singleton and bind current module symbols.
+
+        Prior test modules (e.g. test_production_release_fixes.py) may call
+        importlib.reload() on terraform_lsp_client, replacing the class object
+        in sys.modules with a freshly-created one.  If this class held stale
+        module-level references (imported at file-load time) the isinstance()
+        checks below would fail because client.__class__ is not the same object
+        as the stale TerraformLSPClient name.
+
+        Resolving the symbols here — after collection order is determined —
+        guarantees this class always uses the same class object as the live
+        module does, regardless of which test module ran before us.
+        """
+        import sys
+
+        mod = sys.modules["terraform_lsp_client"]
+        # Bind live symbols so every test method uses the current class objects.
+        self.mod = mod
+        self.TerraformLSPClient = mod.TerraformLSPClient
+        self.get_lsp_client = mod.get_lsp_client
 
         original = mod._lsp_client
         mod._lsp_client = None
@@ -1254,61 +1272,56 @@ class TestGetLspClient:
     @pytest.mark.asyncio
     async def test_returns_client_instance(self):
         """Should return a TerraformLSPClient when called without workspace_path."""
-        import terraform_lsp_client as mod
-
         # When workspace_path is None, it creates client but doesn't start
-        client = await get_lsp_client()
-        assert isinstance(client, TerraformLSPClient)
+        client = await self.get_lsp_client()
+        assert isinstance(client, self.TerraformLSPClient)
 
     @pytest.mark.asyncio
     async def test_singleton_returns_same_instance(self):
         """Successive calls should return the same instance."""
-        client1 = await get_lsp_client()
-        client2 = await get_lsp_client()
+        client1 = await self.get_lsp_client()
+        client2 = await self.get_lsp_client()
         assert client1 is client2
 
     @pytest.mark.asyncio
     async def test_raises_on_failed_initialization(self, tmp_path):
         """Should raise RuntimeError and reset singleton on start failure."""
-        import terraform_lsp_client as mod
-
         with patch.object(
-            TerraformLSPClient,
+            self.TerraformLSPClient,
             "start_terraform_ls",
             new_callable=AsyncMock,
             return_value=False,
         ):
             with pytest.raises(RuntimeError, match="Failed to initialize"):
-                await get_lsp_client(str(tmp_path))
+                await self.get_lsp_client(str(tmp_path))
 
         # Singleton should be reset to None for retry
-        assert mod._lsp_client is None
+        assert self.mod._lsp_client is None
 
     @pytest.mark.asyncio
     async def test_captures_error_message_on_failure(self, tmp_path):
         """Should include the initialization error in the RuntimeError message."""
+        mod = self.mod
 
         async def mock_start(workspace_path):
             # Simulate setting initialization_error before returning False
-            import terraform_lsp_client as mod
-
             if mod._lsp_client:
                 mod._lsp_client.initialization_error = "terraform-ls binary not found"
             return False
 
         with patch.object(
-            TerraformLSPClient, "start_terraform_ls", side_effect=mock_start
+            self.TerraformLSPClient, "start_terraform_ls", side_effect=mock_start
         ):
             with pytest.raises(RuntimeError, match="terraform-ls binary not found"):
-                await get_lsp_client(str(tmp_path))
+                await self.get_lsp_client(str(tmp_path))
 
     @pytest.mark.asyncio
     async def test_concurrent_access_returns_same_instance(self):
         """Multiple concurrent calls should safely return the same instance."""
         results = await asyncio.gather(
-            get_lsp_client(),
-            get_lsp_client(),
-            get_lsp_client(),
+            self.get_lsp_client(),
+            self.get_lsp_client(),
+            self.get_lsp_client(),
         )
 
         # All should be the same instance
@@ -1319,16 +1332,15 @@ class TestGetLspClient:
     async def test_skips_start_when_no_workspace_path(self):
         """When workspace_path is None, should not call start_terraform_ls."""
         with patch.object(
-            TerraformLSPClient, "start_terraform_ls", new_callable=AsyncMock
+            self.TerraformLSPClient, "start_terraform_ls", new_callable=AsyncMock
         ) as mock_start:
-            await get_lsp_client(None)
+            await self.get_lsp_client(None)
             mock_start.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_retry_after_failure(self, tmp_path):
         """After a failure resets the singleton, a subsequent call should retry."""
-        import terraform_lsp_client as mod
-
+        mod = self.mod
         call_count = 0
 
         async def mock_start(workspace_path):
@@ -1340,15 +1352,15 @@ class TestGetLspClient:
             return True
 
         with patch.object(
-            TerraformLSPClient, "start_terraform_ls", side_effect=mock_start
+            self.TerraformLSPClient, "start_terraform_ls", side_effect=mock_start
         ):
             # First call should fail
             with pytest.raises(RuntimeError):
-                await get_lsp_client(str(tmp_path))
+                await self.get_lsp_client(str(tmp_path))
 
             # Second call should succeed (singleton was reset)
-            client = await get_lsp_client(str(tmp_path))
-            assert isinstance(client, TerraformLSPClient)
+            client = await self.get_lsp_client(str(tmp_path))
+            assert isinstance(client, self.TerraformLSPClient)
             assert call_count == 2
 
 
@@ -1378,3 +1390,380 @@ class TestInit:
         assert client.initialized is False
         assert client.capabilities == {}
         assert client.initialization_error is None
+
+
+# ---------------------------------------------------------------------------
+# 16. Error sanitization in public LSP methods (Fix 1)
+# ---------------------------------------------------------------------------
+
+
+class TestErrorSanitization:
+    """Tests that public LSP methods return sanitized error messages.
+
+    Sensitive exception details (e.g. stack frames, internal paths) must not
+    be forwarded to callers.  Each public method must log the original error
+    and return the generic sentinel string.
+    """
+
+    SANITIZED_MSG = "LSP operation failed. See server logs for details."
+
+    @pytest.mark.asyncio
+    async def test_validate_document_sanitizes_exception(
+        self, initialized_client, tmp_path
+    ):
+        """validate_document must return a generic error when an exception occurs."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        client._send_notification = AsyncMock(
+            side_effect=RuntimeError("Internal pipe state: fd=7 broken")
+        )
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await client.validate_document(str(target))
+
+        assert "error" in result
+        assert result["error"] == self.SANITIZED_MSG
+
+    @pytest.mark.asyncio
+    async def test_get_hover_info_sanitizes_exception(
+        self, initialized_client, tmp_path
+    ):
+        """get_hover_info must return a generic error when an exception occurs."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        client._send_notification = AsyncMock()
+        client._send_request = AsyncMock(
+            side_effect=RuntimeError("Timeout waiting for response to textDocument/hover")
+        )
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await client.get_hover_info(str(target), 0, 0)
+
+        assert "error" in result
+        assert result["error"] == self.SANITIZED_MSG
+
+    @pytest.mark.asyncio
+    async def test_get_completions_sanitizes_exception(
+        self, initialized_client, tmp_path
+    ):
+        """get_completions must return a generic error when an exception occurs."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        client._send_notification = AsyncMock()
+        client._send_request = AsyncMock(
+            side_effect=RuntimeError("LSP process connection lost")
+        )
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await client.get_completions(str(target), 0, 0)
+
+        assert "error" in result
+        assert result["error"] == self.SANITIZED_MSG
+
+    @pytest.mark.asyncio
+    async def test_format_document_sanitizes_exception(
+        self, initialized_client, tmp_path
+    ):
+        """format_document must return a generic error when an exception occurs."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        client._send_notification = AsyncMock()
+        client._send_request = AsyncMock(
+            side_effect=RuntimeError("No matching response for textDocument/formatting")
+        )
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await client.format_document(str(target))
+
+        assert "error" in result
+        assert result["error"] == self.SANITIZED_MSG
+
+    @pytest.mark.asyncio
+    async def test_sanitized_error_does_not_expose_internal_details(
+        self, initialized_client, tmp_path
+    ):
+        """The sanitized error string must not contain internal exception text."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        internal_detail = "fd=7 /mnt/workspace/secret.tfvars line 42"
+        client._send_notification = AsyncMock(
+            side_effect=RuntimeError(internal_detail)
+        )
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await client.validate_document(str(target))
+
+        assert internal_detail not in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# 17. Malformed Content-Length in _read_response (Fix 2)
+# ---------------------------------------------------------------------------
+
+
+class TestMalformedContentLength:
+    """Tests that _read_response raises a clear RuntimeError on non-integer
+    Content-Length values rather than propagating a raw ValueError."""
+
+    @pytest.mark.asyncio
+    async def test_raises_runtime_error_on_non_integer_content_length(
+        self, initialized_client
+    ):
+        """Non-integer Content-Length header must raise RuntimeError, not ValueError."""
+        client = initialized_client
+
+        raw = b"Content-Length: not-a-number\r\n\r\n"
+        reader = asyncio.StreamReader()
+        reader.feed_data(raw)
+        reader.feed_eof()
+        client.terraform_ls_process.stdout = reader
+
+        with pytest.raises(RuntimeError, match="invalid Content-Length"):
+            await client._read_response()
+
+    @pytest.mark.asyncio
+    async def test_raises_runtime_error_on_float_content_length(
+        self, initialized_client
+    ):
+        """Floating-point Content-Length (e.g. '1.5') must raise RuntimeError."""
+        client = initialized_client
+
+        raw = b"Content-Length: 1.5\r\n\r\n"
+        reader = asyncio.StreamReader()
+        reader.feed_data(raw)
+        reader.feed_eof()
+        client.terraform_ls_process.stdout = reader
+
+        with pytest.raises(RuntimeError, match="invalid Content-Length"):
+            await client._read_response()
+
+    @pytest.mark.asyncio
+    async def test_raises_runtime_error_on_empty_content_length(
+        self, initialized_client
+    ):
+        """Empty Content-Length value must raise RuntimeError."""
+        client = initialized_client
+
+        raw = b"Content-Length: \r\n\r\n"
+        reader = asyncio.StreamReader()
+        reader.feed_data(raw)
+        reader.feed_eof()
+        client.terraform_ls_process.stdout = reader
+
+        with pytest.raises(RuntimeError, match="invalid Content-Length"):
+            await client._read_response()
+
+
+# ---------------------------------------------------------------------------
+# 18. Broken pipe handling in _send_notification (Fix 3)
+# ---------------------------------------------------------------------------
+
+
+class TestSendNotificationBrokenPipe:
+    """Tests that _send_notification handles pipe-related OS errors gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_broken_pipe_raises_runtime_error(self, initialized_client):
+        """BrokenPipeError on stdin.write must raise RuntimeError and clear initialized."""
+        client = initialized_client
+
+        client.terraform_ls_process.stdin.write = MagicMock(
+            side_effect=BrokenPipeError("pipe broken")
+        )
+
+        with pytest.raises(RuntimeError, match="LSP process connection lost"):
+            await client._send_notification("initialized", {})
+
+        assert client.initialized is False
+
+    @pytest.mark.asyncio
+    async def test_connection_reset_raises_runtime_error(self, initialized_client):
+        """ConnectionResetError on stdin.write must raise RuntimeError."""
+        client = initialized_client
+
+        client.terraform_ls_process.stdin.write = MagicMock(
+            side_effect=ConnectionResetError("connection reset")
+        )
+
+        with pytest.raises(RuntimeError, match="LSP process connection lost"):
+            await client._send_notification("textDocument/didOpen", {})
+
+        assert client.initialized is False
+
+    @pytest.mark.asyncio
+    async def test_os_error_on_drain_raises_runtime_error(self, initialized_client):
+        """OSError on stdin.drain must raise RuntimeError and clear initialized."""
+        client = initialized_client
+
+        client.terraform_ls_process.stdin.drain = AsyncMock(
+            side_effect=OSError("bad file descriptor")
+        )
+
+        with pytest.raises(RuntimeError, match="LSP process connection lost"):
+            await client._send_notification("initialized", {})
+
+        assert client.initialized is False
+
+    @pytest.mark.asyncio
+    async def test_broken_pipe_sets_initialized_false(self, initialized_client):
+        """A broken-pipe error during notification must mark client as not initialized."""
+        client = initialized_client
+        assert client.initialized is True
+
+        client.terraform_ls_process.stdin.write = MagicMock(
+            side_effect=BrokenPipeError()
+        )
+
+        try:
+            await client._send_notification("exit", {})
+        except RuntimeError:
+            pass
+
+        assert client.initialized is False
+
+
+# ---------------------------------------------------------------------------
+# 19. File read error handling in public methods (Fix 4)
+# ---------------------------------------------------------------------------
+
+
+class TestFileReadErrorHandling:
+    """Tests that file-read errors in public methods return user-friendly errors
+    without exposing internal file paths or raw exception messages."""
+
+    GENERIC_READ_ERROR = "LSP operation failed. See server logs for details."
+
+    @pytest.mark.asyncio
+    async def test_validate_document_handles_permission_error(
+        self, initialized_client, tmp_path
+    ):
+        """PermissionError reading file content must return a safe error message."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        with patch(
+            "asyncio.to_thread", side_effect=PermissionError("permission denied")
+        ):
+            result = await client.validate_document(str(target))
+
+        assert "error" in result
+        assert result["error"] == self.GENERIC_READ_ERROR
+
+    @pytest.mark.asyncio
+    async def test_validate_document_handles_unicode_decode_error(
+        self, initialized_client, tmp_path
+    ):
+        """UnicodeDecodeError reading file content must return a safe error message."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_bytes(b"\xff\xfe binary garbage")
+
+        with patch(
+            "asyncio.to_thread",
+            side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "invalid byte"),
+        ):
+            result = await client.validate_document(str(target))
+
+        assert "error" in result
+        assert result["error"] == self.GENERIC_READ_ERROR
+
+    @pytest.mark.asyncio
+    async def test_get_hover_info_handles_permission_error(
+        self, initialized_client, tmp_path
+    ):
+        """PermissionError reading file in get_hover_info returns safe error."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        with patch(
+            "asyncio.to_thread", side_effect=PermissionError("permission denied")
+        ):
+            result = await client.get_hover_info(str(target), 0, 0)
+
+        assert "error" in result
+        assert result["error"] == self.GENERIC_READ_ERROR
+
+    @pytest.mark.asyncio
+    async def test_get_completions_handles_os_error(
+        self, initialized_client, tmp_path
+    ):
+        """OSError reading file in get_completions returns safe error."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        with patch(
+            "asyncio.to_thread", side_effect=OSError("device not ready")
+        ):
+            result = await client.get_completions(str(target), 0, 0)
+
+        assert "error" in result
+        assert result["error"] == self.GENERIC_READ_ERROR
+
+    @pytest.mark.asyncio
+    async def test_format_document_handles_permission_error(
+        self, initialized_client, tmp_path
+    ):
+        """PermissionError reading file in format_document returns safe error."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "main.tf"
+        target.write_text("# test")
+
+        with patch(
+            "asyncio.to_thread", side_effect=PermissionError("permission denied")
+        ):
+            result = await client.format_document(str(target))
+
+        assert "error" in result
+        assert result["error"] == self.GENERIC_READ_ERROR
+
+    @pytest.mark.asyncio
+    async def test_file_read_error_does_not_expose_internal_path(
+        self, initialized_client, tmp_path
+    ):
+        """A permission error on file read must not expose the internal path in the error."""
+        client = initialized_client
+        client.workspace_root = tmp_path
+
+        target = tmp_path / "sensitive.tf"
+        target.write_text("# secret config")
+
+        with patch(
+            "asyncio.to_thread", side_effect=PermissionError("permission denied")
+        ):
+            result = await client.validate_document(str(target))
+
+        assert str(target) not in result["error"]
+        assert str(tmp_path) not in result["error"]

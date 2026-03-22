@@ -77,6 +77,10 @@ htmlcov/
 .tox/
 .nox/
 
+# Type checking and linting caches
+.mypy_cache/
+.ruff_cache/
+
 # Local development
 local/
 tmp/

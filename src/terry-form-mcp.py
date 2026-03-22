@@ -18,9 +18,19 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Validate and cache operation timeout at module load time.
+# Raises RuntimeError immediately on invalid configuration rather than at call time.
+try:
+    _RAW_TIMEOUT = os.environ.get("MAX_OPERATION_TIMEOUT", "300")
+    DEFAULT_TIMEOUT = max(10, min(3600, int(_RAW_TIMEOUT)))
+except ValueError:
+    raise RuntimeError(
+        f"Invalid MAX_OPERATION_TIMEOUT={_RAW_TIMEOUT!r}: must be an integer between 10 and 3600"
+    )
 
 # Environment variables to pass through to Terraform
 ALLOWED_ENV_VARS = {
@@ -61,7 +71,7 @@ FORCED_ENV_VARS = {
 }
 
 
-def get_controlled_env() -> Dict[str, str]:
+def get_controlled_env() -> dict[str, str]:
     """Build a controlled environment for Terraform execution."""
     env = {}
 
@@ -77,7 +87,7 @@ def get_controlled_env() -> Dict[str, str]:
 
 
 def build_terraform_command(
-    action: str, vars: Optional[Dict[str, Any]] = None, var_file: Optional[str] = None
+    action: str, vars: dict[str, Any] | None = None, var_file: str | None = None
 ) -> list:
     """Build Terraform command with appropriate flags for each action."""
     base_cmd = ["terraform"]
@@ -114,7 +124,7 @@ def build_terraform_command(
         raise ValueError(f"Unsupported Terraform action: {action}")
 
 
-def parse_plan_output(path: str) -> Optional[Dict[str, Any]]:
+def parse_plan_output(path: str) -> dict[str, Any] | None:
     """Parse Terraform plan output to extract summary."""
     plan_file = Path(path) / "tfplan"
 
@@ -183,7 +193,7 @@ def parse_plan_output(path: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def parse_text_plan_summary(stdout: str) -> Dict[str, int]:
+def parse_text_plan_summary(stdout: str) -> dict[str, int]:
     """Fallback: Parse plan summary from text output."""
     summary = {"add": 0, "change": 0, "destroy": 0}
 
@@ -202,8 +212,8 @@ def parse_text_plan_summary(stdout: str) -> Dict[str, int]:
 
 
 def run_terraform(
-    path: str, action: str, vars: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    path: str, action: str, vars: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Execute a Terraform action with security hardening.
 
@@ -223,8 +233,7 @@ def run_terraform(
         - plan_summary: (for plan action) Summary of changes
         - resources: (for plan action) List of affected resources
     """
-    # Get timeout from environment or use default
-    timeout = int(os.environ.get("MAX_OPERATION_TIMEOUT", 300))
+    timeout = DEFAULT_TIMEOUT
 
     # Validate path exists
     workspace_path = Path(path)
@@ -393,33 +402,3 @@ def run_terraform(
             except Exception as e:
                 logger.warning(f"Failed to clean up plan file: {e}")
 
-
-# Convenience function for batch execution
-def run_terraform_actions(
-    path: str, actions: list, vars: Optional[Dict[str, Any]] = None
-) -> list:
-    """
-    Execute multiple Terraform actions in sequence.
-
-    Args:
-        path: Full path to Terraform workspace directory
-        actions: List of actions to execute
-        vars: Optional variables (passed only to plan action)
-
-    Returns:
-        List of results for each action
-    """
-    results = []
-
-    for action in actions:
-        # Only pass vars to plan action
-        action_vars = vars if action == "plan" else None
-        result = run_terraform(path, action, action_vars)
-        results.append(result)
-
-        # Stop on failure (except for fmt which may fail on formatting issues)
-        if not result["success"] and action != "fmt":
-            logger.warning(f"Action {action} failed, stopping execution")
-            break
-
-    return results

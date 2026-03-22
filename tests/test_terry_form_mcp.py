@@ -8,7 +8,6 @@ Covers:
 - parse_text_plan_summary(): regex-based fallback plan parsing
 - get_controlled_env(): environment variable filtering and forced vars
 - run_terraform(): subprocess execution, error handling, timeout, env vars
-- run_terraform_actions(): sequential multi-action execution, stop-on-failure
 """
 
 import importlib
@@ -33,7 +32,6 @@ parse_plan_output = terry_form_mcp.parse_plan_output
 parse_text_plan_summary = terry_form_mcp.parse_text_plan_summary
 get_controlled_env = terry_form_mcp.get_controlled_env
 run_terraform = terry_form_mcp.run_terraform
-run_terraform_actions = terry_form_mcp.run_terraform_actions
 ALLOWED_ENV_VARS = terry_form_mcp.ALLOWED_ENV_VARS
 FORCED_ENV_VARS = terry_form_mcp.FORCED_ENV_VARS
 
@@ -645,8 +643,12 @@ class TestRunTerraform:
 
     @patch("terry_form_mcp.subprocess.run")
     def test_custom_timeout_from_env(self, mock_run, workspace, monkeypatch):
-        """MAX_OPERATION_TIMEOUT environment variable controls the timeout."""
-        monkeypatch.setenv("MAX_OPERATION_TIMEOUT", "60")
+        """DEFAULT_TIMEOUT constant controls the timeout passed to subprocess.run.
+        The value is set at module load time from MAX_OPERATION_TIMEOUT; patching
+        the module-level constant directly is the correct way to test this.
+        """
+        import terry_form_mcp as _tfm
+        monkeypatch.setattr(_tfm, "DEFAULT_TIMEOUT", 60)
         mock_run.return_value = MagicMock(
             returncode=0, stdout="", stderr=""
         )
@@ -873,183 +875,6 @@ class TestRunTerraform:
 
         # Plan file should have been cleaned up
         assert not plan_file.exists()
-
-
-# ---------------------------------------------------------------------------
-# 6. run_terraform_actions()
-# ---------------------------------------------------------------------------
-
-
-class TestRunTerraformActions:
-    """Tests for the run_terraform_actions function."""
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_single_action(self, mock_run_tf, workspace):
-        """Single action returns a list with one result."""
-        mock_run_tf.return_value = {
-            "action": "init",
-            "success": True,
-            "exit_code": 0,
-            "stdout": "Initialized.",
-            "stderr": "",
-            "duration": 1.0,
-        }
-        results = run_terraform_actions(workspace, ["init"])
-
-        assert len(results) == 1
-        assert results[0]["action"] == "init"
-        assert results[0]["success"] is True
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_multiple_actions_sequential(self, mock_run_tf, workspace):
-        """Multiple actions are executed in order and all results returned."""
-        mock_run_tf.side_effect = [
-            {
-                "action": "init",
-                "success": True,
-                "exit_code": 0,
-                "stdout": "",
-                "stderr": "",
-                "duration": 1.0,
-            },
-            {
-                "action": "validate",
-                "success": True,
-                "exit_code": 0,
-                "stdout": "",
-                "stderr": "",
-                "duration": 0.5,
-            },
-            {
-                "action": "plan",
-                "success": True,
-                "exit_code": 0,
-                "stdout": "",
-                "stderr": "",
-                "duration": 2.0,
-            },
-        ]
-        results = run_terraform_actions(workspace, ["init", "validate", "plan"])
-
-        assert len(results) == 3
-        assert results[0]["action"] == "init"
-        assert results[1]["action"] == "validate"
-        assert results[2]["action"] == "plan"
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_stops_on_failure(self, mock_run_tf, workspace):
-        """Execution stops after a non-fmt action fails."""
-        mock_run_tf.side_effect = [
-            {
-                "action": "init",
-                "success": True,
-                "exit_code": 0,
-                "stdout": "",
-                "stderr": "",
-                "duration": 1.0,
-            },
-            {
-                "action": "validate",
-                "success": False,
-                "exit_code": 1,
-                "stdout": "",
-                "stderr": "Error",
-                "duration": 0.5,
-            },
-        ]
-        results = run_terraform_actions(
-            workspace, ["init", "validate", "plan"]
-        )
-
-        # Should stop after validate failure, plan never runs
-        assert len(results) == 2
-        assert results[1]["success"] is False
-        assert mock_run_tf.call_count == 2
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_fmt_failure_does_not_stop_execution(self, mock_run_tf, workspace):
-        """fmt failure does not stop subsequent actions."""
-        mock_run_tf.side_effect = [
-            {
-                "action": "fmt",
-                "success": False,
-                "exit_code": 3,
-                "stdout": "main.tf\n",
-                "stderr": "",
-                "duration": 0.2,
-            },
-            {
-                "action": "validate",
-                "success": True,
-                "exit_code": 0,
-                "stdout": "",
-                "stderr": "",
-                "duration": 0.5,
-            },
-        ]
-        results = run_terraform_actions(workspace, ["fmt", "validate"])
-
-        assert len(results) == 2
-        assert results[0]["success"] is False
-        assert results[1]["success"] is True
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_vars_only_passed_to_plan(self, mock_run_tf, workspace):
-        """Variables are only passed to the plan action, not to init or validate."""
-        mock_run_tf.return_value = {
-            "action": "init",
-            "success": True,
-            "exit_code": 0,
-            "stdout": "",
-            "stderr": "",
-            "duration": 0.5,
-        }
-        my_vars = {"region": "us-east-1"}
-        run_terraform_actions(workspace, ["init", "plan"], vars=my_vars)
-
-        calls = mock_run_tf.call_args_list
-        # init should be called with vars=None
-        assert calls[0][0] == (workspace, "init", None)
-        # plan should be called with vars=my_vars
-        assert calls[1][0] == (workspace, "plan", my_vars)
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_empty_actions_list(self, mock_run_tf, workspace):
-        """Empty actions list returns empty results."""
-        results = run_terraform_actions(workspace, [])
-        assert results == []
-        mock_run_tf.assert_not_called()
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_returns_list_type(self, mock_run_tf, workspace):
-        """run_terraform_actions always returns a list."""
-        mock_run_tf.return_value = {
-            "action": "init",
-            "success": True,
-            "exit_code": 0,
-            "stdout": "",
-            "stderr": "",
-            "duration": 0.5,
-        }
-        results = run_terraform_actions(workspace, ["init"])
-        assert isinstance(results, list)
-
-    @patch("terry_form_mcp.run_terraform")
-    def test_init_failure_prevents_plan(self, mock_run_tf, workspace):
-        """A common pattern: init failure prevents plan from running."""
-        mock_run_tf.return_value = {
-            "action": "init",
-            "success": False,
-            "exit_code": 1,
-            "stdout": "",
-            "stderr": "Failed to install providers",
-            "duration": 3.0,
-        }
-        results = run_terraform_actions(workspace, ["init", "plan"])
-
-        assert len(results) == 1
-        assert results[0]["action"] == "init"
-        assert results[0]["success"] is False
 
 
 # ---------------------------------------------------------------------------

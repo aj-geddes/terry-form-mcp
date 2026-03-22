@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: terry-form-mcp
+  namespace: terry-form-mcp
+spec:
+  podSelector:
+    matchLabels:
+      app: terry-form-mcp
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    - to: []  # Allow all egress (needs GitHub API, TF Cloud, terraform init)

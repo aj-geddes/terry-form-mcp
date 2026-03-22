@@ -12,13 +12,27 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Dict
+
+_LSP_OP_FAILED = "LSP operation failed. See server logs for details."
+
+# ---------------------------------------------------------------------------
+# Module-level constants — configurable via environment variables
+# ---------------------------------------------------------------------------
+_LSP_REQUEST_TIMEOUT_S: float = float(os.environ.get("TERRY_LSP_TIMEOUT", "30"))
+_LSP_MAX_RESPONSE_BYTES: int = int(
+    os.environ.get("TERRY_LSP_MAX_RESPONSE_BYTES", str(10 * 1024 * 1024))
+)
+_LSP_SHUTDOWN_TIMEOUT_S: float = 5.0
+_LSP_MAX_ITERATIONS: int = 50
+_LSP_DOCUMENT_SETTLE_S: float = 0.1
+_LSP_DIAGNOSTIC_WAIT_S: float = 1.0
+_WORKSPACE_ROOT: str = os.environ.get("TERRY_WORKSPACE_ROOT", "/mnt/workspace")
 
 
 class TerraformLSPClient:
     """LSP client for terraform-ls Language Server"""
 
-    def __init__(self, workspace_root: str = "/mnt/workspace"):
+    def __init__(self, workspace_root: str = _WORKSPACE_ROOT):
         self.workspace_root = Path(workspace_root)
         self.terraform_ls_process = None
         self.request_id = 0
@@ -114,7 +128,7 @@ class TerraformLSPClient:
             self.initialization_error = str(e)
             return False
 
-    async def _send_request(self, method: str, params: Dict = None) -> Dict:
+    async def _send_request(self, method: str, params: dict = None) -> dict:
         """Send JSON-RPC request to terraform-ls"""
         if not self.terraform_ls_process:
             raise RuntimeError("terraform-ls process not started")
@@ -139,10 +153,9 @@ class TerraformLSPClient:
 
             # Read responses, skipping server-initiated notifications until
             # we find the response matching our request ID.
-            max_iterations: int = 50
-            for _ in range(max_iterations):
+            for _ in range(_LSP_MAX_ITERATIONS):
                 response = await asyncio.wait_for(
-                    self._read_response(), timeout=30.0
+                    self._read_response(), timeout=_LSP_REQUEST_TIMEOUT_S
                 )
 
                 # A matching response will have an "id" equal to our request_id
@@ -157,7 +170,7 @@ class TerraformLSPClient:
                     )
                     continue
 
-                # Response with a mismatched id — log and skip
+                # Response with a mismatched id -- log and skip
                 self.logger.debug(
                     f"Skipping LSP message with id={response.get('id')} "
                     f"(expected {request_id})"
@@ -165,7 +178,7 @@ class TerraformLSPClient:
 
             raise RuntimeError(
                 f"No matching response for {method} (id={request_id}) "
-                f"after {max_iterations} messages"
+                f"after {_LSP_MAX_ITERATIONS} messages"
             )
 
         except asyncio.TimeoutError:
@@ -175,7 +188,7 @@ class TerraformLSPClient:
             self.logger.error(f"Error sending request {method}: {e}")
             raise
 
-    async def _read_response(self) -> Dict:
+    async def _read_response(self) -> dict:
         """Read JSON-RPC response from terraform-ls"""
         # Read headers
         headers = {}
@@ -193,12 +206,16 @@ class TerraformLSPClient:
                 key, value = line.split(":", 1)
                 headers[key.strip()] = value.strip()
 
-        # Read content (enforce 10MB upper bound to prevent memory exhaustion)
-        content_length = int(headers.get("Content-Length", 0))
-        max_content_length = 10 * 1024 * 1024  # 10MB
-        if content_length > max_content_length:
+        # Read content (enforce upper bound to prevent memory exhaustion)
+        try:
+            content_length = int(headers.get("Content-Length", 0))
+        except ValueError:
+            raise RuntimeError("LSP server sent invalid Content-Length header")
+
+        if content_length > _LSP_MAX_RESPONSE_BYTES:
             raise RuntimeError(
-                f"LSP response too large: {content_length} bytes (max {max_content_length})"
+                f"LSP response too large: {content_length} bytes "
+                f"(max {_LSP_MAX_RESPONSE_BYTES})"
             )
         if content_length > 0:
             content = await self.terraform_ls_process.stdout.read(content_length)
@@ -266,7 +283,7 @@ class TerraformLSPClient:
             "textDocument/didClose", {"textDocument": {"uri": file_uri}}
         )
 
-    async def _send_notification(self, method: str, params: Dict = None):
+    async def _send_notification(self, method: str, params: dict = None):
         """Send JSON-RPC notification to terraform-ls"""
         notification = {"jsonrpc": "2.0", "method": method}
 
@@ -280,10 +297,17 @@ class TerraformLSPClient:
 
         message = f"Content-Length: {content_length}\r\n\r\n{notification_json}"
 
-        self.terraform_ls_process.stdin.write(message.encode("utf-8"))
-        await self.terraform_ls_process.stdin.drain()
+        try:
+            self.terraform_ls_process.stdin.write(message.encode("utf-8"))
+            await self.terraform_ls_process.stdin.drain()
+        except (BrokenPipeError, ConnectionResetError, OSError) as e:
+            self.logger.error(
+                f"LSP process pipe broken during notification {method}: {e}"
+            )
+            self.initialized = False
+            raise RuntimeError("LSP process connection lost") from e
 
-    async def validate_document(self, file_path: str) -> Dict:
+    async def validate_document(self, file_path: str) -> dict:
         """Get diagnostics for a Terraform file"""
         try:
             self._validate_file_path(file_path)
@@ -301,9 +325,15 @@ class TerraformLSPClient:
             if not os.path.exists(file_path):
                 return {"error": f"File does not exist: {file_path}"}
 
-            content = await asyncio.to_thread(
-                Path(file_path).read_text, encoding="utf-8"
-            )
+            try:
+                content = await asyncio.to_thread(
+                    Path(file_path).read_text, encoding="utf-8"
+                )
+            except (PermissionError, UnicodeDecodeError, OSError) as e:
+                self.logger.error(
+                    f"LSP operation failed in validate_document: {e}", exc_info=True
+                )
+                return {"error": _LSP_OP_FAILED}
 
             await self._send_notification(
                 "textDocument/didOpen",
@@ -319,7 +349,7 @@ class TerraformLSPClient:
 
             try:
                 # Wait a bit for diagnostics
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(_LSP_DIAGNOSTIC_WAIT_S)
 
                 # For now, return success - in full implementation we'd listen for diagnostics
                 return {
@@ -331,10 +361,15 @@ class TerraformLSPClient:
             finally:
                 await self._close_document(file_uri)
 
-        except Exception as e:
+        except ValueError as e:
             return {"error": str(e)}
+        except Exception as e:
+            self.logger.error(
+                f"LSP operation failed in validate_document: {e}", exc_info=True
+            )
+            return {"error": _LSP_OP_FAILED}
 
-    async def get_hover_info(self, file_path: str, line: int, character: int) -> Dict:
+    async def get_hover_info(self, file_path: str, line: int, character: int) -> dict:
         """Get hover information for a position in a Terraform file"""
         try:
             self._validate_file_path(file_path)
@@ -349,9 +384,15 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                content = await asyncio.to_thread(
-                    Path(file_path).read_text, encoding="utf-8"
-                )
+                try:
+                    content = await asyncio.to_thread(
+                        Path(file_path).read_text, encoding="utf-8"
+                    )
+                except (PermissionError, UnicodeDecodeError, OSError) as e:
+                    self.logger.error(
+                        f"LSP operation failed in get_hover_info: {e}", exc_info=True
+                    )
+                    return {"error": _LSP_OP_FAILED}
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -366,7 +407,7 @@ class TerraformLSPClient:
                 )
 
                 # Small delay to let LSP process the document
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(_LSP_DOCUMENT_SETTLE_S)
 
             try:
                 response = await self._send_request(
@@ -389,10 +430,15 @@ class TerraformLSPClient:
             finally:
                 await self._close_document(file_uri)
 
-        except Exception as e:
+        except ValueError as e:
             return {"error": str(e)}
+        except Exception as e:
+            self.logger.error(
+                f"LSP operation failed in get_hover_info: {e}", exc_info=True
+            )
+            return {"error": _LSP_OP_FAILED}
 
-    async def get_completions(self, file_path: str, line: int, character: int) -> Dict:
+    async def get_completions(self, file_path: str, line: int, character: int) -> dict:
         """Get completion suggestions for a position in a Terraform file"""
         try:
             self._validate_file_path(file_path)
@@ -407,9 +453,15 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                content = await asyncio.to_thread(
-                    Path(file_path).read_text, encoding="utf-8"
-                )
+                try:
+                    content = await asyncio.to_thread(
+                        Path(file_path).read_text, encoding="utf-8"
+                    )
+                except (PermissionError, UnicodeDecodeError, OSError) as e:
+                    self.logger.error(
+                        f"LSP operation failed in get_completions: {e}", exc_info=True
+                    )
+                    return {"error": _LSP_OP_FAILED}
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -424,7 +476,7 @@ class TerraformLSPClient:
                 )
 
                 # Small delay to let LSP process the document
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(_LSP_DOCUMENT_SETTLE_S)
 
             try:
                 response = await self._send_request(
@@ -446,10 +498,15 @@ class TerraformLSPClient:
             finally:
                 await self._close_document(file_uri)
 
-        except Exception as e:
+        except ValueError as e:
             return {"error": str(e)}
+        except Exception as e:
+            self.logger.error(
+                f"LSP operation failed in get_completions: {e}", exc_info=True
+            )
+            return {"error": _LSP_OP_FAILED}
 
-    async def format_document(self, file_path: str) -> Dict:
+    async def format_document(self, file_path: str) -> dict:
         """Format a Terraform document"""
         try:
             self._validate_file_path(file_path)
@@ -464,9 +521,15 @@ class TerraformLSPClient:
 
             # First open the document
             if os.path.exists(file_path):
-                content = await asyncio.to_thread(
-                    Path(file_path).read_text, encoding="utf-8"
-                )
+                try:
+                    content = await asyncio.to_thread(
+                        Path(file_path).read_text, encoding="utf-8"
+                    )
+                except (PermissionError, UnicodeDecodeError, OSError) as e:
+                    self.logger.error(
+                        f"LSP operation failed in format_document: {e}", exc_info=True
+                    )
+                    return {"error": _LSP_OP_FAILED}
 
                 await self._send_notification(
                     "textDocument/didOpen",
@@ -481,7 +544,7 @@ class TerraformLSPClient:
                 )
 
                 # Small delay to let LSP process the document
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(_LSP_DOCUMENT_SETTLE_S)
 
             try:
                 response = await self._send_request(
@@ -500,8 +563,13 @@ class TerraformLSPClient:
             finally:
                 await self._close_document(file_uri)
 
-        except Exception as e:
+        except ValueError as e:
             return {"error": str(e)}
+        except Exception as e:
+            self.logger.error(
+                f"LSP operation failed in format_document: {e}", exc_info=True
+            )
+            return {"error": _LSP_OP_FAILED}
 
     async def shutdown(self):
         """Shutdown the LSP client and terraform-ls process"""
@@ -513,7 +581,9 @@ class TerraformLSPClient:
             if self.terraform_ls_process:
                 self.terraform_ls_process.terminate()
                 try:
-                    await asyncio.wait_for(self.terraform_ls_process.wait(), timeout=5.0)
+                    await asyncio.wait_for(
+                        self.terraform_ls_process.wait(), timeout=_LSP_SHUTDOWN_TIMEOUT_S
+                    )
                 except asyncio.TimeoutError:
                     self.logger.warning("terraform-ls did not exit in time, killing")
                     self.terraform_ls_process.kill()

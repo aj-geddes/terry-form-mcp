@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Terry-Form MCP Server - Enhanced with LSP Integration"""
-__version__ = "3.1.0"
+
+from _version import __version__
 
 import asyncio
 import functools
 import importlib
+import ipaddress
 import json
 import logging
 import os
@@ -12,12 +14,64 @@ import re
 import subprocess
 import time
 from collections import defaultdict, deque
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
 from threading import Lock
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 
 from fastmcp import FastMCP
+
+# Module-level start time for uptime metrics
+_START_TIME = time.time()
+
+# Configurable workspace root — override with TERRY_WORKSPACE_ROOT env var
+WORKSPACE_ROOT = os.environ.get("TERRY_WORKSPACE_ROOT", "/mnt/workspace")
+
+# Configurable terraform-ls binary path — override with TERRY_TERRAFORM_LS_PATH env var
+TERRAFORM_LS_BIN = os.environ.get("TERRY_TERRAFORM_LS_PATH", "terraform-ls")
+
+# ---------------------------------------------------------------------------
+# IP whitelisting — TERRY_ALLOWED_HOSTS
+# ---------------------------------------------------------------------------
+# Comma-separated list of allowed IPs or CIDR ranges.
+# Empty (the default) means no restriction.
+# Example: TERRY_ALLOWED_HOSTS=10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+_ALLOWED_HOSTS_RAW: str = os.environ.get("TERRY_ALLOWED_HOSTS", "")
+_ALLOWED_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+_ALLOWED_HOSTS_INVALID: list[str] = []  # collected before logger is ready
+if _ALLOWED_HOSTS_RAW:
+    for _entry in _ALLOWED_HOSTS_RAW.split(","):
+        _entry = _entry.strip()
+        if _entry:
+            try:
+                _ALLOWED_NETWORKS.append(ipaddress.ip_network(_entry, strict=False))
+            except ValueError:
+                _ALLOWED_HOSTS_INVALID.append(_entry)
+
+
+def _check_allowed_ip(client_ip: str | None) -> tuple[bool, str | None]:
+    """Check whether client_ip is permitted by _ALLOWED_NETWORKS.
+
+    Returns (allowed, error_message).
+    - (True, None) when allowed or no restriction is configured.
+    - (False, message) when denied.
+    """
+    if not _ALLOWED_NETWORKS:
+        return True, None
+
+    if not client_ip:
+        return False, "Client IP not available"
+
+    try:
+        addr = ipaddress.ip_address(client_ip)
+        if any(addr in net for net in _ALLOWED_NETWORKS):
+            return True, None
+    except ValueError:
+        pass
+
+    return False, f"Access denied: {client_ip} not in allowed networks"
+
 
 # Pre-compiled regex patterns for Terraform file analysis
 _RE_PROVIDER = re.compile(r'provider\s+"([^"]+)"')
@@ -32,34 +86,63 @@ _RE_HARDCODED_INSTANCE = re.compile(r'i-[a-f0-9]{8,}')
 _RE_HARDCODED_VPC = re.compile(r'vpc-[a-f0-9]{8,}')
 _RE_HARDCODED_SUBNET = re.compile(r'subnet-[a-f0-9]{8,}')
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Maximum Terraform file size to process — files larger than this are skipped
+_MAX_TF_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Configure logging with structured JSON output
+class _JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+        if hasattr(record, "extra"):
+            log_record.update(record.extra)
+        return json.dumps(log_record)
+
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(_JsonFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
+
+# Emit deferred warnings for any invalid TERRY_ALLOWED_HOSTS entries collected
+# before the logger was initialised above.
+for _bad_entry in _ALLOWED_HOSTS_INVALID:
+    logger.warning(f"Invalid TERRY_ALLOWED_HOSTS entry: {_bad_entry!r}")
 
 # Lifespan context manager for clean startup/shutdown
 @asynccontextmanager
 async def app_lifespan(server: FastMCP):
-    logger.info("Terry-Form MCP server starting...")
+    _transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    _host = os.environ.get("HOST", "0.0.0.0")
+    _port = os.environ.get("PORT", "8000")
+    logger.info(
+        f"Terry-Form MCP server v{__version__} starting. "
+        f"transport={_transport} host={_host} port={_port}"
+    )
     yield {}
-    logger.info("Terry-Form MCP server shutting down...")
-    if terraform_lsp_client._lsp_client:
-        await terraform_lsp_client._lsp_client.shutdown()
+    logger.info(f"Terry-Form MCP server v{__version__} shutting down.")
+    # Shutdown LSP client
+    try:
+        if terraform_lsp_client._lsp_client:
+            await terraform_lsp_client._lsp_client.shutdown()
+            logger.info("LSP client shut down successfully")
+    except Exception as e:
+        logger.warning(f"LSP client shutdown error (non-fatal): {e}")
 
 
 # Initialize the MCP server
 mcp = FastMCP("terry-form", lifespan=app_lifespan)
 
-# Import security validator
-try:
-    from mcp_request_validator import MCPRequestValidator
-    request_validator = MCPRequestValidator()
-    logger.info("Security validator initialized")
-except Exception as e:
-    logger.error(f"Failed to load security validator: {e}")
-    request_validator = None
+# Import security validator — hard failure: the server must not start without validation
+from mcp_request_validator import MCPRequestValidator
+request_validator = MCPRequestValidator()
+logger.info("Security validator initialized")
 
 # ============================================================================
 # RATE LIMITING SYSTEM
@@ -232,7 +315,7 @@ auth_manager = AuthManager()
 logger.info("Authentication manager initialized")
 
 # Security validation decorator
-def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
+def _pre_validate(tool_name: str, kwargs: dict) -> tuple[bool, dict]:
     """Shared pre-execution validation: auth, rate limiting, request validation, path checks.
 
     Returns (ok, info) where info contains either error details or
@@ -266,6 +349,7 @@ def _pre_validate(tool_name: str, kwargs: dict) -> Tuple[bool, dict]:
 
     for path_key in ("path", "file_path", "workspace_path", "config_path"):
         if path_key in kwargs and not validate_safe_path(str(kwargs[path_key])):
+            logger.warning(f"Path traversal attempt blocked: tool={tool_name}, key={path_key}")
             return False, {"error": f"Invalid {path_key}: Access outside workspace is not allowed"}
 
     return True, {"user_id": user_id, "role": role, "rate_info": rate_info}
@@ -288,13 +372,14 @@ def validate_request(tool_name: str):
                 ok, info = _pre_validate(tool_name, kwargs)
                 if not ok:
                     return info
+                tool_kwargs = {k: v for k, v in kwargs.items() if k != "api_key"}
                 try:
-                    result = await func(**kwargs)
+                    result = await func(**tool_kwargs)
                     logger.info(f"Tool {tool_name} completed successfully for user {info['user_id']}")
                     return _post_process(result, info)
                 except Exception as e:
-                    logger.error(f"Tool {tool_name} failed with error: {e}")
-                    return {"error": f"Tool execution failed: {str(e)}"}
+                    logger.error(f"Tool {tool_name} execution failed: {e}", exc_info=True)
+                    return {"error": f"Tool '{tool_name}' execution failed. Check server logs for details."}
             return async_wrapper
 
         @functools.wraps(func)
@@ -302,18 +387,19 @@ def validate_request(tool_name: str):
             ok, info = _pre_validate(tool_name, kwargs)
             if not ok:
                 return info
+            tool_kwargs = {k: v for k, v in kwargs.items() if k != "api_key"}
             try:
-                result = func(**kwargs)
+                result = func(**tool_kwargs)
                 logger.info(f"Tool {tool_name} completed successfully for user {info['user_id']}")
                 return _post_process(result, info)
             except Exception as e:
-                logger.error(f"Tool {tool_name} failed with error: {e}")
-                return {"error": f"Tool execution failed: {str(e)}"}
+                logger.error(f"Tool {tool_name} execution failed: {e}", exc_info=True)
+                return {"error": f"Tool '{tool_name}' execution failed. Check server logs for details."}
         return wrapper
     return decorator
 
 
-def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> bool:
+def validate_safe_path(path: str, workspace_root: str = WORKSPACE_ROOT) -> bool:
     """Validate that a path is safe and within workspace bounds"""
     try:
         # Handle special prefixes
@@ -338,6 +424,27 @@ def validate_safe_path(path: str, workspace_root: str = "/mnt/workspace") -> boo
         return False
 
 
+def _resolve_lsp_paths(
+    file_path: str, workspace_path: str | None
+) -> tuple[str, str]:
+    """Resolve full file and workspace paths for LSP operations.
+
+    Args:
+        file_path: Path to Terraform file relative to workspace root or workspace dir.
+        workspace_path: Optional workspace directory relative to workspace root.
+
+    Returns:
+        Tuple of (full_file_path, full_workspace_path) as absolute strings.
+    """
+    if workspace_path:
+        full_workspace_path = str(Path(WORKSPACE_ROOT) / workspace_path)
+        full_file_path = str(Path(full_workspace_path) / file_path)
+    else:
+        full_file_path = str(Path(WORKSPACE_ROOT) / file_path)
+        full_workspace_path = str(Path(full_file_path).parent)
+    return full_file_path, full_workspace_path
+
+
 # Load the existing Terraform tool logic (kebab-case filename requires importlib)
 terry_form = importlib.import_module("terry-form-mcp")
 
@@ -352,31 +459,31 @@ import terraform_lsp_client
 @mcp.tool()
 @validate_request("terry")
 def terry(
-    path: str, actions: List[str] = None, vars: Dict[str, Any] = None
-) -> Dict[str, object]:
+    path: str, actions: list[str] = None, tf_vars: dict[str, Any] = None
+) -> dict[str, object]:
     """
     Execute Terraform operations with comprehensive output and security validation.
-    
+
     Args:
         path: Workspace path relative to /mnt/workspace
         actions: Array of Terraform actions to execute (default: ["plan"])
-        vars: Terraform variables (optional)
-    
+        tf_vars: Terraform variables (optional)
+
     Returns:
         Execution results with detailed output matching API specification
-        
+
     Supported actions: init, validate, fmt, plan, show, graph, providers, version
     """
     if actions is None:
         actions = ["plan"]
-    if vars is None:
-        vars = {}
-    full_path = str(Path("/mnt/workspace") / path)
+    if tf_vars is None:
+        tf_vars = {}
+    full_path = str(Path(WORKSPACE_ROOT) / path)
     results = []
     for action in actions:
         results.append(
             terry_form.run_terraform(
-                full_path, action, vars if action == "plan" else None
+                full_path, action, tf_vars if action == "plan" else None
             )
         )
     return {"terry-results": results}
@@ -389,12 +496,12 @@ def terry(
 
 @mcp.tool()
 @validate_request("terry_workspace_list")
-def terry_workspace_list() -> Dict[str, object]:
+def terry_workspace_list() -> dict[str, object]:
     """
     List all available Terraform workspaces in /mnt/workspace.
     Returns workspace paths with initialization status and metadata.
     """
-    workspace_root = Path("/mnt/workspace")
+    workspace_root = Path(WORKSPACE_ROOT)
     workspaces = []
     
     try:
@@ -419,17 +526,23 @@ def terry_workspace_list() -> Dict[str, object]:
                 # Get last modified time
                 try:
                     mtime = max(os.path.getmtime(os.path.join(root, f)) for f in tf_files)
-                    workspace_info["last_modified"] = subprocess.run(
-                        ["date", "-u", "-d", f"@{int(mtime)}", "+%Y-%m-%dT%H:%M:%SZ"],
-                        capture_output=True, text=True
-                    ).stdout.strip()
+                    workspace_info["last_modified"] = datetime.fromtimestamp(
+                        mtime, tz=timezone.utc
+                    ).strftime("%Y-%m-%dT%H:%M:%SZ")
                 except Exception as e:
                     logger.debug(f"Failed to get last modified time for workspace: {e}")
 
                 # Extract provider information
                 for tf_file in tf_files:
                     try:
-                        with open(os.path.join(root, tf_file), 'r') as f:
+                        tf_file_path = Path(os.path.join(root, tf_file))
+                        if tf_file_path.stat().st_size > _MAX_TF_FILE_SIZE:
+                            logger.warning(
+                                f"Skipping oversized file {tf_file_path} "
+                                f"({tf_file_path.stat().st_size} bytes)"
+                            )
+                            continue
+                        with open(tf_file_path, 'r') as f:
                             content = f.read()
                             # Simple provider extraction
                             providers = _RE_PROVIDER.findall(content)
@@ -451,7 +564,7 @@ def terry_workspace_list() -> Dict[str, object]:
 
 @mcp.tool()
 @validate_request("terry_version")
-def terry_version() -> Dict[str, object]:
+def terry_version() -> dict[str, object]:
     """
     Get Terraform version information and provider selections.
     Returns version details and available provider information.
@@ -517,7 +630,7 @@ def terry_version() -> Dict[str, object]:
 
 @mcp.tool()
 @validate_request("terry_environment_check")
-def terry_environment_check() -> Dict[str, object]:
+def terry_environment_check() -> dict[str, object]:
     """
     Comprehensive environment check for Terraform and LSP integration.
     Checks container environment, available tools, and configuration.
@@ -530,7 +643,7 @@ def terry_environment_check() -> Dict[str, object]:
             "working_directory": os.getcwd(),
             "user": os.getenv("USER", "unknown"),
             "path": os.getenv("PATH", ""),
-            "workspace_mount": os.path.exists("/mnt/workspace"),
+            "workspace_mount": os.path.exists(WORKSPACE_ROOT),
         }
 
         # Check Terraform
@@ -598,7 +711,7 @@ def terry_environment_check() -> Dict[str, object]:
 
 @mcp.tool()
 @validate_request("terry_lsp_debug")
-def terry_lsp_debug() -> Dict[str, object]:
+def terry_lsp_debug() -> dict[str, object]:
     """
     Debug terraform-ls functionality and LSP client state.
     Tests terraform-ls availability and basic functionality.
@@ -668,17 +781,18 @@ def terry_lsp_debug() -> Dict[str, object]:
         return {"terry-lsp-debug": results}
 
     except Exception as e:
+        logger.error(f"terry_lsp_debug failed: {e}", exc_info=True)
         return {"terry-lsp-debug": {"error": str(e)}}
 
 
 @mcp.tool()
 @validate_request("terry_workspace_info")
-def terry_workspace_info(path: str = ".") -> Dict[str, object]:
+def terry_workspace_info(path: str = ".") -> dict[str, object]:
     """
     Analyze Terraform workspace structure and provide recommendations.
     Shows file structure, configuration status, and LSP readiness.
     """
-    full_path = str(Path("/mnt/workspace") / path)
+    full_path = str(Path(WORKSPACE_ROOT) / path)
     results = {}
 
     try:
@@ -706,7 +820,6 @@ def terry_workspace_info(path: str = ".") -> Dict[str, object]:
         terraform_dir = os.path.join(full_path, ".terraform")
         results["terraform_state"] = {
             "initialized": os.path.exists(terraform_dir),
-            "terraform_dir_exists": os.path.exists(terraform_dir),
             "state_file_exists": os.path.exists(
                 os.path.join(full_path, "terraform.tfstate")
             ),
@@ -744,18 +857,19 @@ def terry_workspace_info(path: str = ".") -> Dict[str, object]:
         return {"terry-workspace": results}
 
     except Exception as e:
+        logger.error(f"terry_workspace_info failed: {e}", exc_info=True)
         return {"terry-workspace": {"error": str(e)}}
 
 
 @mcp.tool()
 @validate_request("terry_lsp_init")
-async def terry_lsp_init(workspace_path: str) -> Dict[str, object]:
+async def terry_lsp_init(workspace_path: str) -> dict[str, object]:
     """
     Manually initialize LSP client for a specific workspace.
     Useful for troubleshooting LSP initialization issues.
     """
     try:
-        full_workspace_path = str(Path("/mnt/workspace") / workspace_path)
+        full_workspace_path = str(Path(WORKSPACE_ROOT) / workspace_path)
 
         # Check if workspace exists
         if not os.path.exists(full_workspace_path):
@@ -792,18 +906,19 @@ async def terry_lsp_init(workspace_path: str) -> Dict[str, object]:
             }
 
     except Exception as e:
+        logger.error(f"terry_lsp_init failed: {e}", exc_info=True)
         return {"terry-lsp-init": {"error": str(e)}}
 
 
 @mcp.tool()
 @validate_request("terry_file_check")
-def terry_file_check(file_path: str) -> Dict[str, object]:
+def terry_file_check(file_path: str) -> dict[str, object]:
     """
     Check Terraform file syntax and readiness for LSP operations.
     Validates file exists, is readable, and has basic Terraform syntax.
     """
     try:
-        full_path = str(Path("/mnt/workspace") / file_path)
+        full_path = str(Path(WORKSPACE_ROOT) / file_path)
 
         results = {
             "file_path": file_path,
@@ -846,7 +961,7 @@ def terry_file_check(file_path: str) -> Dict[str, object]:
 @validate_request("terry_workspace_setup")
 def terry_workspace_setup(
     path: str, project_name: str = "terraform-project"
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """
     Create a properly structured Terraform workspace ready for LSP operations.
     Sets up basic files and directory structure.
@@ -856,7 +971,7 @@ def terry_workspace_setup(
         if not re.match(r'^[a-zA-Z0-9_-]+$', project_name):
             return {"terry-workspace-setup": {"error": "Invalid project_name: only alphanumeric, hyphens, and underscores allowed"}}
 
-        full_path = str(Path("/mnt/workspace") / path)
+        full_path = str(Path(WORKSPACE_ROOT) / path)
 
         # Create directory if it doesn't exist
         os.makedirs(full_path, exist_ok=True)
@@ -937,6 +1052,7 @@ variable "project_name" {{
         }
 
     except Exception as e:
+        logger.error(f"terry_workspace_setup failed: {e}", exc_info=True)
         return {"terry-workspace-setup": {"error": str(e)}}
 
 
@@ -948,8 +1064,8 @@ variable "project_name" {{
 @mcp.tool()
 @validate_request("terraform_validate_lsp")
 async def terraform_validate_lsp(
-    file_path: str, workspace_path: Optional[str] = None
-) -> Dict[str, object]:
+    file_path: str, workspace_path: str | None = None
+) -> dict[str, object]:
     """
     Validate a Terraform file using terraform-ls Language Server.
     Provides detailed diagnostics and syntax validation.
@@ -960,12 +1076,7 @@ async def terraform_validate_lsp(
     """
     try:
         # Resolve full paths
-        if workspace_path:
-            full_workspace_path = str(Path("/mnt/workspace") / workspace_path)
-            full_file_path = str(Path(full_workspace_path) / file_path)
-        else:
-            full_file_path = str(Path("/mnt/workspace") / file_path)
-            full_workspace_path = str(Path(full_file_path).parent)
+        full_file_path, full_workspace_path = _resolve_lsp_paths(file_path, workspace_path)
 
         # Check if file exists
         if not os.path.exists(full_file_path):
@@ -992,14 +1103,15 @@ async def terraform_validate_lsp(
         }
 
     except Exception as e:
+        logger.error(f"terraform_validate_lsp failed: {e}", exc_info=True)
         return {"terraform-ls-validation": {"error": str(e), "file_path": file_path}}
 
 
 @mcp.tool()
 @validate_request("terraform_hover")
 async def terraform_hover(
-    file_path: str, line: int, character: int, workspace_path: Optional[str] = None
-) -> Dict[str, object]:
+    file_path: str, line: int, character: int, workspace_path: str | None = None
+) -> dict[str, object]:
     """
     Get documentation and information for Terraform resource at cursor position.
 
@@ -1011,12 +1123,7 @@ async def terraform_hover(
     """
     try:
         # Resolve full paths
-        if workspace_path:
-            full_workspace_path = str(Path("/mnt/workspace") / workspace_path)
-            full_file_path = str(Path(full_workspace_path) / file_path)
-        else:
-            full_file_path = str(Path("/mnt/workspace") / file_path)
-            full_workspace_path = str(Path(full_file_path).parent)
+        full_file_path, full_workspace_path = _resolve_lsp_paths(file_path, workspace_path)
 
         # Check if file exists
         if not os.path.exists(full_file_path):
@@ -1043,6 +1150,7 @@ async def terraform_hover(
         }
 
     except Exception as e:
+        logger.error(f"terraform_hover failed: {e}", exc_info=True)
         return {
             "terraform-hover": {
                 "error": str(e),
@@ -1055,8 +1163,8 @@ async def terraform_hover(
 @mcp.tool()
 @validate_request("terraform_complete")
 async def terraform_complete(
-    file_path: str, line: int, character: int, workspace_path: Optional[str] = None
-) -> Dict[str, object]:
+    file_path: str, line: int, character: int, workspace_path: str | None = None
+) -> dict[str, object]:
     """
     Get completion suggestions for Terraform code at cursor position.
 
@@ -1068,12 +1176,7 @@ async def terraform_complete(
     """
     try:
         # Resolve full paths
-        if workspace_path:
-            full_workspace_path = str(Path("/mnt/workspace") / workspace_path)
-            full_file_path = str(Path(full_workspace_path) / file_path)
-        else:
-            full_file_path = str(Path("/mnt/workspace") / file_path)
-            full_workspace_path = str(Path(full_file_path).parent)
+        full_file_path, full_workspace_path = _resolve_lsp_paths(file_path, workspace_path)
 
         # Check if file exists
         if not os.path.exists(full_file_path):
@@ -1100,6 +1203,7 @@ async def terraform_complete(
         }
 
     except Exception as e:
+        logger.error(f"terraform_complete failed: {e}", exc_info=True)
         return {
             "terraform-completions": {
                 "error": str(e),
@@ -1112,8 +1216,8 @@ async def terraform_complete(
 @mcp.tool()
 @validate_request("terraform_format_lsp")
 async def terraform_format_lsp(
-    file_path: str, workspace_path: Optional[str] = None
-) -> Dict[str, object]:
+    file_path: str, workspace_path: str | None = None
+) -> dict[str, object]:
     """
     Format a Terraform file using terraform-ls Language Server.
 
@@ -1123,12 +1227,7 @@ async def terraform_format_lsp(
     """
     try:
         # Resolve full paths
-        if workspace_path:
-            full_workspace_path = str(Path("/mnt/workspace") / workspace_path)
-            full_file_path = str(Path(full_workspace_path) / file_path)
-        else:
-            full_file_path = str(Path("/mnt/workspace") / file_path)
-            full_workspace_path = str(Path(full_file_path).parent)
+        full_file_path, full_workspace_path = _resolve_lsp_paths(file_path, workspace_path)
 
         # Check if file exists
         if not os.path.exists(full_file_path):
@@ -1148,12 +1247,13 @@ async def terraform_format_lsp(
         return {"terraform-format": {"file_path": file_path, **result}}
 
     except Exception as e:
+        logger.error(f"terraform_format_lsp failed: {e}", exc_info=True)
         return {"terraform-format": {"error": str(e), "file_path": file_path}}
 
 
 @mcp.tool()
 @validate_request("terraform_lsp_status")
-def terraform_lsp_status() -> Dict[str, object]:
+def terraform_lsp_status() -> dict[str, object]:
     """
     Get the status of the terraform-ls Language Server integration.
     """
@@ -1185,7 +1285,7 @@ def terraform_lsp_status() -> Dict[str, object]:
 
 @mcp.tool()
 @validate_request("terry_analyze")
-def terry_analyze(path: str) -> Dict[str, object]:
+def terry_analyze(path: str) -> dict[str, object]:
     """
     Analyze Terraform configuration for best practices.
     
@@ -1195,11 +1295,11 @@ def terry_analyze(path: str) -> Dict[str, object]:
     Returns:
         Analysis report with score, issues, and statistics
     """
-    full_path = str(Path("/mnt/workspace") / path)
-    
+    full_path = str(Path(WORKSPACE_ROOT) / path)
+
     if not os.path.exists(full_path):
         return {"error": f"Path {full_path} does not exist"}
-    
+
     analysis = {
         "score": 100,  # Start with perfect score
         "issues": [],
@@ -1216,9 +1316,14 @@ def terry_analyze(path: str) -> Dict[str, object]:
     try:
         # Analyze all .tf files in the directory
         for tf_file in Path(full_path).glob("*.tf"):
+            if tf_file.stat().st_size > _MAX_TF_FILE_SIZE:
+                logger.warning(
+                    f"Skipping oversized file {tf_file} ({tf_file.stat().st_size} bytes)"
+                )
+                continue
             with open(tf_file, 'r') as f:
                 content = f.read()
-                
+
                 # Count resources
                 resources = _RE_RESOURCE.findall(content)
                 analysis["statistics"]["resources"] += len(resources)
@@ -1301,12 +1406,13 @@ def terry_analyze(path: str) -> Dict[str, object]:
         return {"analysis": analysis}
         
     except Exception as e:
+        logger.error(f"terry_analyze failed: {e}", exc_info=True)
         return {"error": f"Analysis failed: {str(e)}"}
 
 
 @mcp.tool()
 @validate_request("terry_security_scan")
-def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object]:
+def terry_security_scan(path: str, severity: str = "medium") -> dict[str, object]:
     """
     Run security scan on Terraform configuration.
     
@@ -1317,11 +1423,15 @@ def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object
     Returns:
         Security scan results with vulnerabilities and summary
     """
-    full_path = str(Path("/mnt/workspace") / path)
-    
+    valid_severity_values = {"low", "medium", "high", "critical"}
+    if severity.lower() not in valid_severity_values:
+        return {"error": f"Invalid severity '{severity}'. Must be one of: {', '.join(sorted(valid_severity_values))}"}
+
+    full_path = str(Path(WORKSPACE_ROOT) / path)
+
     if not os.path.exists(full_path):
         return {"error": f"Path {full_path} does not exist"}
-    
+
     severity_levels = {"low": 1, "medium": 2, "high": 3, "critical": 4}
     min_severity = severity_levels.get(severity.lower(), 2)
     
@@ -1338,6 +1448,11 @@ def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object
     try:
         # Security checks for all .tf files
         for tf_file in Path(full_path).glob("*.tf"):
+            if tf_file.stat().st_size > _MAX_TF_FILE_SIZE:
+                logger.warning(
+                    f"Skipping oversized file {tf_file} ({tf_file.stat().st_size} bytes)"
+                )
+                continue
             with open(tf_file, 'r') as f:
                 content = f.read()
 
@@ -1434,12 +1549,13 @@ def terry_security_scan(path: str, severity: str = "medium") -> Dict[str, object
         return {"security_scan": security_scan}
         
     except Exception as e:
+        logger.error(f"terry_security_scan failed: {e}", exc_info=True)
         return {"error": f"Security scan failed: {str(e)}"}
 
 
 @mcp.tool()
 @validate_request("terry_recommendations")
-def terry_recommendations(path: str, focus: str = "security") -> Dict[str, object]:
+def terry_recommendations(path: str, focus: str = "security") -> dict[str, object]:
     """
     Get recommendations for Terraform configuration improvement.
     
@@ -1450,11 +1566,15 @@ def terry_recommendations(path: str, focus: str = "security") -> Dict[str, objec
     Returns:
         Recommendations based on the selected focus area
     """
-    full_path = str(Path("/mnt/workspace") / path)
-    
+    valid_focus_values = {"security", "cost", "performance", "reliability"}
+    if focus not in valid_focus_values:
+        return {"error": f"Invalid focus '{focus}'. Must be one of: {', '.join(sorted(valid_focus_values))}"}
+
+    full_path = str(Path(WORKSPACE_ROOT) / path)
+
     if not os.path.exists(full_path):
         return {"error": f"Path {full_path} does not exist"}
-    
+
     recommendations = {
         "focus": focus,
         "recommendations": [],
@@ -1464,9 +1584,14 @@ def terry_recommendations(path: str, focus: str = "security") -> Dict[str, objec
     try:
         # Analyze configuration based on focus area
         for tf_file in Path(full_path).glob("*.tf"):
+            if tf_file.stat().st_size > _MAX_TF_FILE_SIZE:
+                logger.warning(
+                    f"Skipping oversized file {tf_file} ({tf_file.stat().st_size} bytes)"
+                )
+                continue
             with open(tf_file, 'r') as f:
                 content = f.read()
-                
+
                 if focus == "security":
                     # Security recommendations
                     if 'aws_instance' in content and 'key_name' in content:
@@ -1559,242 +1684,173 @@ def terry_recommendations(path: str, focus: str = "security") -> Dict[str, objec
         return {"recommendations": recommendations}
         
     except Exception as e:
+        logger.error(f"terry_recommendations failed: {e}", exc_info=True)
         return {"error": f"Recommendations generation failed: {str(e)}"}
 
 
 # ============================================================================
-# TERRAFORM CLOUD TOOLS
+# TERRAFORM CLOUD TOOLS (planned for v3.2.0)
+# These tools are not yet implemented and have been removed from the
+# tool registry to avoid exposing non-functional endpoints to customers.
+# Uncomment and implement when TF Cloud API integration is ready.
 # ============================================================================
 
-@mcp.tool()
-@validate_request("tf_cloud_list_workspaces")
-def tf_cloud_list_workspaces(organization: str, limit: int = 20) -> Dict[str, object]:
-    """
-    List Terraform Cloud workspaces for an organization.
-    
-    Args:
-        organization: Terraform Cloud organization name
-        limit: Maximum number of workspaces to return (default: 20, max: 100)
-    
-    Returns:
-        List of workspaces with metadata
-    """
-    # Validate inputs
-    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
-        return {"error": "Invalid organization name"}
-    
-    if limit < 1 or limit > 100:
-        return {"error": "Limit must be between 1 and 100"}
-    
-    try:
-        # Check for TF Cloud token
-        token = os.environ.get("TF_CLOUD_TOKEN")
-        if not token:
-            return {"error": "Terraform Cloud token not configured. Set TF_CLOUD_TOKEN environment variable"}
-        
-        # Mock implementation - in production, this would call TF Cloud API
-        # For now, return example structure as documented
-        return {
-            "workspaces": [
-                {
-                    "id": f"ws-example-{i}",
-                    "name": f"{organization}-workspace-{i}",
-                    "environment": "production" if i == 1 else "development",
-                    "terraform_version": "1.6.5",
-                    "current_run": {
-                        "id": f"run-example-{i}",
-                        "status": "applied" if i % 2 == 0 else "planned",
-                        "created_at": "2024-01-15T10:30:00Z"
-                    },
-                    "resource_count": 42 + i * 10,
-                    "auto_apply": i == 1
-                }
-                for i in range(1, min(limit + 1, 4))  # Return max 3 example workspaces
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to list TF Cloud workspaces: {e}")
-        return {"error": f"Failed to list workspaces: {str(e)}"}
+# --- Terraform Cloud tools (planned for v3.2.0) ---
+# These tools are not yet implemented and have been removed from the
+# tool registry to avoid exposing non-functional endpoints to customers.
+# Uncomment and implement when TF Cloud API integration is ready.
 
-
-@mcp.tool()
-@validate_request("tf_cloud_get_workspace")
-def tf_cloud_get_workspace(organization: str, workspace: str) -> Dict[str, object]:
-    """
-    Get detailed information about a specific Terraform Cloud workspace.
-    
-    Args:
-        organization: Terraform Cloud organization name
-        workspace: Workspace name
-    
-    Returns:
-        Detailed workspace information
-    """
-    # Validate inputs
-    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
-        return {"error": "Invalid organization name"}
-    
-    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
-        return {"error": "Invalid workspace name"}
-    
-    try:
-        # Check for TF Cloud token
-        token = os.environ.get("TF_CLOUD_TOKEN")
-        if not token:
-            return {"error": "Terraform Cloud token not configured"}
-        
-        # Mock implementation
-        return {
-            "workspace": {
-                "id": f"ws-{workspace}",
-                "name": workspace,
-                "organization": organization,
-                "environment": "production",
-                "terraform_version": "1.6.5",
-                "auto_apply": False,
-                "execution_mode": "remote",
-                "working_directory": "",
-                "vcs_repo": {
-                    "identifier": f"{organization}/infrastructure",
-                    "branch": "main",
-                    "oauth_token_id": "ot-example"
-                },
-                "current_state_version": {
-                    "id": "sv-example",
-                    "serial": 42,
-                    "state_version": 42,
-                    "created_at": "2024-01-15T10:00:00Z"
-                },
-                "resource_count": 75,
-                "tags": ["production", "aws", "managed"]
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get TF Cloud workspace: {e}")
-        return {"error": f"Failed to get workspace: {str(e)}"}
-
-
-@mcp.tool()
-@validate_request("tf_cloud_list_runs")
-def tf_cloud_list_runs(organization: str, workspace: str, limit: int = 10) -> Dict[str, object]:
-    """
-    List runs for a Terraform Cloud workspace.
-    
-    Args:
-        organization: Terraform Cloud organization name
-        workspace: Workspace name
-        limit: Maximum number of runs to return (default: 10)
-    
-    Returns:
-        List of runs with status and metadata
-    """
-    # Validate inputs
-    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
-        return {"error": "Invalid organization name"}
-    
-    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
-        return {"error": "Invalid workspace name"}
-    
-    if limit < 1 or limit > 100:
-        return {"error": "Limit must be between 1 and 100"}
-    
-    try:
-        # Check for TF Cloud token
-        token = os.environ.get("TF_CLOUD_TOKEN")
-        if not token:
-            return {"error": "Terraform Cloud token not configured"}
-        
-        # Mock implementation
-        statuses = ["applied", "planned", "planning", "applying", "errored", "canceled"]
-        return {
-            "runs": [
-                {
-                    "id": f"run-{i}",
-                    "status": statuses[i % len(statuses)],
-                    "created_at": f"2024-01-{15-i:02d}T{10+i}:00:00Z",
-                    "message": f"Run triggered by API - commit {i}",
-                    "is_destroy": False,
-                    "has_changes": i % 2 == 0,
-                    "resource_additions": i * 2,
-                    "resource_changes": i,
-                    "resource_destructions": 0,
-                    "cost_estimation": {
-                        "enabled": True,
-                        "delta": f"+${i * 10}.00",
-                        "monthly": f"${100 + i * 10}.00"
-                    } if i % 3 == 0 else None
-                }
-                for i in range(1, min(limit + 1, 6))
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to list TF Cloud runs: {e}")
-        return {"error": f"Failed to list runs: {str(e)}"}
-
-
-@mcp.tool()
-@validate_request("tf_cloud_get_state_outputs")
-def tf_cloud_get_state_outputs(organization: str, workspace: str) -> Dict[str, object]:
-    """
-    Get state outputs from a Terraform Cloud workspace.
-    
-    Args:
-        organization: Terraform Cloud organization name
-        workspace: Workspace name
-    
-    Returns:
-        Current state outputs with values and metadata
-    """
-    # Validate inputs
-    if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
-        return {"error": "Invalid organization name"}
-    
-    if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
-        return {"error": "Invalid workspace name"}
-    
-    try:
-        # Check for TF Cloud token
-        token = os.environ.get("TF_CLOUD_TOKEN")
-        if not token:
-            return {"error": "Terraform Cloud token not configured"}
-        
-        # Mock implementation
-        return {
-            "outputs": {
-                "vpc_id": {
-                    "value": "vpc-12345678",
-                    "type": "string",
-                    "sensitive": False
-                },
-                "subnet_ids": {
-                    "value": ["subnet-12345", "subnet-67890"],
-                    "type": "list(string)",
-                    "sensitive": False
-                },
-                "database_endpoint": {
-                    "value": "[SENSITIVE]",
-                    "type": "string",
-                    "sensitive": True
-                },
-                "load_balancer_dns": {
-                    "value": "lb-example.us-east-1.elb.amazonaws.com",
-                    "type": "string",
-                    "sensitive": False
-                },
-                "instance_count": {
-                    "value": 3,
-                    "type": "number",
-                    "sensitive": False
-                }
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get TF Cloud state outputs: {e}")
-        return {"error": f"Failed to get state outputs: {str(e)}"}
+# def _check_tf_cloud_token() -> str | None:
+#     """Return the TF_API_TOKEN env var value, or None if not configured."""
+#     return os.environ.get("TF_API_TOKEN") or None
+#
+#
+# @mcp.tool()
+# @validate_request("tf_cloud_list_workspaces")
+# def tf_cloud_list_workspaces(organization: str, limit: int = 20) -> dict[str, object]:
+#     """
+#     List Terraform Cloud workspaces for an organization.
+#
+#     Args:
+#         organization: Terraform Cloud organization name
+#         limit: Maximum number of workspaces to return (default: 20, max: 100)
+#
+#     Returns:
+#         List of workspaces with metadata
+#     """
+#     # Validate inputs
+#     if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+#         return {"error": "Invalid organization name"}
+#
+#     if limit < 1 or limit > 100:
+#         return {"error": "Limit must be between 1 and 100"}
+#
+#     try:
+#         # Check for TF Cloud token
+#         token = _check_tf_cloud_token()
+#         if not token:
+#             return {"error": "Terraform Cloud token not configured. Set TF_API_TOKEN environment variable"}
+#
+#         return {
+#             "error": "Terraform Cloud API integration is not yet implemented in this release. The token was validated successfully.",
+#             "status": "not_implemented",
+#         }
+#
+#     except Exception as e:
+#         logger.error(f"Failed to list TF Cloud workspaces: {e}")
+#         return {"error": f"Failed to list workspaces: {str(e)}"}
+#
+#
+# @mcp.tool()
+# @validate_request("tf_cloud_get_workspace")
+# def tf_cloud_get_workspace(organization: str, workspace: str) -> dict[str, object]:
+#     """
+#     Get detailed information about a specific Terraform Cloud workspace.
+#
+#     Args:
+#         organization: Terraform Cloud organization name
+#         workspace: Workspace name
+#
+#     Returns:
+#         Detailed workspace information
+#     """
+#     # Validate inputs
+#     if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+#         return {"error": "Invalid organization name"}
+#
+#     if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+#         return {"error": "Invalid workspace name"}
+#
+#     try:
+#         # Check for TF Cloud token
+#         token = _check_tf_cloud_token()
+#         if not token:
+#             return {"error": "Terraform Cloud token not configured. Set TF_API_TOKEN environment variable"}
+#
+#         return {
+#             "error": "Terraform Cloud API integration is not yet implemented in this release. The token was validated successfully.",
+#             "status": "not_implemented",
+#         }
+#
+#     except Exception as e:
+#         logger.error(f"Failed to get TF Cloud workspace: {e}")
+#         return {"error": f"Failed to get workspace: {str(e)}"}
+#
+#
+# @mcp.tool()
+# @validate_request("tf_cloud_list_runs")
+# def tf_cloud_list_runs(organization: str, workspace: str, limit: int = 10) -> dict[str, object]:
+#     """
+#     List runs for a Terraform Cloud workspace.
+#
+#     Args:
+#         organization: Terraform Cloud organization name
+#         workspace: Workspace name
+#         limit: Maximum number of runs to return (default: 10)
+#
+#     Returns:
+#         List of runs with status and metadata
+#     """
+#     # Validate inputs
+#     if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+#         return {"error": "Invalid organization name"}
+#
+#     if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+#         return {"error": "Invalid workspace name"}
+#
+#     if limit < 1 or limit > 100:
+#         return {"error": "Limit must be between 1 and 100"}
+#
+#     try:
+#         # Check for TF Cloud token
+#         token = _check_tf_cloud_token()
+#         if not token:
+#             return {"error": "Terraform Cloud token not configured. Set TF_API_TOKEN environment variable"}
+#
+#         return {
+#             "error": "Terraform Cloud API integration is not yet implemented in this release. The token was validated successfully.",
+#             "status": "not_implemented",
+#         }
+#
+#     except Exception as e:
+#         logger.error(f"Failed to list TF Cloud runs: {e}")
+#         return {"error": f"Failed to list runs: {str(e)}"}
+#
+#
+# @mcp.tool()
+# @validate_request("tf_cloud_get_state_outputs")
+# def tf_cloud_get_state_outputs(organization: str, workspace: str) -> dict[str, object]:
+#     """
+#     Get state outputs from a Terraform Cloud workspace.
+#
+#     Args:
+#         organization: Terraform Cloud organization name
+#         workspace: Workspace name
+#
+#     Returns:
+#         Current state outputs with values and metadata
+#     """
+#     # Validate inputs
+#     if not organization or not re.match(r'^[a-zA-Z0-9_-]+$', organization):
+#         return {"error": "Invalid organization name"}
+#
+#     if not workspace or not re.match(r'^[a-zA-Z0-9_-]+$', workspace):
+#         return {"error": "Invalid workspace name"}
+#
+#     try:
+#         # Check for TF Cloud token
+#         token = _check_tf_cloud_token()
+#         if not token:
+#             return {"error": "Terraform Cloud token not configured. Set TF_API_TOKEN environment variable"}
+#
+#         return {
+#             "error": "Terraform Cloud API integration is not yet implemented in this release. The token was validated successfully.",
+#             "status": "not_implemented",
+#         }
+#
+#     except Exception as e:
+#         logger.error(f"Failed to get TF Cloud state outputs: {e}")
+#         return {"error": f"Failed to get state outputs: {str(e)}"}
 
 
 # ============================================================================
@@ -1814,7 +1870,7 @@ try:
         github_auth = GitHubAppAuth(github_config)
         github_handler = GitHubRepoHandler(github_auth)
     except Exception as e:
-        logger.info(f"GitHub integration not configured: {e}")
+        logger.info("GitHub integration disabled (GITHUB_APP_ID not set). GitHub tools will be unavailable.")
 
 except Exception as e:
     logger.error(f"Failed to load GitHub integration: {e}")
@@ -1824,8 +1880,8 @@ except Exception as e:
 @mcp.tool()
 @validate_request("github_clone_repo")
 async def github_clone_repo(
-    owner: str, repo: str, branch: Optional[str] = None, force: bool = False
-) -> Dict[str, object]:
+    owner: str, repo: str, branch: str | None = None, force: bool = False
+) -> dict[str, object]:
     """
     Clone or update a GitHub repository into the workspace.
     
@@ -1852,7 +1908,7 @@ async def github_clone_repo(
 @validate_request("github_list_terraform_files")
 async def github_list_terraform_files(
     owner: str, repo: str, path: str = "", pattern: str = "*.tf"
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """
     List Terraform files in a GitHub repository.
     
@@ -1879,7 +1935,7 @@ async def github_list_terraform_files(
 @validate_request("github_get_terraform_config")
 async def github_get_terraform_config(
     owner: str, repo: str, config_path: str
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """
     Analyze Terraform configuration in a GitHub repository.
     
@@ -1904,8 +1960,8 @@ async def github_get_terraform_config(
 @mcp.tool()
 @validate_request("github_prepare_workspace")
 async def github_prepare_workspace(
-    owner: str, repo: str, config_path: str, workspace_name: Optional[str] = None
-) -> Dict[str, object]:
+    owner: str, repo: str, config_path: str, workspace_name: str | None = None
+) -> dict[str, object]:
     """
     Prepare a Terraform workspace from a GitHub repository.
     
@@ -1931,20 +1987,89 @@ async def github_prepare_workspace(
 
 
 # ============================================================================
+# HEALTH AND METRICS ENDPOINTS
+# ============================================================================
+
+
+@mcp.tool()
+def health_live() -> dict[str, object]:
+    """
+    Liveness probe. Always returns 200/ok when the server process is running.
+    Used by orchestrators to detect crashed/deadlocked processes.
+    """
+    return {"status": "ok"}
+
+
+@mcp.tool()
+def health_ready() -> dict[str, object]:
+    """
+    Readiness probe. Returns ok when Terraform binary is available and the
+    server is ready to accept requests. Returns not_ready otherwise.
+    """
+    try:
+        result = subprocess.run(
+            ["terraform", "version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return {"status": "ok", "terraform": "available"}
+        return {"status": "not_ready", "reason": "terraform binary returned non-zero exit code"}
+    except FileNotFoundError:
+        return {"status": "not_ready", "reason": "terraform binary not found in PATH"}
+    except subprocess.TimeoutExpired:
+        return {"status": "not_ready", "reason": "terraform binary timed out"}
+    except Exception as e:
+        logger.error(f"health_ready check failed: {e}", exc_info=True)
+        return {"status": "not_ready", "reason": str(e)}
+
+
+@mcp.tool()
+def api_metrics() -> dict[str, object]:
+    """
+    Basic server metrics. Exposes uptime and rate-limiter state summary.
+    """
+    uptime = time.time() - _START_TIME
+    with rate_limiter.lock:
+        rate_summary = {
+            category: len(timestamps)
+            for category, timestamps in rate_limiter.requests.items()
+        }
+    return {
+        "uptime_seconds": round(uptime, 3),
+        "rate_limiter": {
+            "limits": dict(rate_limiter.limits),
+            "current_window_counts": rate_summary,
+        },
+    }
+
+
+# ============================================================================
 # CONFIGURATION FRONTEND (HAT Stack)
 # ============================================================================
 
-try:
-    from frontend.config_manager import ConfigManager
-    from frontend.routes import register_routes
+_DISABLE_FRONTEND = os.environ.get("TERRY_DISABLE_FRONTEND", "false").lower() == "true"
 
-    config_manager = ConfigManager()
-    config_manager.load()
-    register_routes(mcp, config_manager, rate_limiter=rate_limiter)
-    logger.info("Configuration frontend registered")
-except Exception as e:
-    logger.warning(f"Frontend not available: {e}")
+if _DISABLE_FRONTEND:
+    logger.warning(
+        "Frontend disabled (TERRY_DISABLE_FRONTEND=true). "
+        "Config UI, dashboard, and /api/* endpoints are unavailable. "
+        "Server running in MCP-only mode."
+    )
     config_manager = None
+else:
+    try:
+        from frontend.config_manager import ConfigManager
+        from frontend.routes import register_routes
+
+        config_manager = ConfigManager()
+        config_manager.load()
+        register_routes(mcp, config_manager, rate_limiter=rate_limiter)
+        logger.info("Configuration frontend registered")
+    except Exception as e:
+        logger.warning(f"Frontend not available: {e}")
+        config_manager = None
 
 
 # ============================================================================
@@ -1955,10 +2080,22 @@ if __name__ == "__main__":
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
     transport_kwargs = {}
     if transport in ("sse", "streamable-http"):
-        transport_kwargs["host"] = os.environ.get("HOST", "0.0.0.0")
-        transport_kwargs["port"] = int(os.environ.get("PORT", "8000"))
+        host = os.environ.get("TERRY_HOST") or os.environ.get("HOST", "0.0.0.0")
+        port_str = os.environ.get("TERRY_PORT") or os.environ.get("PORT", "8000")
+        transport_kwargs["host"] = host
+        try:
+            transport_kwargs["port"] = int(port_str)
+        except ValueError:
+            logger.warning(
+                f"Invalid port value {port_str!r}; defaulting to 8000"
+            )
+            transport_kwargs["port"] = 8000
         logger.info(
-            f"Starting with {transport} transport on "
+            f"Terry-Form MCP v{__version__} starting with {transport} transport on "
             f"{transport_kwargs['host']}:{transport_kwargs['port']}"
+        )
+    else:
+        logger.info(
+            f"Terry-Form MCP v{__version__} starting with {transport} transport"
         )
     mcp.run(transport=transport, **transport_kwargs)

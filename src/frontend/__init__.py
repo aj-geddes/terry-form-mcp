@@ -1,3 +1,6 @@
 """Terry-Form MCP Configuration Frontend (HAT Stack)"""
 
-__version__ = "1.0.0"
+try:
+    from _version import __version__
+except ImportError:
+    __version__ = "unknown"

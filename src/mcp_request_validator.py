@@ -11,17 +11,20 @@ Security hardened:
 """
 
 import logging
+import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+_WORKSPACE_ROOT: str = os.environ.get("TERRY_WORKSPACE_ROOT", "/mnt/workspace")
 
 
 class MCPRequestValidator:
     """Validates MCP protocol requests for security and compliance"""
 
-    def __init__(self, workspace_root: str = "/mnt/workspace"):
+    def __init__(self, workspace_root: str = _WORKSPACE_ROOT):
         self.workspace_root = Path(workspace_root)
 
         # Define allowed actions for terry tool
@@ -47,7 +50,7 @@ class MCPRequestValidator:
         self.valid_name_pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
         self.dangerous_chars_pattern = re.compile(r'[$`\\"\';|&><(){}]')
 
-    def validate_request(self, request: Dict[str, Any]) -> Tuple[bool, str]:
+    def validate_request(self, request: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate an MCP request.
         Returns (is_valid, error_message)
@@ -86,7 +89,7 @@ class MCPRequestValidator:
             logger.error(f"Validation error: {e}")
             return False, f"Validation error: {str(e)}"
 
-    def _validate_terry_request(self, arguments: Dict[str, Any]) -> Tuple[bool, str]:
+    def _validate_terry_request(self, arguments: dict[str, Any]) -> tuple[bool, str]:
         """Validate terry tool request"""
         # Validate path
         path = arguments.get("path", "")
@@ -127,8 +130,8 @@ class MCPRequestValidator:
         return True, ""
 
     def _validate_github_request(
-        self, tool_name: str, arguments: Dict[str, Any]
-    ) -> Tuple[bool, str]:
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> tuple[bool, str]:
         """Validate GitHub tool requests"""
         # Validate owner/repo names
         owner = arguments.get("owner", "")
@@ -143,16 +146,11 @@ class MCPRequestValidator:
                 return False, f"Invalid repository name: {repo}"
 
         # Validate other parameters based on tool
-        if tool_name == "github_cleanup_repos":
-            days = arguments.get("days_old", 7)
-            if not isinstance(days, int) or days < 0 or days > 365:
-                return False, "Invalid days_old parameter"
-
         return True, ""
 
     def _validate_tf_cloud_request(
-        self, tool_name: str, arguments: Dict[str, Any]
-    ) -> Tuple[bool, str]:
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> tuple[bool, str]:
         """Validate Terraform Cloud tool requests"""
         # Basic validation for organization/workspace names
         org = arguments.get("organization", "")
@@ -173,8 +171,8 @@ class MCPRequestValidator:
         return True, ""
 
     def _validate_terry_extended_request(
-        self, tool_name: str, arguments: Dict[str, Any]
-    ) -> Tuple[bool, str]:
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> tuple[bool, str]:
         """Validate extended terry tool requests"""
         # Most extended tools work with file paths
         if "file_path" in arguments or "path" in arguments:
@@ -184,7 +182,7 @@ class MCPRequestValidator:
 
         return True, ""
 
-    def _validate_terraform_vars(self, tf_vars: Dict[str, Any]) -> Tuple[bool, str]:
+    def _validate_terraform_vars(self, tf_vars: dict[str, Any]) -> tuple[bool, str]:
         """Validate Terraform variables for security"""
         for key, value in tf_vars.items():
             # Validate key format
@@ -223,32 +221,10 @@ class MCPRequestValidator:
         except ValueError:
             return False
 
-    def _sanitize_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Sanitize parameters (for internal use)"""
-        sanitized = params.copy()
-
-        # Sanitize paths
-        if "path" in sanitized:
-            path = sanitized["path"]
-            if self._is_safe_path(path):
-                try:
-                    if not path.startswith(("github://", "workspace://")):
-                        if path.startswith("/"):
-                            sanitized["path"] = str(Path(path).resolve())
-                        else:
-                            sanitized["path"] = str(
-                                (self.workspace_root / path).resolve()
-                            )
-                except Exception:
-                    # Keep original path if resolution fails
-                    logger.debug(f"Failed to resolve path: {path}")
-
-        return sanitized
-
 
 def validate_mcp_request(
-    request: Dict[str, Any], workspace_root: str = "/mnt/workspace"
-) -> Tuple[bool, str]:
+    request: dict[str, Any], workspace_root: str = _WORKSPACE_ROOT
+) -> tuple[bool, str]:
     """
     Convenience function to validate MCP requests.
     Returns (is_valid, error_message)

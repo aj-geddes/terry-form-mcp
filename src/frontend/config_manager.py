@@ -2,14 +2,18 @@
 
 Startup: env vars seed the config file (if it doesn't exist) -> config file is source of truth.
 UI Save: validate (Pydantic) -> atomic write (tmp + rename) -> apply to os.environ / singletons.
+
+Security: Fields listed in _SECRET_FIELDS are stripped to empty strings before any disk write.
+Credentials submitted via the UI are applied to os.environ only (current process lifetime).
 """
 
 import json
 import logging
 import os
+import secrets
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .schemas import (
     SECTION_MODELS,
@@ -55,13 +59,28 @@ _ENV_MAP = {
 # Reverse map: env var -> config key
 _REVERSE_ENV_MAP = {v: k for k, v in _ENV_MAP.items()}
 
+# Dotted paths that must never be persisted to disk.
+# These fields are stripped to empty strings before json.dump and written
+# only to os.environ via _apply_to_env().
+_SECRET_FIELDS: frozenset = frozenset(
+    {
+        "cloud_credentials.aws.secret_access_key",
+        "cloud_credentials.aws.access_key_id",
+        "cloud_credentials.azure.client_secret",
+        "cloud_credentials.azure.client_id",
+        "cloud_credentials.gcp.credentials_json",
+        "terraform_cloud.token",
+        "github.webhook_secret",
+    }
+)
+
 
 class ConfigManager:
     """Manages terry-form-mcp configuration with file persistence."""
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         self.config_path = config_path or CONFIG_PATH
-        self._config: Optional[TerryConfig] = None
+        self._config: TerryConfig | None = None
 
     def load(self) -> TerryConfig:
         """Load config from file, or seed from env vars on first boot."""
@@ -87,7 +106,7 @@ class ConfigManager:
             self.load()
         return self._config
 
-    def get_section(self, section: str) -> Dict[str, Any]:
+    def get_section(self, section: str) -> dict[str, Any]:
         """Get a configuration section as a dict."""
         config_key = SECTION_TO_KEY.get(section, section)
         section_obj = getattr(self.config, config_key, None)
@@ -95,15 +114,15 @@ class ConfigManager:
             raise ValueError(f"Unknown config section: {section}")
         return section_obj.model_dump()
 
-    def get_section_masked(self, section: str) -> Dict[str, Any]:
+    def get_section_masked(self, section: str) -> dict[str, Any]:
         """Get a configuration section with sensitive values masked."""
         data = self.get_section(section)
         config_key = SECTION_TO_KEY.get(section, section)
         return self._mask_sensitive(data, config_key)
 
     def update_section(
-        self, section: str, data: Dict[str, Any], rate_limiter=None
-    ) -> Dict[str, Any]:
+        self, section: str, data: dict[str, Any], rate_limiter=None
+    ) -> dict[str, Any]:
         """Validate and update a configuration section.
 
         Returns the validated section data.
@@ -124,10 +143,10 @@ class ConfigManager:
         # Update the config object
         setattr(self._config, config_key, validated)
 
-        # Atomic write
+        # Atomic write (secrets stripped inside _save)
         self._save()
 
-        # Apply to environment variables
+        # Apply to environment variables (credentials stay in-process only)
         self._apply_to_env(config_key, validated.model_dump())
 
         # Live-reload rate limiter if applicable
@@ -139,13 +158,39 @@ class ConfigManager:
         logger.info(f"Config section '{section}' updated")
         return validated.model_dump()
 
-    def get_all(self) -> Dict[str, Any]:
+    def get_all(self) -> dict[str, Any]:
         """Get the full config as a dict."""
         return self.config.model_dump()
 
+    def get_or_create_csrf_secret(self) -> str:
+        """Return the CSRF secret, following env-var > persisted > generated priority.
+
+        Priority order:
+        1. TERRY_CSRF_SECRET environment variable (highest priority).
+        2. Persisted value from the config file.
+        3. Freshly generated secret that is then persisted for future restarts.
+
+        The generated secret is 32 random bytes encoded as a 64-character hex string.
+        """
+        env_secret = os.environ.get("TERRY_CSRF_SECRET")
+        if env_secret:
+            return env_secret
+
+        # Try persisted value
+        persisted = self.config.server_internal.csrf_secret
+        if persisted:
+            return persisted
+
+        # Generate a new secret and persist it
+        new_secret = secrets.token_hex(32)
+        self.config.server_internal.csrf_secret = new_secret
+        self._save()
+        logger.info("Generated and persisted new CSRF secret")
+        return new_secret
+
     def _seed_from_env(self) -> TerryConfig:
         """Build a TerryConfig from current environment variables."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         for config_key, env_var in _ENV_MAP.items():
             value = os.environ.get(env_var)
             if value is not None:
@@ -157,15 +202,20 @@ class ConfigManager:
             return TerryConfig()
 
     def _save(self) -> None:
-        """Atomic write: write to temp file then rename."""
+        """Atomic write: write to temp file then rename.
+
+        Sensitive fields (listed in _SECRET_FIELDS) are stripped to empty
+        strings before writing.  The in-memory config object is not mutated.
+        """
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         data = self.config.model_dump()
+        sanitized = self._strip_secrets(data)
         try:
             fd, tmp_path = tempfile.mkstemp(
                 dir=self.config_path.parent, suffix=".tmp"
             )
             with os.fdopen(fd, "w") as f:
-                json.dump(data, f, indent=2)
+                json.dump(sanitized, f, indent=2)
             os.replace(tmp_path, self.config_path)
             # Best-effort chmod 600
             try:
@@ -176,38 +226,64 @@ class ConfigManager:
             logger.error(f"Failed to save config: {e}")
             raise
 
-    def _apply_to_env(self, config_key: str, data: Dict[str, Any]) -> None:
-        """Push config values back to os.environ so existing code picks them up."""
+    def _apply_to_env(self, config_key: str, data: dict[str, Any]) -> None:
+        """Push config values to os.environ so existing code picks them up.
+
+        Credentials are written ONLY to the current process environment and
+        are never persisted to the config file.
+        """
         flat = self._flatten(data, config_key)
+        has_credential = False
         for dotted_key, value in flat.items():
             env_var = _ENV_MAP.get(dotted_key)
             if env_var:
                 str_value = str(value) if value is not None else ""
                 if str_value:
                     os.environ[env_var] = str_value
+                    if dotted_key in _SECRET_FIELDS:
+                        has_credential = True
                 elif env_var in os.environ:
                     del os.environ[env_var]
 
+        if has_credential:
+            logger.warning(
+                "Credentials applied to current process only. "
+                "For persistence, use environment variables or Kubernetes secrets."
+            )
+
+    @staticmethod
+    def _strip_secrets(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+        """Return a copy of data with all _SECRET_FIELDS replaced by empty strings.
+
+        The original dict is not mutated.
+        """
+        result: dict[str, Any] = {}
+        for key, val in data.items():
+            full_key = f"{prefix}.{key}" if prefix else key
+            if isinstance(val, dict):
+                result[key] = ConfigManager._strip_secrets(val, full_key)
+            elif full_key in _SECRET_FIELDS:
+                result[key] = ""
+            else:
+                result[key] = val
+        return result
+
     def _merge_sensitive(
-        self, current: Dict[str, Any], incoming: Dict[str, Any], prefix: str
-    ) -> Dict[str, Any]:
+        self, current: dict[str, Any], incoming: dict[str, Any], prefix: str
+    ) -> dict[str, Any]:
         """Keep existing secret values when incoming field is empty."""
         merged = dict(incoming)
         for key, val in current.items():
             full_key = f"{prefix}.{key}"
             if isinstance(val, dict) and isinstance(merged.get(key), dict):
-                merged[key] = self._merge_sensitive(
-                    val, merged[key], full_key
-                )
+                merged[key] = self._merge_sensitive(val, merged[key], full_key)
             elif full_key in SENSITIVE_FIELDS:
                 # If incoming is empty/None, keep current value
                 if not merged.get(key):
                     merged[key] = val
         return merged
 
-    def _mask_sensitive(
-        self, data: Dict[str, Any], prefix: str
-    ) -> Dict[str, Any]:
+    def _mask_sensitive(self, data: dict[str, Any], prefix: str) -> dict[str, Any]:
         """Replace sensitive values with masked versions."""
         masked = {}
         for key, val in data.items():
@@ -217,13 +293,15 @@ class ConfigManager:
             elif full_key in SENSITIVE_FIELDS and val:
                 # Show last 4 chars
                 s = str(val)
-                masked[key] = f"{'*' * max(0, len(s) - 4)}{s[-4:]}" if len(s) > 4 else "****"
+                masked[key] = (
+                    f"{'*' * max(0, len(s) - 4)}{s[-4:]}" if len(s) > 4 else "****"
+                )
             else:
                 masked[key] = val
         return masked
 
     @staticmethod
-    def _set_nested(data: Dict[str, Any], dotted_key: str, value: Any) -> None:
+    def _set_nested(data: dict[str, Any], dotted_key: str, value: Any) -> None:
         """Set a value in a nested dict using dotted key notation."""
         keys = dotted_key.split(".")
         d = data
@@ -237,11 +315,9 @@ class ConfigManager:
         d[keys[-1]] = value
 
     @staticmethod
-    def _flatten(
-        data: Dict[str, Any], prefix: str = ""
-    ) -> Dict[str, Any]:
+    def _flatten(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
         """Flatten nested dict to dotted keys."""
-        items: Dict[str, Any] = {}
+        items: dict[str, Any] = {}
         for key, val in data.items():
             full_key = f"{prefix}.{key}" if prefix else key
             if isinstance(val, dict):

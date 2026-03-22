@@ -4,17 +4,19 @@ Registers routes on the FastMCP server via @mcp.custom_route().
 Uses Jinja2 for template rendering and HTMX for partial page updates.
 """
 
-import hashlib
+import asyncio
 import hmac
+import ipaddress
 import json
 import logging
 import os
 import secrets
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from starlette.requests import Request
@@ -23,7 +25,33 @@ from starlette.responses import HTMLResponse, JSONResponse, Response
 from .config_manager import ConfigManager
 from .schemas import SECTION_TO_KEY, RESTART_REQUIRED_FIELDS
 
+# Import version from single source of truth; fall back gracefully if unavailable
+try:
+    _src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _src_dir not in sys.path:
+        sys.path.insert(0, _src_dir)
+    from _version import __version__ as _APP_VERSION
+except ImportError:
+    _APP_VERSION = "unknown"
+
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# IP whitelisting — TERRY_ALLOWED_HOSTS
+# ---------------------------------------------------------------------------
+# Comma-separated list of allowed IPs or CIDR ranges.
+# Empty (the default) means no restriction: all source IPs are permitted.
+# Example: TERRY_ALLOWED_HOSTS=10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+_ALLOWED_HOSTS_RAW: str = os.environ.get("TERRY_ALLOWED_HOSTS", "")
+_ALLOWED_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+if _ALLOWED_HOSTS_RAW:
+    for _entry in _ALLOWED_HOSTS_RAW.split(","):
+        _entry = _entry.strip()
+        if _entry:
+            try:
+                _ALLOWED_NETWORKS.append(ipaddress.ip_network(_entry, strict=False))
+            except ValueError:
+                logger.warning(f"Invalid TERRY_ALLOWED_HOSTS entry: {_entry!r}")
 
 # Template directory
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -56,11 +84,30 @@ _TAB_TEMPLATES = {
     "terraform-options": "partials/_terraform_options.html",
 }
 
-# CSRF secret (generated once per process)
-_CSRF_SECRET = os.environ.get("TERRY_CSRF_SECRET", secrets.token_hex(32))
+# CSRF secret — initialised to a temporary value at import time.
+# register_routes() replaces this with the persisted/env-var value from
+# ConfigManager.get_or_create_csrf_secret() so the secret survives restarts.
+_CSRF_SECRET = os.environ.get("TERRY_CSRF_SECRET") or secrets.token_hex(32)
 
 # Server start time for uptime calculation
 _START_TIME = time.time()
+
+# Security response headers applied to all HTML responses
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self' https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self';"
+    ),
+}
+
+# Session store: token -> expiry timestamp (epoch seconds)
+_sessions: dict[str, float] = {}
 
 
 def _generate_csrf_token() -> str:
@@ -76,15 +123,44 @@ def _verify_csrf_token(request: Request, token: str) -> bool:
     return hmac.compare_digest(expected, token)
 
 
+def _check_allowed_host(request: Request) -> Response | None:
+    """Check whether the request's source IP is in _ALLOWED_NETWORKS.
+
+    Returns None when the client is permitted (or no restriction is configured).
+    Returns a 403 JSONResponse when the client IP is absent or not whitelisted.
+    """
+    if not _ALLOWED_NETWORKS:
+        return None  # no restriction configured
+
+    client_ip: str | None = request.client.host if request.client else None
+    if not client_ip:
+        logger.warning("Blocked request: client IP not available (TERRY_ALLOWED_HOSTS active)")
+        return JSONResponse({"error": "Client IP not available"}, status_code=403)
+
+    try:
+        addr = ipaddress.ip_address(client_ip)
+        if any(addr in net for net in _ALLOWED_NETWORKS):
+            return None  # allowed
+    except ValueError:
+        pass
+
+    logger.warning(
+        f"Blocked request from {client_ip}: not in TERRY_ALLOWED_HOSTS"
+    )
+    return JSONResponse({"error": "Access denied"}, status_code=403)
+
+
 def _render(template_name: str, **context: Any) -> str:
     """Render a Jinja2 template with common context."""
     template = _jinja_env.get_template(template_name)
     return template.render(**context)
 
 
-def _html(content: str, status_code: int = 200, headers: Optional[Dict] = None) -> HTMLResponse:
-    """Create an HTMLResponse with optional headers."""
+def _html(content: str, status_code: int = 200, headers: dict | None = None) -> HTMLResponse:
+    """Create an HTMLResponse with security headers and optional additional headers."""
     resp = HTMLResponse(content, status_code=status_code)
+    for k, v in _SECURITY_HEADERS.items():
+        resp.headers[k] = v
     if headers:
         for k, v in headers.items():
             resp.headers[k] = v
@@ -99,14 +175,17 @@ def _set_csrf_cookie(response: Response, token: str) -> Response:
         httponly=True,
         samesite="strict",
         max_age=3600,
+        secure=True,
     )
     return response
 
 
-def _check_auth(request: Request, config_mgr: ConfigManager) -> Optional[Response]:
+def _check_auth(request: Request, config_mgr: ConfigManager) -> Response | None:
     """Check if request is authenticated when API key is configured.
 
     Returns None if OK, or a redirect/error response if not.
+    Validates session tokens against the module-level _sessions store
+    and opportunistically purges expired entries.
     """
     api_key = config_mgr.config.server.api_key
     if not api_key:
@@ -115,10 +194,13 @@ def _check_auth(request: Request, config_mgr: ConfigManager) -> Optional[Respons
     # Check session cookie
     session = request.cookies.get("terry_session")
     if session:
-        expected = hashlib.sha256(
-            f"{api_key}:{_CSRF_SECRET}".encode()
-        ).hexdigest()
-        if hmac.compare_digest(session, expected):
+        now = time.time()
+        expiry = _sessions.get(session)
+        if expiry is not None and expiry > now:
+            # Opportunistically remove expired sessions
+            expired = [t for t, exp in _sessions.items() if exp <= now]
+            for t in expired:
+                _sessions.pop(t, None)
             return None
 
     # Not authenticated — serve login page for GET, 401 for API
@@ -127,7 +209,7 @@ def _check_auth(request: Request, config_mgr: ConfigManager) -> Optional[Respons
     return _html(_render("login.html", csrf_token="", error=""), status_code=401)
 
 
-def _get_server_status(config_mgr: ConfigManager) -> Dict[str, Any]:
+def _get_server_status(config_mgr: ConfigManager) -> dict[str, Any]:
     """Gather server status information."""
     config = config_mgr.config
     uptime_seconds = int(time.time() - _START_TIME)
@@ -144,21 +226,24 @@ def _get_server_status(config_mgr: ConfigManager) -> Dict[str, Any]:
         if result.returncode == 0:
             tf_data = json.loads(result.stdout)
             tf_version = tf_data.get("terraform_version")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Terraform version check failed: {e}")
 
     # Check LSP availability
     lsp_available = shutil.which("terraform-ls") is not None
 
+    healthy = tf_version is not None
+    tools_data = _load_tools_json()
     return {
-        "version": "3.1.0",
+        "version": _APP_VERSION,
         "transport": config.server.transport,
         "host": config.server.host,
         "port": config.server.port,
-        "tool_count": 25,
+        "tool_count": tools_data.get("tool_count", 0),
         "uptime": f"{hours}h {minutes}m {seconds}s",
         "uptime_seconds": uptime_seconds,
-        "healthy": True,
+        "healthy": healthy,
+        "terraform_available": tf_version is not None,
         "terraform_version": tf_version,
         "lsp_available": lsp_available,
         "github_configured": bool(config.github.app_id),
@@ -166,10 +251,10 @@ def _get_server_status(config_mgr: ConfigManager) -> Dict[str, Any]:
     }
 
 
-_tools_json_cache: Optional[Dict[str, Any]] = None
+_tools_json_cache: dict[str, Any] | None = None
 
 
-def _load_tools_json() -> Dict[str, Any]:
+def _load_tools_json() -> dict[str, Any]:
     """Load and cache tools.json."""
     global _tools_json_cache
     if _tools_json_cache is not None:
@@ -205,7 +290,7 @@ def _parse_cloud_credentials_form(form_data: dict) -> dict:
     provider = form_data.get("_provider", "aws")
 
     # Start with empty structure
-    result: Dict[str, Any] = {"aws": {}, "gcp": {}, "azure": {}}
+    result: dict[str, Any] = {"aws": {}, "gcp": {}, "azure": {}}
 
     if provider == "aws":
         result["aws"] = {
@@ -239,6 +324,12 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         config_mgr: ConfigManager instance for reading/writing config
         rate_limiter: RateLimiter instance for live rate limit updates
     """
+    global _CSRF_SECRET
+    # Resolve the CSRF secret with full priority chain:
+    # env var > persisted config > generated+persisted
+    _CSRF_SECRET = config_mgr.get_or_create_csrf_secret()
+    logger.debug("CSRF secret initialised from %s",
+                 "env var" if os.environ.get("TERRY_CSRF_SECRET") else "config/generated")
 
     # ------------------------------------------------------------------
     # Static files
@@ -279,7 +370,7 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         html = _render(
             "dashboard.html",
             active_page="dashboard",
-            version="3.1.0",
+            version=_APP_VERSION,
             csrf_token=csrf_token,
             status=status,
             tool_categories=_get_tool_categories(),
@@ -301,7 +392,7 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         html = _render(
             "tools.html",
             active_page="tools",
-            version="3.1.0",
+            version=_APP_VERSION,
             csrf_token=csrf_token,
             tools_json=json.dumps(tools_data["tools"]),
             categories_json=json.dumps(tools_data["categories"]),
@@ -315,6 +406,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
     # ------------------------------------------------------------------
     @mcp_server.custom_route("/api/tools", methods=["GET"])
     async def api_tools(request: Request) -> Response:
+        auth_resp = _check_auth(request, config_mgr)
+        if auth_resp:
+            return auth_resp
         return JSONResponse(_load_tools_json())
 
     # ------------------------------------------------------------------
@@ -341,7 +435,7 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         html = _render(
             "config.html",
             active_page="config",
-            version="3.1.0",
+            version=_APP_VERSION,
             csrf_token=csrf_token,
             tabs=CONFIG_TABS,
             active_tab=active_tab,
@@ -419,14 +513,17 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         try:
             config_mgr.update_section(section, form_data, rate_limiter=rate_limiter)
         except Exception as e:
-            logger.error(f"Config update failed for {section}: {e}")
+            logger.error(f"Config update failed for {section}: {e}", exc_info=True)
             section_data = config_mgr.get_section_masked(section)
             html = _render(_TAB_TEMPLATES[section], config=section_data)
             return _html(
                 html,
                 headers={
                     "HX-Trigger": json.dumps({
-                        "show-toast": {"message": f"Error: {e}", "type": "error"}
+                        "show-toast": {
+                            "message": "Failed to save settings. Check server logs.",
+                            "type": "error",
+                        }
                     })
                 },
             )
@@ -464,6 +561,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
     # ------------------------------------------------------------------
     @mcp_server.custom_route("/api/status", methods=["GET"])
     async def api_status(request: Request) -> Response:
+        auth_resp = _check_auth(request, config_mgr)
+        if auth_resp:
+            return auth_resp
         status = _get_server_status(config_mgr)
         return JSONResponse({"status": "ok", **status})
 
@@ -472,6 +572,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
     # ------------------------------------------------------------------
     @mcp_server.custom_route("/api/status/badge", methods=["GET"])
     async def api_status_badge(request: Request) -> Response:
+        auth_resp = _check_auth(request, config_mgr)
+        if auth_resp:
+            return auth_resp
         status = _get_server_status(config_mgr)
         if status["healthy"]:
             html = '<span class="inline-flex items-center space-x-1"><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span><span class="text-green-400">Healthy</span></span>'
@@ -484,6 +587,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
     # ------------------------------------------------------------------
     @mcp_server.custom_route("/api/status/panel", methods=["GET"])
     async def api_status_panel(request: Request) -> Response:
+        auth_resp = _check_auth(request, config_mgr)
+        if auth_resp:
+            return auth_resp
         status = _get_server_status(config_mgr)
         html = _render("partials/_status_panel.html", status=status)
         return _html(html)
@@ -513,8 +619,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
                 f'<div class="mt-2 text-sm text-green-400">Connected. Found {len(installations)} installation(s).</div>'
             )
         except Exception as e:
+            logger.error(f"Connection test failed: {e}", exc_info=True)
             return _html(
-                f'<div class="mt-2 text-sm text-red-400">Connection failed: {e}</div>'
+                '<div class="mt-2 text-sm text-red-400">Connection failed. Check server logs.</div>'
             )
 
     @mcp_server.custom_route("/config/terraform-cloud/test", methods=["POST"])
@@ -552,8 +659,9 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
                             f'<div class="mt-2 text-sm text-red-400">API returned HTTP {resp.status}</div>'
                         )
         except Exception as e:
+            logger.error(f"Connection test failed: {e}", exc_info=True)
             return _html(
-                f'<div class="mt-2 text-sm text-red-400">Connection failed: {e}</div>'
+                '<div class="mt-2 text-sm text-red-400">Connection failed. Check server logs.</div>'
             )
 
     # ------------------------------------------------------------------
@@ -577,10 +685,10 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
         submitted_key = form.get("api_key", "")
 
         if hmac.compare_digest(str(submitted_key), api_key):
-            # Create session
-            session_token = hashlib.sha256(
-                f"{api_key}:{_CSRF_SECRET}".encode()
-            ).hexdigest()
+            # Create a random per-login session token valid for 24 hours
+            session_token = secrets.token_urlsafe(32)
+            _sessions[session_token] = time.time() + 86400
+            logger.info(f"Successful login from {request.client.host}")
             resp = Response("", status_code=302, headers={"Location": "/"})
             resp.set_cookie(
                 "terry_session",
@@ -588,12 +696,38 @@ def register_routes(mcp_server, config_mgr: ConfigManager, rate_limiter=None):
                 httponly=True,
                 samesite="strict",
                 max_age=86400,
+                secure=True,
             )
             return resp
 
+        logger.warning(f"Failed login attempt from {request.client.host}")
         csrf_token = _generate_csrf_token()
         html = _render("login.html", csrf_token=csrf_token, error="Invalid API key")
         resp = _html(html, status_code=401)
         return _set_csrf_cookie(resp, csrf_token)
 
+    # ------------------------------------------------------------------
+    # Logout — invalidates the session token and clears the cookie
+    # ------------------------------------------------------------------
+    @mcp_server.custom_route("/logout", methods=["POST"])
+    async def logout(request: Request) -> Response:
+        session = request.cookies.get("terry_session")
+        if session:
+            _sessions.pop(session, None)
+            logger.info(f"User logged out from {request.client.host}")
+        resp = Response("", status_code=302, headers={"Location": "/login"})
+        resp.delete_cookie("terry_session")
+        return resp
+
+    async def _cleanup_sessions_task():
+        while True:
+            await asyncio.sleep(3600)
+            now = time.time()
+            expired = [t for t, exp in list(_sessions.items()) if exp <= now]
+            for t in expired:
+                _sessions.pop(t, None)
+            if expired:
+                logger.info(f"Purged {len(expired)} expired sessions")
+
+    asyncio.ensure_future(_cleanup_sessions_task())
     logger.info("Frontend routes registered")

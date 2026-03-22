@@ -69,6 +69,73 @@ scripts/verify.sh   # Runs 8 checks: Docker, image size, Terraform, terraform-ls
 
 ---
 
+## Environment Variables
+
+All configuration is through environment variables. No config file is required for basic use.
+
+### Server Configuration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `MCP_TRANSPORT` | Transport protocol: `stdio`, `sse`, or `streamable-http` | `stdio` | No |
+| `TERRY_HOST` | Server bind address (fallback: `HOST`) | `0.0.0.0` | No |
+| `TERRY_PORT` | Server port (fallback: `PORT`) | `8000` | No |
+| `TERRY_FORM_API_KEY` | API key for frontend auth; if unset, auth is disabled | None | No |
+| `TERRY_CSRF_SECRET` | CSRF token secret; regenerated on restart if unset | Random | Recommended |
+| `TERRY_WORKSPACE_ROOT` | Terraform workspace root directory | `/mnt/workspace` | No |
+| `TERRY_CONFIG_PATH` | Config file path | `/app/config/terry-config.json` | No |
+
+### Terraform
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `MAX_OPERATION_TIMEOUT` | Terraform command timeout in seconds (10–3600) | `300` | No |
+
+### LSP
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `TERRY_TERRAFORM_LS_PATH` | Path to `terraform-ls` binary | `terraform-ls` | No |
+| `TERRY_LSP_TIMEOUT` | LSP request timeout in seconds | `30` | No |
+| `TERRY_LSP_MAX_RESPONSE_BYTES` | Maximum LSP response size in bytes | `10485760` | No |
+
+### GitHub Integration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `GITHUB_APP_ID` | GitHub App ID | None | For GitHub features |
+| `GITHUB_APP_PRIVATE_KEY_PATH` | Path to GitHub App private key file | None | For GitHub features |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App private key (inline PEM) | None | Alt to path |
+| `GITHUB_APP_INSTALLATION_ID` | GitHub App installation ID | None | No |
+| `GITHUB_APP_WEBHOOK_SECRET` | Webhook signature verification secret | None | No |
+
+### Terraform Cloud
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `TF_API_TOKEN` | Terraform Cloud API token | None | For TF Cloud features |
+
+### Rate Limits
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `TERRY_RATE_LIMIT_TERRAFORM` | Terraform operations per minute | `20` | No |
+| `TERRY_RATE_LIMIT_GITHUB` | GitHub operations per minute | `30` | No |
+| `TERRY_RATE_LIMIT_TF_CLOUD` | Terraform Cloud operations per minute | `30` | No |
+| `TERRY_RATE_LIMIT_DEFAULT` | Default rate limit per minute | `100` | No |
+
+### Cloud Provider Passthrough
+
+These variables are forwarded directly to the Terraform subprocess. Set them to authenticate with your cloud provider.
+
+**AWS:** `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_DEFAULT_REGION`, `AWS_REGION`, `AWS_PROFILE`
+
+**GCP:** `GOOGLE_CREDENTIALS`, `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_PROJECT`, `GOOGLE_REGION`, `GOOGLE_ZONE`
+
+**Azure:** `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID`, `ARM_TENANT_ID`
+
+---
+
 ## MCP Client Configuration
 
 Add Terry-Form to any MCP-compatible client:

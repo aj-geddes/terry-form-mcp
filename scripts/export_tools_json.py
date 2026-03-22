@@ -10,14 +10,22 @@ Generates tools.json at the project root and docs/_data/tools.json for Jekyll.
 
 import asyncio
 import json
+import logging
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+script_logger = logging.getLogger(__name__)
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 os.chdir(PROJECT_ROOT)
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+try:
+    from _version import __version__ as _SERVER_VERSION
+except ImportError:
+    _SERVER_VERSION = "unknown"
 
 CATEGORIES = {
     "Core Terraform": {
@@ -160,7 +168,7 @@ async def export():
         }
 
     return {
-        "server": {"name": "terry-form", "version": "3.1.0"},
+        "server": {"name": "terry-form", "version": _SERVER_VERSION},
         "tool_count": len(tools),
         "tools": tools,
         "categories": categories,
@@ -173,17 +181,21 @@ def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--output":
         output_path = Path(sys.argv[2])
 
-    data = asyncio.run(export())
+    try:
+        data = asyncio.run(export())
+    except Exception as e:
+        script_logger.error(f"Failed to export tools.json: {e}", exc_info=True)
+        sys.exit(1)
 
     # Write to project root
     output_path.write_text(json.dumps(data, indent=2) + "\n")
-    print(f"Wrote {output_path} ({data['tool_count']} tools)")
+    script_logger.info(f"Wrote {output_path} ({data['tool_count']} tools)")
 
     # Also write to docs/_data/ for Jekyll
     docs_data = PROJECT_ROOT / "docs" / "_data" / "tools.json"
     if docs_data.parent.exists():
         docs_data.write_text(json.dumps(data, indent=2) + "\n")
-        print(f"Wrote {docs_data}")
+        script_logger.info(f"Wrote {docs_data}")
 
 
 if __name__ == "__main__":
